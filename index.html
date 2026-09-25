@@ -50,7 +50,7 @@ button{font:inherit;color:inherit}
 .keyselect{padding:12px;display:flex;flex-direction:column;gap:10px}
 .krow{display:grid;grid-template-columns:78px 1fr;gap:10px;align-items:center}
 .rowlabel{font-family:var(--px);font-size:9px;line-height:1.6;letter-spacing:.06em;text-align:left;background:transparent;
-  border:3px solid currentColor;padding:8px 6px;cursor:pointer;box-shadow:3px 3px 0 var(--shadow)}
+  border:3px solid currentColor;padding:5px 6px;cursor:pointer;box-shadow:3px 3px 0 var(--shadow)}
 .rowlabel small{display:block;font-size:7px;opacity:.75;margin-top:4px}
 .rowlabel:hover{background:rgba(255,255,255,.06)}
 .rowlabel[aria-pressed="true"]{background:currentColor}
@@ -233,7 +233,7 @@ button{font:inherit;color:inherit}
   50%{text-shadow:6px 2px var(--cyan),-6px -2px var(--mag);transform:translate(-3px,2px) skewX(6deg)}}
 
 /* ---------- fit one screen (Chromebook / projector) ---------- */
-.app{gap:10px;padding-block:10px 12px}
+.app{gap:10px;padding-block:8px}
 .logo{font-size:20px} .logo small{margin-top:6px}
 .keyselect{padding:10px;gap:8px}
 .cart{padding:9px 2px 7px;gap:6px}
@@ -258,7 +258,7 @@ button{font:inherit;color:inherit}
 .steps li{grid-template-columns:34px 1fr;gap:10px}
 .steps span{font-size:20px}
 .start,.chaos{padding:16px 42px}
-@media (max-height:700px){ .keyhint{display:none} .logo small{display:none} }
+@media (max-height:700px){ .keyhint{display:none} .logo small{display:none} .insert{padding:0;font-size:12px} .steps{gap:6px} .steps span{font-size:18px;line-height:1.05} }
 @media (max-height:620px){
   .ladder,.qtag{display:none}
   .app{gap:8px;padding-block:8px}
@@ -304,8 +304,8 @@ button{font:inherit;color:inherit}
   </header>
 
   <section class="panel keyselect" id="keySelect" aria-label="Choose keys">
-    <div class="krow sharp"><button type="button" class="rowlabel" data-row="sharp" aria-pressed="false"><span>SHARP<br>KEYS ♯<small>ALL / NONE</small></span></button><div class="kgrid" id="sharpRow"></div></div>
-    <div class="krow flat"><button type="button" class="rowlabel" data-row="flat" aria-pressed="false"><span>FLAT<br>KEYS ♭<small>ALL / NONE</small></span></button><div class="kgrid" id="flatRow"></div></div>
+    <div class="krow sharp"><button type="button" class="rowlabel" data-row="sharp" aria-pressed="false" title="Select all sharp keys (click again for none)"><span>SHARP<br>KEYS ♯</span></button><div class="kgrid" id="sharpRow"></div></div>
+    <div class="krow flat"><button type="button" class="rowlabel" data-row="flat" aria-pressed="false" title="Select all flat keys (click again for none)"><span>FLAT<br>KEYS ♭</span></button><div class="kgrid" id="flatRow"></div></div>
   </section>
 
   <section class="settings">
