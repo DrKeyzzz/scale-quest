@@ -157,7 +157,15 @@ button{font:inherit;color:inherit}
 
 .popup{position:absolute;left:50%;top:34%;transform:translateX(-50%);font-family:var(--px);font-size:24px;color:var(--yel);
   text-shadow:3px 3px 0 var(--shadow);pointer-events:none;animation:rise 1.1s forwards;white-space:nowrap;z-index:5}
-.popup.streak{color:var(--mag);top:46%;font-size:16px}
+.popup.streak{color:var(--mag);top:58%;font-size:16px}
+.popup.speed{color:var(--cyan);top:47%;font-size:14px}
+.timer{position:absolute;inset:0 0 auto 0;pointer-events:none;z-index:2}
+.timetrack{height:7px;background:var(--shadow)}
+.timefill{height:100%;width:100%;background:var(--cyan)}
+.timefill.mid{background:var(--yel)} .timefill.low{background:var(--bad)}
+.timelab,.timeclock{position:absolute;top:15px;font-family:var(--px);font-size:9px;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.timelab{right:14px;color:var(--yel)} .timelab.none{color:var(--dim)}
+.timeclock{left:14px;color:var(--dim)}
 @keyframes rise{0%{opacity:0;transform:translate(-50%,16px) scale(.6)}20%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-50px)}}
 
 /* ---------- attract ---------- */
@@ -333,7 +341,7 @@ button{font:inherit;color:inherit}
         <h2>HOW TO PLAY</h2>
         <ol class="steps">
           <li><span class="n">1</span><div><b>CHECK YOUR KEYS</b><span>Click any keys in the top bar to add them to your quest.</span></div></li>
-          <li><span class="n">2</span><div><b>PRESS START</b><span>Clear one key at a time: build the scale, then find its notes on piano and staff.</span></div></li>
+          <li><span class="n">2</span><div><b>PRESS START</b><span>Clear one key at a time on piano and staff. Answer fast for a speed bonus!</span></div></li>
           <li><span class="n">3</span><div><b>HIT CHAOS</b><span>20 shuffled questions from every checked key. Finish without a CONTINUE to post a high score.</span></div></li>
         </ol>
       </div>
@@ -344,6 +352,7 @@ button{font:inherit;color:inherit}
     </div>
 
     <div id="question" hidden style="display:contents">
+      <div class="timer" aria-hidden="true"><div class="timetrack"><div class="timefill" id="timeFill"></div></div><span class="timeclock" id="timeClock">0.0s</span><span class="timelab" id="timeLab">SPEED +100</span></div>
       <span class="qtag" id="qTag">PIANO</span>
       <h2 class="qtext" id="qText"></h2>
       <p class="qhelp" id="qHelp"></p>
@@ -721,6 +730,31 @@ function flash(kind){
 }
 function later(fn, ms){ const r = S.run; setTimeout(() => { if(S.run === r && r && !r.ended) fn(); }, ms); }
 
+/* ---------- speed timer ----------
+   Correct answers earn up to +100, shrinking to 0 over the window below.
+   The clock pauses while feedback or a menu is showing. */
+const SPEED_MAX = 100;
+const TIME_WINDOW = {build: 25, piano: 10, staff: 12};   // seconds
+const timer = {start: 0, pausedAt: 0};
+function timerStart(){ timer.start = performance.now(); timer.pausedAt = 0; }
+function timerPause(){ if(!timer.pausedAt) timer.pausedAt = performance.now(); }
+function elapsed(){ return ((timer.pausedAt || performance.now()) - timer.start) / 1000; }
+function speedBonus(q){ const f = Math.max(0, 1 - elapsed() / TIME_WINDOW[q.type]); return Math.round(SPEED_MAX * f / 5) * 5; }
+function timerLoop(){
+  const q = S.run && !S.run.ended && S.run.q;
+  if(q){
+    const hold = S.busy || S.overlay;
+    if(hold && !timer.pausedAt) timer.pausedAt = performance.now();
+    if(!hold && timer.pausedAt){ timer.start += performance.now() - timer.pausedAt; timer.pausedAt = 0; }
+    const f = Math.max(0, 1 - elapsed() / TIME_WINDOW[q.type]), b = speedBonus(q), lab = $('#timeLab');
+    $('#timeFill').style.width = (f * 100) + '%';
+    $('#timeFill').className = 'timefill' + (f > .5 ? '' : f > .2 ? ' mid' : ' low');
+    $('#timeClock').textContent = elapsed().toFixed(1) + 's';
+    lab.textContent = b ? `SPEED +${b}` : 'NO SPEED BONUS'; lab.classList.toggle('none', !b);
+  }
+  requestAnimationFrame(timerLoop);
+}
+
 /* ---------- run flow ---------- */
 function setPlaying(on){
   $('#app').classList.toggle('playing', on);
@@ -736,7 +770,7 @@ function setPlaying(on){
 function startRun(mode){
   closeOverlay();
   const keys = PLAY_ORDER.filter(k => S.selected.has(k)); if(!keys.length) return;
-  S.run = {mode, keys, keyIdx:0, continued:false, qInKey:0, total:0, score:0, streak:0, best:0, lives:3,
+  S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives:3,
            stats:{}, lastInstr:null, lastKey:null, lastDeg:{}, q:null, ended:false};
   setPlaying(true); updateHUD();
   if(mode === 'chaos'){
@@ -795,6 +829,7 @@ function renderQuestion(){
   const ng = $('#noteG'); ng.classList.remove('good','bad');
   drawKeySig(q.key); drawGhost(null); drawNote();
   $('#submitBtn').disabled = false;
+  timerStart();
 }
 
 function submit(){
@@ -817,13 +852,16 @@ function stat(key, ok){ const s = S.run.stats[key] || (S.run.stats[key] = {right
 function scaleLine(key){ return `${fmt(key)} major: ${SCALES[key].map(fmt).join(' ')}`; }
 
 function onCorrect(){
+  timerPause();
   const r = S.run, q = r.q; S.busy = true; $('#submitBtn').disabled = true;
   r.streak++; r.best = Math.max(r.best, r.streak);
-  const pts = q.tries ? 50 : 100;
+  const pts = q.tries ? 50 : 100, speed = speedBonus(q);
+  r.times.push(elapsed());
   let bonus = 0;
   if(r.streak === 3) bonus = 50; else if(r.streak === 5) bonus = 100; else if(r.streak % 10 === 0) bonus = 250;
-  r.score += pts + bonus; stat(q.key, true);
-  flash('ok'); SFX.coin(); popup('+' + pts);
+  r.score += pts + speed + bonus; stat(q.key, true);
+  flash('ok'); SFX.coin(); popup('+' + (pts + speed));
+  if(speed) setTimeout(() => popup(`SPEED +${speed} · ${elapsed().toFixed(1)}s`, 'speed'), 120);
   if(bonus){ SFX.streak(); setTimeout(() => popup(`STREAK x${r.streak}! +${bonus}`, 'streak'), 250); }
   const praise = pick(['NICE!','PERFECT!','GREAT!','YES!','NAILED IT!']);
   if(q.type === 'build'){
@@ -841,6 +879,7 @@ function onCorrect(){
   later(advance, q.type === 'build' ? 1900 : 1400);
 }
 function onWrong(){
+  timerPause();
   const r = S.run, q = r.q;
   if(q.type === 'build' && q.tries === 0){
     q.tries = 1; S.busy = true;
@@ -945,6 +984,7 @@ function endRun(reason){
       : `<div><small>SCORE</small><strong>${String(r.score).padStart(6,'0')}</strong></div>`}
       <div><small>ACCURACY</small><strong>${acc}%</strong></div>
       <div><small>BEST STREAK</small><strong>x${r.best}</strong></div>
+      ${r.times.length ? `<div><small>AVG ANSWER</small><strong>${(r.times.reduce((a,b) => a+b, 0) / r.times.length).toFixed(1)}s</strong></div>` : ''}
     </div>
     ${bars ? `<div class="bars">${bars}</div>` : '<p class="osub dim">No questions answered.</p>'}
     ${weak ? `<p class="weak">PRACTICE NEXT: ${fmt(weak.k)} MAJOR</p>` : (total ? '<p class="weak" style="color:var(--ok)">FLAWLESS! EVERY KEY AT 100%</p>' : '')}
@@ -1017,7 +1057,7 @@ function chaosPicker(){
       <div><small>KEYS</small><strong>${keys.length}</strong></div>
       <div><small>KEY BONUS</small><strong>x${keyBonus(keys.length).toFixed(1)}</strong></div>
     </div>
-    <p class="osub dim" style="font-size:20px">Finish all ${CHAOS_LEN} without using CONTINUE to post your score. More keys = bigger bonus.</p>
+    <p class="osub dim" style="font-size:20px">Finish all ${CHAOS_LEN} without using CONTINUE to post your score. Fast answers earn a speed bonus. More keys = bigger key bonus.</p>
     <div class="obtns"><button class="btn obtn mag" id="goChaos" type="button" data-focus>START CHAOS</button><button class="btn obtn alt" id="cancelChaos" type="button">CANCEL</button></div>`, 'mag');
   p.querySelector('#goChaos').onclick = () => startRun('chaos');
   p.querySelector('#cancelChaos').onclick = closeOverlay;
@@ -1062,7 +1102,7 @@ document.addEventListener('keydown', e => {
 
 /* ---------- boot ---------- */
 document.querySelectorAll('#accs button').forEach(b => b.querySelector('svg').innerHTML = ACC_SHAPE[b.dataset.acc]);
-renderKeyRows(); renderQpk(); buildPiano(); buildStaff(); renderMute(); renderBoard(); updateCarts(); setPlaying(false);
+renderKeyRows(); renderQpk(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); renderBoard(); updateCarts(); setPlaying(false);
 </script>
 </body>
 </html>

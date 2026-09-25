@@ -10,7 +10,7 @@
 const SHEET_NAME = 'Scores';
 const TOP_N = 10;
 const CHAOS_LEN = 20;
-const MAX_POINTS = 2650;   // 20 perfect answers + every streak bonus
+const MAX_POINTS = 4650;   // 20 perfect answers + max speed bonus + every streak bonus
 
 function doGet() {
   return json_({ ok: true, top: top_(TOP_N) });
