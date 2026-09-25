@@ -226,6 +226,44 @@ button{font:inherit;color:inherit}
 @keyframes glitch{0%{text-shadow:-5px 0 var(--cyan),5px 0 var(--mag);transform:translate(0,0)}
   50%{text-shadow:6px 2px var(--cyan),-6px -2px var(--mag);transform:translate(-3px,2px) skewX(6deg)}}
 
+/* ---------- fit one screen (Chromebook / projector) ---------- */
+.app{gap:10px;padding-block:10px 12px}
+.logo{font-size:20px} .logo small{margin-top:6px}
+.keyselect{padding:10px;gap:8px}
+.cart{padding:9px 2px 7px;gap:6px}
+.cart .cname{font-size:14px}
+.app.playing .keyselect,.app.playing .settings,.app.playing .controls{display:none}
+.quit{color:var(--bad)}
+.hcell{padding:8px 12px;gap:6px}
+.hval{font-size:14px}
+.stage{min-height:0;padding:12px 16px 14px;gap:10px}
+.qtext{font-size:clamp(28px,5.4vh,44px)}
+.qhelp{font-size:20px}
+.pianowrap{width:min(100%,700px,calc(30vh * 2.95 + 26px));padding:8px 8px 6px}
+.staffwrap{width:min(100%,780px,calc(32vh * 2.95 + 140px));max-width:none;gap:14px}
+.arrow{width:70px;height:52px}
+.feedback{min-height:26px;font-size:24px}
+.submit{font-size:15px;padding:13px 36px}
+.attract{gap:14px}
+.attract h2{margin-bottom:8px}
+.insert{padding:4px 0;font-size:13px}
+.steps{gap:8px}
+.steps .n{width:34px;height:34px;font-size:11px}
+.steps li{grid-template-columns:34px 1fr;gap:10px}
+.steps span{font-size:20px}
+.start,.chaos{padding:16px 42px}
+@media (max-height:700px){ .keyhint{display:none} .logo small{display:none} }
+@media (max-height:620px){
+  .ladder,.qtag{display:none}
+  .app{gap:8px;padding-block:8px}
+  .stage{gap:8px;padding-block:10px}
+  .cart{padding:7px 2px 5px;gap:4px}
+  .steps span{display:none}
+  .steps b{margin:0}
+  .steps li{align-items:center}
+  .start,.chaos{padding:12px 36px}
+}
+
 @media (max-width:760px){
   .krow{grid-template-columns:1fr;gap:6px}
   .kgrid{grid-template-columns:repeat(4,1fr)}
@@ -255,6 +293,7 @@ button{font:inherit;color:inherit}
       <button class="btn tbtn" id="boardBtn" type="button">BEST SCORES</button>
       <button class="btn tbtn" id="muteBtn" type="button">SOUND: ON</button>
       <button class="btn tbtn" id="gearBtn" type="button">SETUP</button>
+      <button class="btn tbtn quit" id="quitBtn" type="button" hidden>QUIT</button>
     </div>
   </header>
 
@@ -332,7 +371,6 @@ button{font:inherit;color:inherit}
   <footer class="controls">
     <button class="btn start" id="startBtn" type="button" disabled>START</button>
     <button class="btn chaos" id="chaosBtn" type="button" disabled>CHAOS</button>
-    <button class="btn quit" id="quitBtn" type="button" hidden>QUIT</button>
   </footer>
 </main>
 
@@ -665,6 +703,7 @@ function later(fn, ms){ const r = S.run; setTimeout(() => { if(S.run === r && r 
 
 /* ---------- run flow ---------- */
 function setPlaying(on){
+  $('#app').classList.toggle('playing', on);
   $('#keySelect').classList.toggle('locked', on);
   $('#lockMsg').hidden = !on;
   document.querySelectorAll('#qpkSeg button').forEach(b => b.disabled = on);
@@ -672,7 +711,7 @@ function setPlaying(on){
   $('#attract').hidden = on;
   $('#question').hidden = !on;
   $('#question').style.display = on ? 'contents' : 'none';
-  $('#startBtn').hidden = on; $('#chaosBtn').hidden = on; $('#quitBtn').hidden = !on;
+  $('#quitBtn').hidden = !on;
 }
 function startRun(mode, len=null){
   closeOverlay();
