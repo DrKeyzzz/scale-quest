@@ -4,6 +4,14 @@ An arcade-style major scale trainer for beginner music theory. Students check th
 
 **Play:** https://drkeyzzz.github.io/scale-quest/
 
+## How scores work
+
+Only a finished **CHAOS** run can go on the board. Every CHAOS run is 20 questions, so scores compare fairly.
+
+- 100 points per correct answer (50 on a second try at building a scale), plus streak bonuses at 3, 5, 10 and 20 in a row.
+- **Key bonus:** +10% for each key beyond the first (4 keys = x1.3, all 15 = x2.4).
+- Runs that use CONTINUE, practice runs and quit runs can't be posted.
+
 ## Class leaderboard setup (one time, about 5 minutes)
 
 Scores go to a Google Sheet you own.

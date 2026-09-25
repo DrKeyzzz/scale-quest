@@ -49,7 +49,13 @@ button{font:inherit;color:inherit}
 .panel{background:var(--bg2);border:3px solid var(--line);box-shadow:0 0 0 3px var(--shadow)}
 .keyselect{padding:12px;display:flex;flex-direction:column;gap:10px}
 .krow{display:grid;grid-template-columns:78px 1fr;gap:10px;align-items:center}
-.rowlabel{font-family:var(--px);font-size:9px;line-height:1.6;letter-spacing:.06em}
+.rowlabel{font-family:var(--px);font-size:9px;line-height:1.6;letter-spacing:.06em;text-align:left;background:transparent;
+  border:3px solid currentColor;padding:8px 6px;cursor:pointer;box-shadow:3px 3px 0 var(--shadow)}
+.rowlabel small{display:block;font-size:7px;opacity:.75;margin-top:4px}
+.rowlabel:hover{background:rgba(255,255,255,.06)}
+.rowlabel[aria-pressed="true"]{background:currentColor}
+.krow.sharp .rowlabel[aria-pressed="true"] span,.krow.flat .rowlabel[aria-pressed="true"] span{color:var(--shadow)}
+.keyselect.locked .rowlabel{cursor:not-allowed;opacity:.6}
 .krow.sharp .rowlabel{color:var(--cyan)} .krow.flat .rowlabel{color:var(--mag)}
 .kgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
 .cart{position:relative;font-family:var(--px);background:var(--panel);color:var(--dim);border:3px solid var(--line);
@@ -298,8 +304,8 @@ button{font:inherit;color:inherit}
   </header>
 
   <section class="panel keyselect" id="keySelect" aria-label="Choose keys">
-    <div class="krow sharp"><div class="rowlabel">SHARP<br>KEYS ♯</div><div class="kgrid" id="sharpRow"></div></div>
-    <div class="krow flat"><div class="rowlabel">FLAT<br>KEYS ♭</div><div class="kgrid" id="flatRow"></div></div>
+    <div class="krow sharp"><button type="button" class="rowlabel" data-row="sharp" aria-pressed="false"><span>SHARP<br>KEYS ♯<small>ALL / NONE</small></span></button><div class="kgrid" id="sharpRow"></div></div>
+    <div class="krow flat"><button type="button" class="rowlabel" data-row="flat" aria-pressed="false"><span>FLAT<br>KEYS ♭<small>ALL / NONE</small></span></button><div class="kgrid" id="flatRow"></div></div>
   </section>
 
   <section class="settings">
@@ -328,7 +334,7 @@ button{font:inherit;color:inherit}
         <ol class="steps">
           <li><span class="n">1</span><div><b>CHECK YOUR KEYS</b><span>Click any keys in the top bar to add them to your quest.</span></div></li>
           <li><span class="n">2</span><div><b>PRESS START</b><span>Clear one key at a time: build the scale, then find its notes on piano and staff.</span></div></li>
-          <li><span class="n">3</span><div><b>HIT CHAOS</b><span>Every checked key, shuffled. Prove you've mastered them all.</span></div></li>
+          <li><span class="n">3</span><div><b>HIT CHAOS</b><span>20 shuffled questions from every checked key. Finish without a CONTINUE to post a high score.</span></div></li>
         </ol>
       </div>
       <div>
@@ -427,6 +433,10 @@ const isFlatKey = k => SCALES[k].some(n => n[1]==='b');
 const sigCount  = k => SCALES[k].filter(n => n.length>1).length;
 const sigLabel  = k => { const c = sigCount(k); return c ? c + (isFlatKey(k) ? '♭' : '♯') : 'NONE'; };
 const ORD = {1:'tonic (1st)',2:'2nd',3:'3rd',4:'4th',5:'5th',6:'6th',7:'7th',8:'octave (8th)'};
+/* Ranked CHAOS: every run is the same length, so scores compare fairly.
+   Final score = points × key bonus (+10% for each key beyond the first). */
+const CHAOS_LEN = 20;
+const keyBonus = n => Math.round((1 + 0.1*(n-1)) * 10) / 10;
 const pick = a => a[Math.floor(Math.random()*a.length)];
 const $ = s => document.querySelector(s);
 
@@ -454,17 +464,18 @@ const remote = {
 // Best score per student on this device, same shape as the class board.
 function localTop(n){
   const best = {};
-  store.get('scores', []).forEach(x => {
-    const b = best[x.n] || (best[x.n] = {name: x.n, score: 0, streak: 0});
-    b.score = Math.max(b.score, x.s); b.streak = Math.max(b.streak, x.b || 0);
+  store.get('ranked', []).forEach(x => {
+    const b = best[x.n] || (best[x.n] = {name: x.n, score: -1, streak: 0, keys: 0});
+    if(x.s > b.score){ b.score = x.s; b.keys = x.k; }
+    b.streak = Math.max(b.streak, x.b || 0);
   });
   return Object.values(best).sort((a,b) => b.score - a.score).slice(0, n);
 }
 function boardTable(list){
-  if(!list.length) return '<p class="dim">No scores yet. Be the first to enter your initials!</p>';
+  if(!list.length) return '<p class="dim">No scores yet. Finish a CHAOS run to claim the top spot!</p>';
   const esc = v => String(v).replace(/[^A-Z0-9?]/gi, '');
   return `<table class="board"><tbody>${list.map((x,i) =>
-    `<tr><td>${i+1}.</td><td>${esc(x.name)}</td><td class="k">BEST x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+    `<tr><td>${i+1}.</td><td>${esc(x.name)}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 
 /* ---------- state ---------- */
@@ -529,11 +540,20 @@ function updateCarts(){
     const on = S.selected.has(b.dataset.key);
     b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
   });
+  document.querySelectorAll('.rowlabel').forEach(b =>
+    b.setAttribute('aria-pressed', (b.dataset.row === 'sharp' ? SHARP_ROW : FLAT_ROW).every(k => S.selected.has(k))));
   const none = S.selected.size === 0;
   $('#startBtn').disabled = none; $('#chaosBtn').disabled = none;
   $('#insertMsg').textContent = none ? 'CHECK YOUR KEYS ABOVE' : 'PRESS START OR CHAOS';
 }
 $('#keySelect').addEventListener('click', e => {
+  const row = e.target.closest('.rowlabel');
+  if(row){
+    if(S.run) return;
+    const list = row.dataset.row === 'sharp' ? SHARP_ROW : FLAT_ROW, all = list.every(k => S.selected.has(k));
+    list.forEach(k => all ? S.selected.delete(k) : S.selected.add(k));
+    SFX.click(); updateCarts(); return;
+  }
   const b = e.target.closest('.cart'); if(!b || S.run) return;
   const k = b.dataset.key;
   S.selected.has(k) ? S.selected.delete(k) : S.selected.add(k);
@@ -682,7 +702,7 @@ function updateHUD(){
   const q = r.q;
   $('#hudKey').textContent = q ? fmt(q.key) + ' MAJOR' : '—';
   const tag = $('#modeTag'); tag.textContent = r.mode === 'chaos' ? 'CHAOS' : 'PRACTICE'; tag.classList.toggle('chaos', r.mode === 'chaos');
-  $('#hudQ').textContent = r.mode === 'chaos' ? `${r.total+1}/${r.len || '∞'}` : `${r.qInKey+1}/${S.qpk}`;
+  $('#hudQ').textContent = r.mode === 'chaos' ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
   $('#hudScore').textContent = String(r.score).padStart(6, '0');
   $('#hudStreak').textContent = 'x' + r.streak;
   $('#hudLives').innerHTML = [0,1,2].map(i => heart(i < r.lives)).join('');
@@ -713,10 +733,10 @@ function setPlaying(on){
   $('#question').style.display = on ? 'contents' : 'none';
   $('#quitBtn').hidden = !on;
 }
-function startRun(mode, len=null){
+function startRun(mode){
   closeOverlay();
   const keys = PLAY_ORDER.filter(k => S.selected.has(k)); if(!keys.length) return;
-  S.run = {mode, keys, len, keyIdx:0, qInKey:0, total:0, score:0, streak:0, best:0, lives:3,
+  S.run = {mode, keys, keyIdx:0, continued:false, qInKey:0, total:0, score:0, streak:0, best:0, lives:3,
            stats:{}, lastInstr:null, lastKey:null, lastDeg:{}, q:null, ended:false};
   setPlaying(true); updateHUD();
   if(mode === 'chaos'){
@@ -739,7 +759,7 @@ function nextQuestion(){
     key = r.keys[r.keyIdx];
     type = r.qInKey === 0 ? 'build' : (r.qInKey % 2 === 1 ? 'staff' : 'piano');
   } else {
-    if(r.len && r.total >= r.len) return endRun('complete');
+    if(r.total >= CHAOS_LEN) return endRun('complete');
     key = pick(r.keys.length > 1 ? r.keys.filter(k => k !== r.lastKey) : r.keys);
     const instr = r.lastInstr === 'piano' ? 'staff' : r.lastInstr === 'staff' ? 'piano' : pick(['piano','staff']);
     type = instr === 'staff' ? 'staff' : (Math.random() < .25 ? 'build' : 'piano');
@@ -886,7 +906,7 @@ function continuePrompt(){
   const r = S.run; SFX.over();
   const msg = r.mode === 'practice'
     ? `Continuing restarts ${fmt(r.q.key)} major with full health. Your score stays.`
-    : 'Continuing refills your health. Your score stays.';
+    : 'Continuing refills your health, but this run can no longer post a high score.';
   const p = openOverlay(`
     <h2 class="otitle" style="color:var(--bad)">OUT OF HEALTH</h2>
     <p class="otitle" style="font-size:18px;animation:blink 1s steps(2) infinite">CONTINUE?</p>
@@ -894,7 +914,7 @@ function continuePrompt(){
     <div class="obtns"><button class="btn obtn" id="contBtn" type="button" data-focus>CONTINUE</button><button class="btn obtn alt" id="endBtn" type="button">END RUN</button></div>`, 'mag');
   p.querySelector('#contBtn').onclick = () => {
     closeOverlay(); r.lives = 3; r.streak = 0;
-    if(r.mode === 'practice'){ r.qInKey = 0; nextQuestion(); } else advance();
+    if(r.mode === 'practice'){ r.qInKey = 0; nextQuestion(); } else { r.continued = true; advance(); }
   };
   p.querySelector('#endBtn').onclick = () => endRun('quit');
 }
@@ -909,16 +929,27 @@ function endRun(reason){
     return `<div class="bar ${p >= 80 ? '' : p >= 50 ? 'mid' : 'low'}"><span>${fmt(k)}</span><span class="track"><span class="fill" style="width:${p}%"></span></span><span class="pct">${p}%</span></div>`; }).join('');
   let weak = null;
   keys.forEach(k => { const p = r.stats[k].right / r.stats[k].total; if(p < 1 && (!weak || p < weak.p)) weak = {k, p}; });
+  const ranked = r.mode === 'chaos' && reason === 'complete';
+  const mult = keyBonus(r.keys.length), final = ranked ? Math.round(r.score * mult) : r.score;
+  const eligible = ranked && !r.continued && final > 0;
+  const why = eligible ? '' : r.mode === 'practice'
+    ? `Practice runs don't go on the board. Finish a ${CHAOS_LEN}-question CHAOS run to post a high score.`
+    : r.continued ? 'This run used CONTINUE, so it can\'t post a high score.'
+    : ranked ? '' : `Finish all ${CHAOS_LEN} CHAOS questions to post a high score.`;
   const p = openOverlay(`
     <h2 class="otitle">${title}</h2>
     <div class="bigstats">
-      <div><small>SCORE</small><strong>${String(r.score).padStart(6,'0')}</strong></div>
+      ${ranked ? `<div><small>POINTS</small><strong>${r.score}</strong></div>
+      <div><small>KEY BONUS</small><strong>x${mult.toFixed(1)}</strong></div>
+      <div><small>FINAL SCORE</small><strong>${String(final).padStart(6,'0')}</strong></div>`
+      : `<div><small>SCORE</small><strong>${String(r.score).padStart(6,'0')}</strong></div>`}
       <div><small>ACCURACY</small><strong>${acc}%</strong></div>
       <div><small>BEST STREAK</small><strong>x${r.best}</strong></div>
     </div>
     ${bars ? `<div class="bars">${bars}</div>` : '<p class="osub dim">No questions answered.</p>'}
     ${weak ? `<p class="weak">PRACTICE NEXT: ${fmt(weak.k)} MAJOR</p>` : (total ? '<p class="weak" style="color:var(--ok)">FLAWLESS! EVERY KEY AT 100%</p>' : '')}
-    ${r.score > 0 ? `<form class="initials" id="initForm"><label for="initials">ENTER INITIALS</label>
+    ${why ? `<p class="osub dim" style="font-size:20px">${why}</p>` : ''}
+    ${eligible ? `<form class="initials" id="initForm"><label for="initials">ENTER INITIALS</label>
       <input id="initials" maxlength="3" autocomplete="off" value="${store.get('lastName','')}" data-focus>
       <button class="btn obtn mag" type="submit">SAVE</button></form>` : ''}
     <div class="obtns"><button class="btn obtn" id="againBtn" type="button">PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, reason === 'quit' ? 'mag' : '');
@@ -926,21 +957,21 @@ function endRun(reason){
   if(form) form.addEventListener('submit', e => {
     e.preventDefault();
     const name = (p.querySelector('#initials').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3)) || '???';
-    const list = store.get('scores', []);
-    list.push({n:name, s:r.score, b:r.best, m:r.mode});
-    list.sort((a,b) => b.s - a.s); store.set('scores', list.slice(0,20)); store.set('lastName', name);
+    const list = store.get('ranked', []);
+    list.push({n:name, s:final, b:r.best, k:r.keys.length});
+    list.sort((a,b) => b.s - a.s); store.set('ranked', list.slice(0,30)); store.set('lastName', name);
     SFX.coin();
     if(!remote.on()){ form.outerHTML = `<p class="weak" style="color:var(--yel)">SAVED FOR ${name}!</p>`; return; }
     form.outerHTML = '<p class="weak" style="color:var(--yel)" id="saveMsg">SAVING TO CLASS BOARD...</p>';
     const msg = p.querySelector('#saveMsg');
-    remote.save({name, score: r.score, streak: r.best, accuracy: acc, questions: total, mode: r.mode, keys: r.keys.join(' ')})
+    remote.save({name, score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: r.keys.length, keys: r.keys.join(' ')})
       .then(top => {
-        const rank = top.findIndex(x => x.name === name && x.score === r.score);
+        const rank = top.findIndex(x => x.name === name && x.score === final);
         msg.textContent = rank >= 0 ? `SAVED! ${name} IS #${rank+1} IN CLASS` : `SAVED TO THE CLASS BOARD, ${name}!`;
       })
       .catch(() => { msg.textContent = 'SAVED ON THIS DEVICE. CLASS BOARD UNREACHABLE.'; msg.style.color = 'var(--bad)'; });
   });
-  p.querySelector('#againBtn').onclick = () => startRun(r.mode, r.len);
+  p.querySelector('#againBtn').onclick = () => startRun(r.mode);
   p.querySelector('#menuBtn').onclick = toMenu;
 }
 function toMenu(){
@@ -980,15 +1011,15 @@ function chaosPicker(){
   const keys = PLAY_ORDER.filter(k => S.selected.has(k));
   const p = openOverlay(`
     <h2 class="otitle" style="color:var(--mag)">CHAOS MODE</h2>
-    <p class="osub">Random questions from: ${keys.map(fmt).join(' · ')}</p>
-    <p class="slabel">HOW MANY QUESTIONS?</p>
-    <div class="obtns">
-      <button class="btn obtn mag" data-len="10" type="button" data-focus>10</button>
-      <button class="btn obtn mag" data-len="20" type="button">20</button>
-      <button class="btn obtn mag" data-len="0" type="button">ENDLESS</button>
+    <p class="osub">${CHAOS_LEN} random questions from: ${keys.map(fmt).join(' · ')}</p>
+    <div class="bigstats">
+      <div><small>QUESTIONS</small><strong>${CHAOS_LEN}</strong></div>
+      <div><small>KEYS</small><strong>${keys.length}</strong></div>
+      <div><small>KEY BONUS</small><strong>x${keyBonus(keys.length).toFixed(1)}</strong></div>
     </div>
-    <button class="btn obtn alt" id="cancelChaos" type="button">CANCEL</button>`, 'mag');
-  p.querySelectorAll('[data-len]').forEach(b => b.onclick = () => startRun('chaos', +b.dataset.len || null));
+    <p class="osub dim" style="font-size:20px">Finish all ${CHAOS_LEN} without using CONTINUE to post your score. More keys = bigger bonus.</p>
+    <div class="obtns"><button class="btn obtn mag" id="goChaos" type="button" data-focus>START CHAOS</button><button class="btn obtn alt" id="cancelChaos" type="button">CANCEL</button></div>`, 'mag');
+  p.querySelector('#goChaos').onclick = () => startRun('chaos');
   p.querySelector('#cancelChaos').onclick = closeOverlay;
 }
 function setupPanel(){
