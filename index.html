@@ -341,8 +341,8 @@ button{font:inherit;color:inherit}
         <h2>HOW TO PLAY</h2>
         <ol class="steps">
           <li><span class="n">1</span><div><b>CHECK YOUR KEYS</b><span>Click any keys in the top bar to add them to your quest.</span></div></li>
-          <li><span class="n">2</span><div><b>PRESS START</b><span>Clear one key at a time on piano and staff. Answer fast for a speed bonus!</span></div></li>
-          <li><span class="n">3</span><div><b>HIT CHAOS</b><span>20 shuffled questions from every checked key. Finish without a CONTINUE to post a high score.</span></div></li>
+          <li><span class="n">2</span><div><b>PRESS START</b><span>Clear one key at a time on piano and staff. No clock, so take your time.</span></div></li>
+          <li><span class="n">3</span><div><b>HIT CHAOS</b><span>20 timed questions from every checked key. Answer fast for bonus points and post a high score.</span></div></li>
         </ol>
       </div>
       <div>
@@ -352,7 +352,7 @@ button{font:inherit;color:inherit}
     </div>
 
     <div id="question" hidden style="display:contents">
-      <div class="timer" aria-hidden="true"><div class="timetrack"><div class="timefill" id="timeFill"></div></div><span class="timeclock" id="timeClock">0.0s</span><span class="timelab" id="timeLab">SPEED +100</span></div>
+      <div class="timer" id="timer" aria-hidden="true" hidden><div class="timetrack"><div class="timefill" id="timeFill"></div></div><span class="timeclock" id="timeClock">0.0s</span><span class="timelab" id="timeLab">SPEED +100</span></div>
       <span class="qtag" id="qTag">PIANO</span>
       <h2 class="qtext" id="qText"></h2>
       <p class="qhelp" id="qHelp"></p>
@@ -730,7 +730,7 @@ function flash(kind){
 }
 function later(fn, ms){ const r = S.run; setTimeout(() => { if(S.run === r && r && !r.ended) fn(); }, ms); }
 
-/* ---------- speed timer ----------
+/* ---------- speed timer (CHAOS only; practice has no clock) ----------
    Correct answers earn up to +100, shrinking to 0 over the window below.
    The clock pauses while feedback or a menu is showing. */
 const SPEED_MAX = 100;
@@ -739,9 +739,9 @@ const timer = {start: 0, pausedAt: 0};
 function timerStart(){ timer.start = performance.now(); timer.pausedAt = 0; }
 function timerPause(){ if(!timer.pausedAt) timer.pausedAt = performance.now(); }
 function elapsed(){ return ((timer.pausedAt || performance.now()) - timer.start) / 1000; }
-function speedBonus(q){ const f = Math.max(0, 1 - elapsed() / TIME_WINDOW[q.type]); return Math.round(SPEED_MAX * f / 5) * 5; }
+function speedBonus(q){ if(S.run.mode !== 'chaos') return 0; const f = Math.max(0, 1 - elapsed() / TIME_WINDOW[q.type]); return Math.round(SPEED_MAX * f / 5) * 5; }
 function timerLoop(){
-  const q = S.run && !S.run.ended && S.run.q;
+  const q = S.run && !S.run.ended && S.run.mode === 'chaos' && S.run.q;
   if(q){
     const hold = S.busy || S.overlay;
     if(hold && !timer.pausedAt) timer.pausedAt = performance.now();
@@ -773,6 +773,7 @@ function startRun(mode){
   S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives:3,
            stats:{}, lastInstr:null, lastKey:null, lastDeg:{}, q:null, ended:false};
   setPlaying(true); updateHUD();
+  $('#timer').hidden = mode !== 'chaos';
   if(mode === 'chaos'){
     $('#chaosMix').textContent = 'MIXING ' + keys.map(fmt).join(' ');
     $('#chaosIntro').hidden = false; S.overlay = true;
@@ -856,7 +857,7 @@ function onCorrect(){
   const r = S.run, q = r.q; S.busy = true; $('#submitBtn').disabled = true;
   r.streak++; r.best = Math.max(r.best, r.streak);
   const pts = q.tries ? 50 : 100, speed = speedBonus(q);
-  r.times.push(elapsed());
+  if(r.mode === 'chaos') r.times.push(elapsed());
   let bonus = 0;
   if(r.streak === 3) bonus = 50; else if(r.streak === 5) bonus = 100; else if(r.streak % 10 === 0) bonus = 250;
   r.score += pts + speed + bonus; stat(q.key, true);
