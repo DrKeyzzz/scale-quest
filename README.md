@@ -1,6 +1,6 @@
 # Scale Quest
 
-An arcade-style major scale trainer for beginner music theory. Students check the keys they want, build each scale on a piano, find scale degrees on piano and treble staff, then mix everything in CHAOS mode.
+An arcade-style major scale trainer for beginner music theory. Students check the keys they want, build each scale on a piano (starting on the root and going up one octave), find scale degrees on piano and treble staff, then mix everything in CHAOS mode.
 
 **Play:** https://drkeyzzz.github.io/scale-quest/
 

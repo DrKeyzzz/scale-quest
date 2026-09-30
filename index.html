@@ -823,7 +823,7 @@ function renderQuestion(){
   if(q.type === 'build'){
     tag.textContent = 'PIANO · BUILD'; tag.className = 'qtag';
     $('#qText').innerHTML = `Build the ${K} scale`;
-    $('#qHelp').textContent = 'Click all 7 notes, then SUBMIT. Any octave works.';
+    $('#qHelp').textContent = `Start on ${fmt(q.key)} and click the 7 notes going up, then SUBMIT.`;
   } else if(q.type === 'piano'){
     tag.textContent = 'PIANO'; tag.className = 'qtag';
     $('#qText').innerHTML = `Play the <em>${ORD[q.degree]}</em> of ${K}`;
@@ -849,8 +849,7 @@ function submit(){
   const q = r.q; let correct;
   if(q.type === 'build'){
     if(!S.sel.size) return say('Click the keys of the scale first.', 'hint');
-    const want = new Set(SCALES[q.key].map(pcOf)), got = new Set([...S.sel].map(m => m % 12));
-    correct = got.size === want.size && [...got].every(p => want.has(p));
+    correct = buildCorrect(q.key);
   } else if(q.type === 'piano'){
     if(!S.sel.size) return say('Click a key first.', 'hint');
     correct = [...S.sel][0] % 12 === pcOf(q.answer);
@@ -890,6 +889,25 @@ function onCorrect(){
   updateHUD();
   later(advance, q.type === 'build' ? 1900 : 1400);
 }
+/* ---------- scale building ----------
+   The only right answer is the scale going UP one octave from the root,
+   e.g. D E F♯ G A B C♯ starting on a D key. Adding the top root is optional. */
+const MAJOR_STEPS = [0,2,4,5,7,9,11];
+function buildRun(key){
+  const root = pcOf(SCALES[key][0]);
+  const start = [...S.sel].sort((a,b) => a-b).find(m => m % 12 === root && m + 11 <= PIANO_HI) ?? (PIANO_LO + root);
+  return MAJOR_STEPS.map(st => start + st);
+}
+function buildCorrect(key){
+  const run = buildRun(key), top = run[0] + 12;
+  return run.every(m => S.sel.has(m)) && [...S.sel].every(m => run.includes(m) || m === top);
+}
+// Right notes, but not one octave going up from the root?
+function rightNotesWrongOrder(key){
+  const want = new Set(SCALES[key].map(pcOf)), got = new Set([...S.sel].map(m => m % 12));
+  return got.size === want.size && [...got].every(p => want.has(p)) && !buildCorrect(key);
+}
+
 /* ---------- mistake explanations ---------- */
 const PC_NAMES = ['C','C♯/D♭','D','D♯/E♭','E','F','F♯/G♭','G','G♯/A♭','A','A♯/B♭','B'];
 function scaleIdxOfPc(key, pc){ return SCALES[key].findIndex(n => pcOf(n) === pc); }
@@ -936,11 +954,13 @@ function onWrong(){
   const r = S.run, q = r.q, practice = r.mode === 'practice';
   if(q.type === 'build' && q.tries === 0){
     q.tries = 1; S.busy = true;
-    const want = new Set(SCALES[q.key].map(pcOf)), got = new Set([...S.sel].map(m => m % 12));
-    S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add(want.has(m % 12) ? 'ok' : 'bad'); });
-    want.forEach(pc => { if(!got.has(pc)) keysOfPc(pc).forEach(m => PK[m].classList.add('miss')); });
+    const run = buildRun(q.key), top = run[0] + 12, order = rightNotesWrongOrder(q.key);
+    S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add(run.includes(m) || m === top ? 'ok' : 'bad'); });
+    run.forEach(m => { if(!S.sel.has(m)) PK[m].classList.add('miss'); });
     flash('bad'); SFX.soft();
-    say('ALMOST! Green = right, red = not in the scale, flashing = missing. One more try!', 'warn');
+    say(order
+      ? `Right notes, wrong order! A scale starts on its root. Start on ${fmt(q.key)} and go up. One more try!`
+      : `ALMOST! Start on ${fmt(q.key)}. Green = right, red = wrong, flashing = missing. One more try!`, 'warn');
     const retry = () => { allKeys().forEach(g => g.classList.remove('ok','bad','miss')); paintSel(); say('', ''); S.busy = false; };
     if(practice){ setNext('TRY AGAIN ▶', retry); } else later(retry, 2200);
     return;
@@ -950,14 +970,18 @@ function onWrong(){
   flash('bad'); SFX.buzz();
   if(q.type === 'build'){
     const want = new Set(SCALES[q.key].map(pcOf)), got = new Set([...S.sel].map(m => m % 12)), byPc = Object.fromEntries(SCALES[q.key].map(n => [pcOf(n), n]));
+    const run = buildRun(q.key), order = rightNotesWrongOrder(q.key);
     allKeys().forEach(g => { const m = +g.dataset.m; g.classList.remove('sel');
-      if(want.has(m % 12)){ g.classList.add('reveal'); label(m, byPc[m % 12]); } else if(S.sel.has(m)) g.classList.add('bad'); });
+      if(run.includes(m)){ g.classList.add('reveal'); label(m, byPc[m % 12]); } else if(S.sel.has(m)) g.classList.add('bad'); });
     const extra = [...got].filter(pc => !want.has(pc)).map(pc => PC_NAMES[pc]);
     const missIdx = SCALES[q.key].map((n,i) => got.has(pcOf(n)) ? -1 : i).filter(i => i >= 0);
     const parts = [];
     if(extra.length) parts.push(`Not in ${fmt(q.key)} major: ${extra.join(', ')}.`);
     if(missIdx.length) parts.push(`Missing: ${missIdx.map(i => fmt(SCALES[q.key][i])).join(', ')}.`);
-    explain(parts.join(' ') || `Check the spelling of ${fmt(q.key)} major.`, scaleChips(q.key, 'SCALE', missIdx));
+    parts.push(order
+      ? `You had the right notes, but a scale starts on its root. Start on ${fmt(q.key)} and go up one octave.`
+      : `Start on ${fmt(q.key)} and go up.`);
+    explain(parts.join(' '), scaleChips(q.key, 'SCALE', missIdx));
   } else if(q.type === 'piano'){
     const [text, chips] = whyWrong(q);
     S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add('bad'); });
