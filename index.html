@@ -39,7 +39,8 @@ button{font:inherit;color:inherit}
 .logo{margin:0;font-family:var(--px);font-size:24px;letter-spacing:.04em;text-shadow:4px 4px 0 var(--shadow);font-weight:400}
 .logo .a{color:var(--cyan)} .logo .b{color:var(--mag)}
 .logo small{display:block;font-size:9px;color:var(--dim);margin-top:8px;letter-spacing:.14em;text-shadow:none}
-.tools{display:flex;gap:8px}
+.tools{display:flex;gap:8px;align-items:center}
+.classchip{font-family:var(--px);font-size:8px;letter-spacing:.06em;padding:8px 9px;border:3px solid var(--yel);color:var(--yel)}
 .btn{font-family:var(--px);border:3px solid var(--shadow);cursor:pointer;box-shadow:4px 4px 0 var(--shadow);transition:transform .06s,box-shadow .06s}
 .btn:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 var(--shadow)}
 .btn:disabled{opacity:.3;cursor:not-allowed}
@@ -312,6 +313,7 @@ button{font:inherit;color:inherit}
   <header class="topbar">
     <h1 class="logo"><span class="a">SCALE</span> <span class="b">QUEST</span><small>MAJOR SCALE TRAINER</small></h1>
     <div class="tools">
+      <span class="classchip" id="classChip" hidden></span>
       <button class="btn tbtn" id="boardBtn" type="button">BEST SCORES</button>
       <button class="btn tbtn" id="muteBtn" type="button">SOUND: ON</button>
       <button class="btn tbtn" id="gearBtn" type="button">SETUP</button>
@@ -418,6 +420,11 @@ const FIREBASE_CONFIG = {
 };
 // One Firebase project can serve many games; each keeps its scores under games/<GAME_ID>/scores.
 const GAME_ID = 'scale-quest';
+// Class boards: students open the game with the class code after #, e.g. .../scale-quest/#milnes
+// Every code here must also be listed in firestore.rules.
+const CLASS_CODES = ['milnes'];
+// Initials that can't go on a public board. The same list is in firestore.rules.
+const BLOCKED_INITIALS = ['ASS','FUK','FUC','FCK','FKU','FUQ','SHT','CUM','DIK','DIC','DCK','COK','KOK','TIT','VAG','PUS','SEX','FAG','FGT','NIG','NGR','NGA','KKK','HOE','WTF','XXX'];
 
 /* ============================================================
    MUSIC DATA — every major scale, spelled correctly.
@@ -478,7 +485,7 @@ const remote = {
   on: () => !!(FIREBASE_CONFIG && FIREBASE_CONFIG.projectId),
   _db: null,
   db(){
-    // Load Firebase only when the class board is set up.
+    // Load Firebase only when the leaderboard is set up.
     this._db = this._db || (async () => {
       const v = '10.12.2', load = src => new Promise((ok, bad) => {
         const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = bad; document.head.appendChild(el);
@@ -491,22 +498,30 @@ const remote = {
     return this._db;
   },
   limit(p){ return Promise.race([p, new Promise((_, bad) => setTimeout(() => bad(new Error('timeout')), 10000))]); },
-  scores(db){ return db.collection('games').doc(GAME_ID).collection('scores'); },
-  async top(){
+  // World: games/<id>/scores. Class: games/<id>/classes/<code>/scores.
+  col(db, board){
+    const game = db.collection('games').doc(GAME_ID);
+    return board === 'class' ? game.collection('classes').doc(CLASS).collection('scores') : game.collection('scores');
+  },
+  // World board = the 10 best runs (small read, safe for public traffic).
+  // Class board = each student's best run, top 10.
+  async top(board){
     const db = await this.limit(this.db());
-    const snap = await this.limit(this.scores(db).orderBy('score', 'desc').limit(300).get());
+    const snap = await this.limit(this.col(db, board).orderBy('score', 'desc').limit(board === 'class' ? 40 : 10).get());
+    const rows = snap.docs.map(d => d.data()).map(x => ({name: x.name, score: x.score, keys: x.keyCount, streak: x.streak || 0}));
+    if(board !== 'class') return rows;
     const best = {};
-    snap.docs.forEach(d => {
-      const x = d.data(), b = best[x.name] || (best[x.name] = {name: x.name, score: -1, keys: 0, streak: 0});
-      if(x.score > b.score){ b.score = x.score; b.keys = x.keyCount; }
-      b.streak = Math.max(b.streak, x.streak || 0);
-    });
+    rows.forEach(x => { const b = best[x.name]; if(!b || x.score > b.score) best[x.name] = {...x, streak: Math.max(x.streak, b ? b.streak : 0)}; else b.streak = Math.max(b.streak, x.streak); });
     return Object.values(best).sort((a,b) => b.score - a.score).slice(0, 10);
   },
+  // One run goes to the world board, and to the class board too when playing with a class code.
   async save(entry){
-    const db = await this.limit(this.db());
-    await this.limit(this.scores(db).add({...entry, created: firebase.firestore.FieldValue.serverTimestamp()}));
-    return this.top();
+    const db = await this.limit(this.db()), batch = db.batch(), doc = {...entry, created: firebase.firestore.FieldValue.serverTimestamp()};
+    batch.set(this.col(db, 'world').doc(), doc);
+    if(CLASS) batch.set(this.col(db, 'class').doc(), doc);
+    await this.limit(batch.commit());
+    const [world, cls] = await Promise.all([this.top('world'), CLASS ? this.top('class') : []]);
+    return {world, cls};
   },
 };
 // Best score per student on this device, same shape as the class board.
@@ -525,6 +540,14 @@ function boardTable(list){
   return `<table class="board"><tbody>${list.map((x,i) =>
     `<tr><td>${i+1}.</td><td>${esc(x.name)}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
+
+/* ---------- class code (from the link, remembered on this device) ---------- */
+const CLASS = (() => {
+  const h = location.hash.replace('#', '').toLowerCase();
+  if(CLASS_CODES.includes(h)){ store.set('classCode', h); return h; }
+  const saved = store.get('classCode', '');
+  return CLASS_CODES.includes(saved) ? saved : '';
+})();
 
 /* ---------- state ---------- */
 const S = {
@@ -1114,19 +1137,23 @@ function endRun(reason){
   if(form) form.addEventListener('submit', e => {
     e.preventDefault();
     const name = (p.querySelector('#initials').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3)) || '???';
+    if(BLOCKED_INITIALS.includes(name)){ p.querySelector('.initials label').textContent = 'PICK DIFFERENT INITIALS'; p.querySelector('#initials').value = ''; p.querySelector('#initials').focus(); SFX.soft(); return; }
     const list = store.get('ranked', []);
     list.push({n:name, s:final, b:r.best, k:r.keys.length});
     list.sort((a,b) => b.s - a.s); store.set('ranked', list.slice(0,30)); store.set('lastName', name);
     SFX.coin();
     if(!remote.on()){ form.outerHTML = `<p class="weak" style="color:var(--yel)">SAVED FOR ${name}!</p>`; return; }
-    form.outerHTML = '<p class="weak" style="color:var(--yel)" id="saveMsg">SAVING TO CLASS BOARD...</p>';
+    form.outerHTML = '<p class="weak" style="color:var(--yel)" id="saveMsg">SAVING...</p>';
     const msg = p.querySelector('#saveMsg');
     remote.save({name, score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: r.keys.length, keys: r.keys.join(' ')})
-      .then(top => {
-        const rank = top.findIndex(x => x.name === name && x.score === final);
-        msg.textContent = rank >= 0 ? `SAVED! ${name} IS #${rank+1} IN CLASS` : `SAVED TO THE CLASS BOARD, ${name}!`;
+      .then(({world, cls}) => {
+        const w = world.findIndex(x => x.name === name && x.score === final), c = cls.findIndex(x => x.name === name && x.score === final);
+        const bits = [];
+        if(c >= 0) bits.push(`#${c+1} IN CLASS`);
+        if(w >= 0) bits.push(`#${w+1} IN THE WORLD`);
+        msg.textContent = bits.length ? `SAVED! ${name} IS ${bits.join(' · ')}` : `SAVED, ${name}! KEEP PRACTICING TO CLIMB THE BOARD.`;
       })
-      .catch(() => { msg.textContent = 'SAVED ON THIS DEVICE. CLASS BOARD UNREACHABLE.'; msg.style.color = 'var(--bad)'; });
+      .catch(() => { msg.textContent = 'SAVED ON THIS DEVICE. LEADERBOARD UNREACHABLE.'; msg.style.color = 'var(--bad)'; });
   });
   p.querySelector('#againBtn').onclick = () => startRun(r.mode);
   p.querySelector('#menuBtn').onclick = toMenu;
@@ -1138,26 +1165,36 @@ function toMenu(){
 function renderBoard(){
   const wrap = $('#boardWrap');
   if(!remote.on()){ $('#boardTitle').textContent = 'HIGH SCORES'; wrap.innerHTML = boardTable(localTop(5)); return; }
-  $('#boardTitle').textContent = 'CLASS BEST SCORES';
+  const board = CLASS ? 'class' : 'world';
+  $('#boardTitle').textContent = CLASS ? `MY CLASS · ${CLASS.toUpperCase()}` : 'WORLD TOP 5';
   wrap.innerHTML = '<p class="dim">LOADING...</p>';
-  remote.top()
+  remote.top(board)
     .then(list => { wrap.innerHTML = boardTable(list.slice(0,5)); })
-    .catch(() => { wrap.innerHTML = boardTable(localTop(5)) + '<p class="boardnote">Class board is offline. Showing this device.</p>'; });
+    .catch(() => { wrap.innerHTML = boardTable(localTop(5)) + '<p class="boardnote">Leaderboard is offline. Showing this device.</p>'; });
 }
 function boardPanel(){
+  const tabs = remote.on() ? [...(CLASS ? [['class', 'MY CLASS']] : []), ['world', 'WORLD TOP 10'], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
   const p = openOverlay(`
     <h2 class="otitle">BEST SCORES</h2>
-    ${remote.on() ? '<div class="otabs" role="group" aria-label="Which scores"><button type="button" data-tab="class" aria-pressed="true">CLASS</button><button type="button" data-tab="device" aria-pressed="false">THIS DEVICE</button></div>' : ''}
+    ${tabs.length > 1 ? `<div class="otabs" role="group" aria-label="Which scores">${tabs.map(([k,l]) => `<button type="button" data-tab="${k}" aria-pressed="false">${l}</button>`).join('')}</div>` : ''}
+    <p class="boardnote" id="bpNote"></p>
     <div id="bpList" style="width:100%"></div>
     <div class="obtns"><button class="btn obtn alt" id="bpRefresh" type="button">REFRESH</button><button class="btn obtn" id="bpClose" type="button" data-focus>CLOSE</button></div>`);
-  let tab = remote.on() ? 'class' : 'device';
+  let tab = tabs[0][0];
+  const NOTES = {
+    class: `Each student's best CHAOS run in class ${CLASS.toUpperCase()}.`,
+    world: 'The 10 best CHAOS runs from everyone who plays.',
+    device: 'Scores saved on this computer.',
+  };
   const show = () => {
     const el = p.querySelector('#bpList');
     p.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tab === tab));
+    p.querySelector('#bpNote').textContent = NOTES[tab];
     if(tab === 'device'){ el.innerHTML = boardTable(localTop(10)); return; }
+    const want = tab;
     el.innerHTML = '<p class="dim">LOADING...</p>';
-    remote.top().then(list => { if(tab === 'class') el.innerHTML = boardTable(list.slice(0,10)); })
-      .catch(() => { if(tab === 'class') el.innerHTML = '<p class="dim">Couldn\'t reach the class board. Check your internet and press REFRESH.</p>'; });
+    remote.top(want).then(list => { if(tab === want) el.innerHTML = boardTable(list); })
+      .catch(() => { if(tab === want) el.innerHTML = '<p class="dim">Couldn\'t reach the leaderboard. Check your internet and press REFRESH.</p>'; });
   };
   p.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; show(); });
   p.querySelector('#bpRefresh').onclick = show;
@@ -1219,6 +1256,7 @@ document.addEventListener('keydown', e => {
 
 /* ---------- boot ---------- */
 document.querySelectorAll('#accs button').forEach(b => b.querySelector('svg').innerHTML = ACC_SHAPE[b.dataset.acc]);
+if(CLASS){ $('#classChip').textContent = 'CLASS: ' + CLASS.toUpperCase(); $('#classChip').hidden = false; }
 renderKeyRows(); renderQpk(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); renderBoard(); updateCarts(); setPlaying(false);
 </script>
 </body>

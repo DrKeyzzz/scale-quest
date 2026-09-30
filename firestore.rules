@@ -1,7 +1,8 @@
 rules_version = '2';
 
 // Shared rules for all class games in this Firebase project.
-// Each game keeps its scores under /games/<game-id>/scores.
+// Each game keeps a world board at /games/<game-id>/scores and class boards at
+// /games/<game-id>/classes/<class-code>/scores.
 // Anyone can read a leaderboard. Games can only ADD scores that pass that
 // game's check below. Editing and deleting is done by the teacher in the
 // Firebase console. Anything not listed here is blocked.
@@ -11,8 +12,11 @@ service cloud.firestore {
     // ---------- Scale Quest ----------
     match /games/scale-quest/scores/{scoreId} {
       allow read: if true;
-      allow update, delete: if false;
       allow create: if scaleQuestScore(request.resource.data);
+    }
+    match /games/scale-quest/classes/{classCode}/scores/{scoreId} {
+      allow read: if true;
+      allow create: if classCode in classCodes() && scaleQuestScore(request.resource.data);
     }
 
     // ---------- Add new games below ----------
@@ -22,11 +26,23 @@ service cloud.firestore {
     // }
   }
 
+  // Class codes that have their own board. Add another teacher's code here
+  // (and to CLASS_CODES in the game) to give them a class board.
+  function classCodes() {
+    return ['milnes'];
+  }
+
+  // Initials that can't go on a public board (same list as the game).
+  function blockedInitials() {
+    return ['ASS','FUK','FUC','FCK','FKU','FUQ','SHT','CUM','DIK','DIC','DCK','COK','KOK','TIT','VAG','PUS','SEX','FAG','FGT','NIG','NGR','NGA','KKK','HOE','WTF','XXX'];
+  }
+
   // A finished 20-question CHAOS run.
   function scaleQuestScore(d) {
     return d.keys().hasOnly(['name', 'score', 'points', 'streak', 'accuracy', 'questions', 'keyCount', 'keys', 'created'])
       && d.keys().hasAll(['name', 'score', 'points', 'streak', 'accuracy', 'questions', 'keyCount', 'keys', 'created'])
       && d.name is string && d.name.matches('^[A-Z0-9?]{1,3}$')
+      && !(d.name in blockedInitials())
       && d.questions == 20
       && d.keyCount is int && d.keyCount >= 1 && d.keyCount <= 15
       && d.points is int && d.points >= 0 && d.points <= 4650      // 20 perfect answers + max speed + streak bonuses

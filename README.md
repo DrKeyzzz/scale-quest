@@ -27,9 +27,15 @@ Scores are stored in a free Firebase (Firestore) database you own. The free Spar
 
 The config values are meant to be public; the rules are what protect the data.
 
+**Two boards:**
+- **WORLD TOP 10** — the 10 best CHAOS runs from anyone who plays at the regular link.
+- **MY CLASS** — each student's best run, for students who open the class link, e.g. https://drkeyzzz.github.io/scale-quest/#milnes. The code is remembered on that device. To add a class, add its code to `CLASS_CODES` in `index.html` and to `classCodes()` in `firestore.rules`.
+
+Rude initials are blocked by a list in both the game and the rules.
+
 **One project, many games:** each game stores its scores under `games/<game-id>/scores` (Scale Quest uses `games/scale-quest/scores`) and gets its own section in the rules.
 
-**Managing scores:** Firestore Database → `games` → `scale-quest` → `scores`. Delete a single score by opening it and choosing **Delete document**. To reset for a new marking period, delete the `scores` collection.
+**Managing scores:** Firestore Database → `games` → `scale-quest` → `scores` (world) or `classes` → `milnes` → `scores` (class). Delete a single score by opening it and choosing **Delete document**. To reset for a new marking period, delete the `scores` collection.
 
 ## Changing the scale data
 
