@@ -15,21 +15,21 @@ Only a finished **CHAOS** run can go on the board. Every CHAOS run is 20 questio
 - **Key bonus:** +10% for each key beyond the first (4 keys = x1.3, all 15 = x2.4).
 - Runs that use CONTINUE, practice runs and quit runs can't be posted.
 
-## Class leaderboard setup (one time, about 5 minutes)
+## Class leaderboard setup (Firebase, one time, about 10 minutes)
 
-Scores go to a Google Sheet you own.
+Scores are stored in a free Firebase (Firestore) database you own. The free Spark plan needs no credit card.
 
-1. Create a new Google Sheet (name it "Scale Quest Scores").
-2. In the sheet: **Extensions → Apps Script**.
-3. Delete what's in the editor, paste in everything from [`apps-script/Code.gs`](apps-script/Code.gs), and click **Save**.
-4. Click **Deploy → New deployment**. Click the gear next to "Select type" and pick **Web app**.
-   - Execute as: **Me**
-   - Who has access: **Anyone**
-5. Click **Deploy**, then **Authorize access** and allow it. (Google may warn that the app isn't verified. Click **Advanced → Go to project** because it's your own script.)
-6. Copy the **Web app URL** (it ends in `/exec`).
-7. In `index.html`, paste that URL into `const SCORES_URL = '';` near the top of the script, and commit.
+1. Go to https://console.firebase.google.com and click **Create a project**. Give it a general name you can reuse for all your class games (for example `milnes-class-games`). You can turn off Google Analytics.
+2. In the left menu: **Build → Firestore Database → Create database**. Pick a US location and **Start in production mode**.
+3. Open the **Rules** tab, replace everything with the contents of [`firestore.rules`](firestore.rules), and click **Publish**.
+4. Click the gear → **Project settings**. Under "Your apps", click the **web icon `</>`**, name the app `Class Games` (no Hosting), and click **Register app**. All your games can share this one web app config.
+5. Copy the `firebaseConfig = { ... }` object it shows and paste it into `const FIREBASE_CONFIG = null;` near the top of the script in `index.html` (replace `null`).
 
-Scores appear on the **Scores** tab of the sheet. To reset for a new marking period, delete the rows under the header.
+The config values are meant to be public; the rules are what protect the data.
+
+**One project, many games:** each game stores its scores under `games/<game-id>/scores` (Scale Quest uses `games/scale-quest/scores`) and gets its own section in the rules.
+
+**Managing scores:** Firestore Database → `games` → `scale-quest` → `scores`. Delete a single score by opening it and choosing **Delete document**. To reset for a new marking period, delete the `scores` collection.
 
 ## Changing the scale data
 

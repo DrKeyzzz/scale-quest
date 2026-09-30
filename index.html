@@ -403,12 +403,14 @@ button{font:inherit;color:inherit}
 
 <script>
 /* ============================================================
-   CLASS LEADERBOARD
-   Paste your Google Apps Script web app URL between the quotes
-   (see README.md). Leave it empty to keep scores on each
-   device only.
+   CLASS LEADERBOARD (Firebase / Firestore)
+   Paste the firebaseConfig object from your shared Firebase project
+   below (see README.md). Leave it as null to keep scores on
+   each device only.
    ============================================================ */
-const SCORES_URL = '';
+const FIREBASE_CONFIG = null;
+// One Firebase project can serve many games; each keeps its scores under games/<GAME_ID>/scores.
+const GAME_ID = 'scale-quest';
 
 /* ============================================================
    MUSIC DATA — every major scale, spelled correctly.
@@ -466,18 +468,39 @@ const store = {
 
 /* ---------- class leaderboard (Google Sheet via Apps Script) ---------- */
 const remote = {
-  on: () => /^https:\/\/script\.google\.com\//.test(SCORES_URL),
-  async call(opts){
-    const c = new AbortController(), t = setTimeout(() => c.abort(), 10000);
-    try{
-      const res = await fetch(SCORES_URL, {...opts, signal: c.signal});
-      const d = await res.json();
-      if(!d.ok) throw new Error(d.error || 'error');
-      return d.top || [];
-    } finally { clearTimeout(t); }
+  on: () => !!(FIREBASE_CONFIG && FIREBASE_CONFIG.projectId),
+  _db: null,
+  db(){
+    // Load Firebase only when the class board is set up.
+    this._db = this._db || (async () => {
+      const v = '10.12.2', load = src => new Promise((ok, bad) => {
+        const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = bad; document.head.appendChild(el);
+      });
+      await load(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);
+      await load(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore-compat.js`);
+      if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      return firebase.firestore();
+    })().catch(err => { this._db = null; throw err; });
+    return this._db;
   },
-  top(){ return this.call({method: 'GET'}); },
-  save(entry){ return this.call({method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(entry)}); },
+  limit(p){ return Promise.race([p, new Promise((_, bad) => setTimeout(() => bad(new Error('timeout')), 10000))]); },
+  scores(db){ return db.collection('games').doc(GAME_ID).collection('scores'); },
+  async top(){
+    const db = await this.limit(this.db());
+    const snap = await this.limit(this.scores(db).orderBy('score', 'desc').limit(300).get());
+    const best = {};
+    snap.docs.forEach(d => {
+      const x = d.data(), b = best[x.name] || (best[x.name] = {name: x.name, score: -1, keys: 0, streak: 0});
+      if(x.score > b.score){ b.score = x.score; b.keys = x.keyCount; }
+      b.streak = Math.max(b.streak, x.streak || 0);
+    });
+    return Object.values(best).sort((a,b) => b.score - a.score).slice(0, 10);
+  },
+  async save(entry){
+    const db = await this.limit(this.db());
+    await this.limit(this.scores(db).add({...entry, created: firebase.firestore.FieldValue.serverTimestamp()}));
+    return this.top();
+  },
 };
 // Best score per student on this device, same shape as the class board.
 function localTop(n){
@@ -1056,7 +1079,7 @@ function endRun(reason){
   let weak = null;
   keys.forEach(k => { const p = r.stats[k].right / r.stats[k].total; if(p < 1 && (!weak || p < weak.p)) weak = {k, p}; });
   const ranked = r.mode === 'chaos' && reason === 'complete';
-  const mult = keyBonus(r.keys.length), final = ranked ? Math.round(r.score * mult) : r.score;
+  const mult = keyBonus(r.keys.length), final = ranked ? Math.round(r.score * (9 + r.keys.length) / 10) : r.score;
   const eligible = ranked && !r.continued && final > 0;
   const why = eligible ? '' : r.mode === 'practice'
     ? `Practice runs don't go on the board. Finish a ${CHAOS_LEN}-question CHAOS run to post a high score.`
