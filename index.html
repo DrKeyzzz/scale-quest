@@ -408,7 +408,14 @@ button{font:inherit;color:inherit}
    below (see README.md). Leave it as null to keep scores on
    each device only.
    ============================================================ */
-const FIREBASE_CONFIG = null;
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBzSNDI_G3IT8l_ZXjIgu3kwzsqayFdfhA",
+  authDomain: "music-theory-d595f.firebaseapp.com",
+  projectId: "music-theory-d595f",
+  storageBucket: "music-theory-d595f.firebasestorage.app",
+  messagingSenderId: "346148016176",
+  appId: "1:346148016176:web:067fc5eb117eaba4beddf5",
+};
 // One Firebase project can serve many games; each keeps its scores under games/<GAME_ID>/scores.
 const GAME_ID = 'scale-quest';
 
