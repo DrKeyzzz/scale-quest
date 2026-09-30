@@ -258,6 +258,14 @@ button{font:inherit;color:inherit}
 .arrow{width:70px;height:52px}
 .feedback{min-height:26px;font-size:24px}
 .submit{font-size:15px;padding:13px 36px}
+.submit.next{background:var(--cyan)}
+.explain{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
+.explain span{font-family:var(--px);font-size:11px;padding:5px 7px;border:2px solid var(--line);background:var(--panel)}
+.explain sup{font-size:7px;color:var(--dim);margin-left:2px}
+.explain .hit{background:var(--ok);border-color:var(--ok);color:var(--shadow)}
+.explain .hit sup{color:var(--shadow)}
+.explain .miss{border-color:var(--bad);color:var(--bad)}
+.explain .clab{border:0;background:none;font-size:8px;color:var(--dim);padding-inline:2px}
 .attract{gap:14px}
 .attract h2{margin-bottom:8px}
 .insert{padding:4px 0;font-size:13px}
@@ -378,6 +386,7 @@ button{font:inherit;color:inherit}
       </div>
 
       <div class="feedback" id="feedback" aria-live="polite"></div>
+      <div class="explain" id="explain" hidden></div>
       <button class="btn submit" id="submitBtn" type="button">SUBMIT</button>
       <span class="keyhint" id="keyHint">ENTER = SUBMIT</span>
     </div>
@@ -770,6 +779,7 @@ function setPlaying(on){
 function startRun(mode){
   closeOverlay();
   const keys = PLAY_ORDER.filter(k => S.selected.has(k)); if(!keys.length) return;
+  S.awaitNext = null;
   S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives:3,
            stats:{}, lastInstr:null, lastKey:null, lastDeg:{}, q:null, ended:false};
   setPlaying(true); updateHUD();
@@ -806,7 +816,8 @@ function nextQuestion(){
 }
 function renderQuestion(){
   const q = S.run.q, K = `<b>${fmt(q.key)} major</b>`;
-  S.busy = false; S.sel.clear(); say('', '');
+  S.busy = false; S.sel.clear(); say('', ''); setNext(null);
+  $('#explain').hidden = true; $('#qHelp').hidden = false;
   updateHUD();
   const tag = $('#qTag');
   if(q.type === 'build'){
@@ -879,39 +890,90 @@ function onCorrect(){
   updateHUD();
   later(advance, q.type === 'build' ? 1900 : 1400);
 }
+/* ---------- mistake explanations ---------- */
+const PC_NAMES = ['C','C♯/D♭','D','D♯/E♭','E','F','F♯/G♭','G','G♯/A♭','A','A♯/B♭','B'];
+function scaleIdxOfPc(key, pc){ return SCALES[key].findIndex(n => pcOf(n) === pc); }
+// Scale laid out with degree numbers; `hits` = indexes to show green, `miss` = index of the student's note.
+function scaleChips(key, label, hits, miss=-1){
+  return `<span class="clab">${label}</span>` + SCALES[key].map((n,i) =>
+    `<span class="${hits.includes(i) ? 'hit' : ''}${i === miss ? ' miss' : ''}">${fmt(n)}<sup>${i+1}</sup></span>`).join('');
+}
+function explain(text, chips){
+  say(text, 'bad');
+  $('#qHelp').hidden = true;
+  const e = $('#explain'); e.innerHTML = chips; e.hidden = false;
+}
+// Practice waits for the student; CHAOS keeps moving.
+function setNext(label, fn){
+  const b = $('#submitBtn');
+  S.awaitNext = fn || null;
+  b.textContent = label || 'SUBMIT';
+  b.classList.toggle('next', !!label);
+  b.disabled = false;
+}
+function primary(){ if(S.awaitNext){ const fn = S.awaitNext; setNext(null); fn(); } else submit(); }
+function whyWrong(q){
+  const K = `${fmt(q.key)} major`, deg = ORD[q.degree], ans = fmt(q.answer), t = (q.degree - 1) % 7;
+  if(q.type === 'piano'){
+    const pc = [...S.sel][0] % 12, i = scaleIdxOfPc(q.key, pc);
+    const text = i >= 0
+      ? `${fmt(SCALES[q.key][i])} is the ${ORD[i+1]} of ${K}, not the ${deg}. The ${deg} is ${ans}.`
+      : `${PC_NAMES[pc]} isn't in ${K}. The ${deg} is ${ans}.`;
+    return [text, scaleChips(q.key, 'COUNT UP', [t], i)];
+  }
+  const letter = LETTERS[S.pos % 7], a = effAcc(letter);
+  const placed = letter + (a === 1 ? '#' : a === -1 ? 'b' : '');
+  const i = SCALES[q.key].findIndex(n => n[0] === letter), inKey = SCALES[q.key][i];
+  let text;
+  if(placed === inKey) text = `${fmt(placed)} is the ${ORD[i+1]} of ${K}, not the ${deg}. The ${deg} is ${ans}.`;
+  else if(letter === q.answer[0]) text = `Right note name, wrong accidental. ${K} uses ${fmt(inKey)}, not ${fmt(placed)}. The ${deg} is ${ans}.`;
+  else text = `${fmt(placed)} isn't in ${K} (it uses ${fmt(inKey)}). The ${deg} is ${ans}.`;
+  return [text, scaleChips(q.key, 'COUNT UP', [t], placed === inKey ? i : -1)];
+}
+
 function onWrong(){
   timerPause();
-  const r = S.run, q = r.q;
+  const r = S.run, q = r.q, practice = r.mode === 'practice';
   if(q.type === 'build' && q.tries === 0){
     q.tries = 1; S.busy = true;
     const want = new Set(SCALES[q.key].map(pcOf)), got = new Set([...S.sel].map(m => m % 12));
     S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add(want.has(m % 12) ? 'ok' : 'bad'); });
     want.forEach(pc => { if(!got.has(pc)) keysOfPc(pc).forEach(m => PK[m].classList.add('miss')); });
     flash('bad'); SFX.soft();
-    say('ALMOST! Green = right, red = wrong, flashing = missing. One more try!', 'warn');
-    later(() => { allKeys().forEach(g => g.classList.remove('ok','bad','miss')); paintSel(); S.busy = false; }, 2200);
+    say('ALMOST! Green = right, red = not in the scale, flashing = missing. One more try!', 'warn');
+    const retry = () => { allKeys().forEach(g => g.classList.remove('ok','bad','miss')); paintSel(); say('', ''); S.busy = false; };
+    if(practice){ setNext('TRY AGAIN ▶', retry); } else later(retry, 2200);
     return;
   }
   S.busy = true; $('#submitBtn').disabled = true;
   r.streak = 0; r.lives--; stat(q.key, false);
   flash('bad'); SFX.buzz();
   if(q.type === 'build'){
-    const want = new Set(SCALES[q.key].map(pcOf)), byPc = Object.fromEntries(SCALES[q.key].map(n => [pcOf(n), n]));
+    const want = new Set(SCALES[q.key].map(pcOf)), got = new Set([...S.sel].map(m => m % 12)), byPc = Object.fromEntries(SCALES[q.key].map(n => [pcOf(n), n]));
     allKeys().forEach(g => { const m = +g.dataset.m; g.classList.remove('sel');
       if(want.has(m % 12)){ g.classList.add('reveal'); label(m, byPc[m % 12]); } else if(S.sel.has(m)) g.classList.add('bad'); });
-    say(`Here's the answer — ${scaleLine(q.key)}`, 'bad');
+    const extra = [...got].filter(pc => !want.has(pc)).map(pc => PC_NAMES[pc]);
+    const missIdx = SCALES[q.key].map((n,i) => got.has(pcOf(n)) ? -1 : i).filter(i => i >= 0);
+    const parts = [];
+    if(extra.length) parts.push(`Not in ${fmt(q.key)} major: ${extra.join(', ')}.`);
+    if(missIdx.length) parts.push(`Missing: ${missIdx.map(i => fmt(SCALES[q.key][i])).join(', ')}.`);
+    explain(parts.join(' ') || `Check the spelling of ${fmt(q.key)} major.`, scaleChips(q.key, 'SCALE', missIdx));
   } else if(q.type === 'piano'){
+    const [text, chips] = whyWrong(q);
     S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add('bad'); });
     keysOfPc(pcOf(q.answer)).forEach(m => { PK[m].classList.add('reveal'); label(m, q.answer); });
     setTimeout(() => playMidi(keysOfPc(pcOf(q.answer))[0]), 350);
-    say(`The ${ORD[q.degree]} of ${fmt(q.key)} major is ${fmt(q.answer)}.`, 'bad');
+    explain(text, chips);
   } else {
+    const [text, chips] = whyWrong(q);
     $('#noteG').classList.add('bad');
     setTimeout(() => drawGhost(q.answer), 350);
-    say(`The ${ORD[q.degree]} of ${fmt(q.key)} major is ${fmt(q.answer)}.`, 'bad');
+    explain(text, chips);
   }
   updateHUD();
-  later(() => r.lives <= 0 ? continuePrompt() : advance(), q.type === 'build' ? 3200 : 2600);
+  const next = () => r.lives <= 0 ? continuePrompt() : advance();
+  if(practice) setNext('NEXT QUESTION ▶', next);
+  else later(next, q.type === 'build' ? 3800 : 3400);
 }
 function advance(){
   const r = S.run; r.total++;
@@ -1079,7 +1141,7 @@ function setupPanel(){
 /* ---------- controls ---------- */
 $('#startBtn').onclick = () => { audio(); startRun('practice'); };
 $('#chaosBtn').onclick = () => { audio(); chaosPicker(); };
-$('#submitBtn').onclick = submit;
+$('#submitBtn').onclick = primary;
 $('#quitBtn').onclick = () => {
   const r = S.run; if(!r) return;
   if(Object.keys(r.stats).length) endRun('quit'); else { r.ended = true; toMenu(); }
@@ -1097,7 +1159,7 @@ document.addEventListener('keydown', e => {
     if(S.run.q.type === 'staff'){ e.preventDefault(); moveNote(e.key === 'ArrowUp' ? 1 : -1); }
   } else if(e.key === 'Enter'){
     if(e.target && e.target.tagName === 'INPUT') return;
-    e.preventDefault(); submit();
+    e.preventDefault(); primary();
   }
 });
 

@@ -6,7 +6,7 @@ An arcade-style major scale trainer for beginner music theory. Students check th
 
 ## How scores work
 
-Practice mode has no timer, so students can work at their own pace.
+Practice mode has no timer, so students can work at their own pace. After a mistake, practice mode explains what went wrong (for example, "A is the 6th of C major, not the 7th. The 7th is B.") and waits until the student clicks NEXT QUESTION.
 
 Only a finished **CHAOS** run can go on the board. Every CHAOS run is 20 questions, so scores compare fairly.
 
