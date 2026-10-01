@@ -16,11 +16,19 @@ service cloud.firestore {
     function signedIn() {
       return request.auth != null && request.auth.token.email_verified == true;
     }
+    // TEACHERS: only these Google accounts can create or manage classes and use the teacher dashboards.
+    // Students share the school's email domain, so this list is what keeps them out. Add a teacher's email here to let them in.
+    function teacherEmails() {
+      return ['milnesda@eht.k12.nj.us'];
+    }
+    function isTeacher() {
+      return signedIn() && request.auth.token.email in teacherEmails();
+    }
     function isAdmin() {
       return signedIn() && request.auth.token.email in ['milnesda@eht.k12.nj.us'];
     }
     function ownsClass(code) {
-      return signedIn() && code != ''
+      return isTeacher() && code != ''
         && exists(/databases/$(database)/documents/classes/$(code))
         && get(/databases/$(database)/documents/classes/$(code)).data.ownerEmail == request.auth.token.email;
     }
@@ -29,7 +37,7 @@ service cloud.firestore {
     match /classes/{code} {
       allow read: if true;
 
-      allow create: if signedIn()
+      allow create: if isTeacher()
         && code.matches('^[A-Z0-9]{4,7}$')   // random 5-character codes, or a teacher's own 4–7 character code
         && request.resource.data.keys().hasOnly(['name', 'ownerEmail', 'created_at', 'assignment', 'scale_assignment'])
         && request.resource.data.ownerEmail == request.auth.token.email
@@ -37,19 +45,19 @@ service cloud.firestore {
         && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 40
         && request.resource.data.created_at == request.time;
 
-      allow update: if signedIn()
+      allow update: if isTeacher()
         && resource.data.ownerEmail == request.auth.token.email
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'assignment', 'scale_assignment'])
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 40;
 
-      allow delete: if signedIn() && (resource.data.ownerEmail == request.auth.token.email || isAdmin());
+      allow delete: if isAdmin() || (isTeacher() && resource.data.ownerEmail == request.auth.token.email);
     }
 
     // Practice progress: one summary per student per day. Students write their own;
     // only the class's teacher (or the admin) can read it.
     match /progress/{docId} {
-      allow read: if isAdmin() || (signedIn() && resource.data.owner == request.auth.token.email);
+      allow read: if isAdmin() || (isTeacher() && resource.data.owner == request.auth.token.email);
 
       allow create, update: if request.resource.data.keys().hasOnly(['class_code', 'owner', 'date', 'sid', 'student', 'rhythms', 'slots', 'correct', 'adj', 'plays', 'extra', 'pool', 'minutes', 'first_at', 'last_at', 'score', 'goal', 'skills', 'ts', 'levels', 'missed', 'challenges', 'updated_at'])
         && request.resource.data.class_code is string
@@ -64,7 +72,7 @@ service cloud.firestore {
         && request.resource.data.score is int && request.resource.data.score >= 0 && request.resource.data.score <= 100
         && request.resource.data.updated_at == request.time;
 
-      allow delete: if isAdmin() || (signedIn() && resource.data.owner == request.auth.token.email);
+      allow delete: if isAdmin() || (isTeacher() && resource.data.owner == request.auth.token.email);
     }
 
     // Scores: anyone can see them and add one in the right shape; nobody can edit them.
@@ -107,7 +115,7 @@ service cloud.firestore {
 
     // Practice progress: one summary per student per day. Only the class's teacher (or the admin) can read it.
     match /scale_progress/{docId} {
-      allow read: if isAdmin() || (signedIn() && resource.data.owner == request.auth.token.email);
+      allow read: if isAdmin() || (isTeacher() && resource.data.owner == request.auth.token.email);
 
       allow create, update: if request.resource.data.keys().hasOnly(['class_code', 'owner', 'date', 'sid', 'student', 'questions', 'correct', 'minutes', 'first_at', 'last_at', 'goal', 'by_key', 'types', 'missed', 'chaos', 'best_chaos', 'updated_at'])
         && request.resource.data.class_code is string
@@ -122,7 +130,7 @@ service cloud.firestore {
         && request.resource.data.minutes is int && request.resource.data.minutes >= 0 && request.resource.data.minutes <= 1440
         && request.resource.data.updated_at == request.time;
 
-      allow delete: if isAdmin() || (signedIn() && resource.data.owner == request.auth.token.email);
+      allow delete: if isAdmin() || (isTeacher() && resource.data.owner == request.auth.token.email);
     }
 
     // A finished 20-question CHAOS run: score = points × key bonus (1.0 + 0.1 per extra key).

@@ -524,6 +524,8 @@ const FIREBASE = {
   projectId: 'rhythm-trainer-fc313',
   appId: '1:956677028482:web:c3ec72a279e61b6f6c929b',
 };
+// Only these Google accounts can open the Teacher Dashboard (must match teacherEmails() in firestore.rules).
+const TEACHER_EMAILS = ['milnesda@eht.k12.nj.us'];
 const ADMIN_EMAILS = ['milnesda@eht.k12.nj.us'];   // can manage the World board (must match firestore.rules)
 const DAILY_GOAL = 40;                              // questions per day when no assignment sets a goal
 
@@ -1553,7 +1555,11 @@ function teacherLogin(){
     <div class="obtns"><button class="btn obtn alt" type="button" id="tlCancel">CANCEL</button><button class="btn obtn" type="button" id="tlGo" data-focus>SIGN IN WITH GOOGLE</button></div>`);
   o.querySelector('#tlCancel').onclick = closeOverlay;
   o.querySelector('#tlGo').onclick = async () => {
-    try{ TD.email = await Cloud.signIn(); closeOverlay(); openTeacherView(); }
+    try{
+      const email = await Cloud.signIn();
+      if(!TEACHER_EMAILS.includes(String(email).toLowerCase())){ await Cloud.signOut(); o.querySelector('#tlErr').textContent = 'The Teacher Dashboard is for teachers only.'; return; }
+      TD.email = email; closeOverlay(); openTeacherView();
+    }
     catch(err){ o.querySelector('#tlErr').textContent = errMsg(err); }
   };
 }
