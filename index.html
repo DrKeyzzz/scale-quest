@@ -480,7 +480,7 @@ button{font:inherit;color:inherit}
       <button class="btn tbtn" id="tdSignOut" type="button">SIGN OUT</button>
     </div>
     <div class="otabs td-tabs" id="tdTabs" role="group" aria-label="Dashboard sections">
-      <button type="button" data-tab="progress">PROGRESS</button><button type="button" data-tab="assign">ASSIGNMENT</button><button type="button" data-tab="classes">CLASSES</button><button type="button" data-tab="scores">SCORES</button>
+      <button type="button" data-tab="progress">PROGRESS</button><button type="button" data-tab="assign">ASSIGNMENT</button><button type="button" data-tab="classes">CLASSES</button><button type="button" data-tab="scores">SCORES</button><button type="button" data-tab="admin" id="tdAdminTab" hidden>ADMIN</button>
     </div>
     <p class="td-err" id="tdErr" role="alert"></p>
     <div id="tdBody"></div>
@@ -524,7 +524,7 @@ const FIREBASE = {
   projectId: 'rhythm-trainer-fc313',
   appId: '1:956677028482:web:c3ec72a279e61b6f6c929b',
 };
-// Only these Google accounts can open the Teacher Dashboard (must match teacherEmails() in firestore.rules).
+// Built-in teachers (must match teacherEmails() in firestore.rules). Other teachers request access and the admin approves them.
 const TEACHER_EMAILS = ['milnesda@eht.k12.nj.us'];
 const ADMIN_EMAILS = ['milnesda@eht.k12.nj.us'];   // can manage the World board (must match firestore.rules)
 const DAILY_GOAL = 40;                              // questions per day when no assignment sets a goal
@@ -642,6 +642,21 @@ const Cloud = {
   }); },
   renameClass(code, name){ return this.run(({fs, db}) => fs.updateDoc(fs.doc(db, 'classes', code), {name})); },
   saveAssignment(code, a){ return this.run(({fs, db}) => fs.updateDoc(fs.doc(db, 'classes', code), {scale_assignment: a || null})); },
+
+  // ----- teacher access: requests and approvals -----
+  async isTeacher(email){ if(TEACHER_EMAILS.includes(email)) return true; return this.run(async ({fs, db}) => (await fs.getDoc(fs.doc(db, 'teachers', email))).exists()); },
+  myRequest(email){ return this.run(async ({fs, db}) => { const d = await fs.getDoc(fs.doc(db, 'teacher_requests', email)); return d.exists() ? d.data() : null; }); },
+  requestAccess(email, r){ return this.run(({fs, db}) => fs.setDoc(fs.doc(db, 'teacher_requests', email), {email, name: r.name, school: r.school, note: r.note, created_at: fs.serverTimestamp()})); },
+  cancelRequest(email){ return this.run(({fs, db}) => fs.deleteDoc(fs.doc(db, 'teacher_requests', email))); },
+  requests(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.collection(db, 'teacher_requests'))).docs.map(d => ({...d.data(), email: d.id}))); },
+  teachers(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.collection(db, 'teachers'))).docs.map(d => ({...d.data(), email: d.id}))); },
+  approve(req, by){ return this.run(async ({fs, db}) => {
+    const b = fs.writeBatch(db);
+    b.set(fs.doc(db, 'teachers', req.email), {name: String(req.name || '').slice(0, 60), school: String(req.school || '').slice(0, 80), approved_at: fs.serverTimestamp(), approved_by: by});
+    b.delete(fs.doc(db, 'teacher_requests', req.email));
+    await b.commit();
+  }); },
+  removeTeacher(email){ return this.run(({fs, db}) => fs.deleteDoc(fs.doc(db, 'teachers', email))); },
 
   // ----- progress: one summary per student per day; only the class's teacher can read it -----
   saveProgress(id, data){ return this.run(({fs, db}) => fs.setDoc(fs.doc(db, 'scale_progress', id), {...data, updated_at: fs.serverTimestamp()})); },
@@ -1556,17 +1571,54 @@ function teacherLogin(){
   o.querySelector('#tlCancel').onclick = closeOverlay;
   o.querySelector('#tlGo').onclick = async () => {
     try{
-      const email = await Cloud.signIn();
-      if(!TEACHER_EMAILS.includes(String(email).toLowerCase())){ await Cloud.signOut(); o.querySelector('#tlErr').textContent = 'The Teacher Dashboard is for teachers only.'; return; }
-      TD.email = email; closeOverlay(); openTeacherView();
+      const email = String(await Cloud.signIn()).toLowerCase();
+      if(await Cloud.isTeacher(email)){ TD.email = email; closeOverlay(); openTeacherView(); return; }
+      requestScreen(email);
     }
     catch(err){ o.querySelector('#tlErr').textContent = errMsg(err); }
   };
 }
+// Someone who isn't a teacher yet can ask for access; the admin approves it in the ADMIN tab.
+async function requestScreen(email){
+  let req = null; try{ req = await Cloud.myRequest(email); } catch(e){}
+  const done = async () => { try{ await Cloud.signOut(); } catch(e){} closeOverlay(); };
+  if(req){
+    const o = openOverlay(`<h2 class="otitle">REQUEST PENDING</h2>
+      <p class="osub">Your request for teacher access (${esc(email)}) is waiting for approval. Sign in again once it's approved.</p>
+      <p class="werr" id="rqErr"></p>
+      <div class="obtns"><button class="btn obtn alt" type="button" id="rqCancel">CANCEL REQUEST</button><button class="btn obtn" type="button" id="rqClose" data-focus>CLOSE</button></div>`);
+    o.querySelector('#rqClose').onclick = done;
+    o.querySelector('#rqCancel').onclick = async () => { try{ await Cloud.cancelRequest(email); await done(); } catch(err){ o.querySelector('#rqErr').textContent = errMsg(err); } };
+    return;
+  }
+  const field = 'font-family:var(--vt);font-size:22px;padding:8px 10px;width:100%;background:var(--shadow);color:var(--ink);border:2px solid var(--line)';
+  const o = openOverlay(`<h2 class="otitle">TEACHERS ONLY</h2>
+    <p class="osub">${esc(email)} isn't a teacher account yet. Teachers can request access below; students, ask your teacher for your class code instead.</p>
+    <form id="rqForm" style="display:flex;flex-direction:column;gap:10px;width:100%;text-align:left">
+      <label class="slabel" for="rqName">YOUR NAME<input id="rqName" maxlength="60" style="${field}" placeholder="e.g. Ms. Rivera"></label>
+      <label class="slabel" for="rqSchool">SCHOOL<input id="rqSchool" maxlength="80" style="${field}"></label>
+      <label class="slabel" for="rqNote">NOTE (OPTIONAL)<input id="rqNote" maxlength="300" style="${field}" placeholder="What you teach, how you heard about it"></label>
+      <p class="werr" id="rqErr"></p>
+      <div class="obtns"><button class="btn obtn alt" type="button" id="rqClose">CANCEL</button><button class="btn obtn" type="submit">REQUEST TEACHER ACCESS</button></div>
+    </form>`);
+  o.querySelector('#rqClose').onclick = done;
+  o.querySelector('#rqForm').onsubmit = async e => {
+    e.preventDefault();
+    const name = o.querySelector('#rqName').value.trim(), school = o.querySelector('#rqSchool').value.trim(), note = o.querySelector('#rqNote').value.trim();
+    if(name.length < 2){ o.querySelector('#rqErr').textContent = 'Type your name.'; return; }
+    try{
+      await Cloud.requestAccess(email, {name, school, note});
+      o.innerHTML = `<h2 class="otitle">REQUEST SENT</h2><p class="osub">Thanks, ${esc(name)}. You'll be able to open the Teacher Dashboard once your request is approved. Sign in again then.</p><div class="obtns"><button class="btn obtn" type="button" id="rqOk" data-focus>OK</button></div>`;
+      o.querySelector('#rqOk').onclick = done;
+    } catch(err){ o.querySelector('#rqErr').textContent = errMsg(err); }
+  };
+}
+
 async function openTeacherView(){
   if(S.run){ S.run.ended = true; toMenu(); }
   $('#app').classList.add('teacher'); $('#teacherView').hidden = false; window.scrollTo({top: 0});
   $('#tdWho').textContent = `Signed in as ${TD.email}`;
+  $('#tdAdminTab').hidden = !ADMIN_EMAILS.includes(TD.email);
   await tdLoadClasses(); tdRender();
 }
 function closeTeacherView(){ clearInterval(TD.timer); $('#app').classList.remove('teacher'); $('#teacherView').hidden = true; refreshClassInfo(); renderBoard(); }
@@ -1581,7 +1633,8 @@ function tdRender(){
   clearInterval(TD.timer);
   if(!TD.code && (TD.tab === 'progress' || TD.tab === 'assign')) TD.tab = 'classes';
   for(const b of $('#tdTabs').children) b.setAttribute('aria-pressed', String(b.dataset.tab === TD.tab));
-  ({progress: tdProgress, assign: tdAssign, classes: tdClasses, scores: tdScores})[TD.tab]();
+  if(TD.tab === 'admin' && !ADMIN_EMAILS.includes(TD.email)) TD.tab = 'progress';
+  ({progress: tdProgress, assign: tdAssign, classes: tdClasses, scores: tdScores, admin: tdAdmin})[TD.tab]();
 }
 
 // ----- Progress -----
@@ -1799,6 +1852,30 @@ async function tdScores(){
     ${list.length ? `<div style="overflow-x:auto"><table class="t-table"><thead><tr><th>#</th><th>NAME</th>${world ? '<th>CLASS</th>' : ''}<th>SCORE</th><th>KEYS</th><th>ACCURACY</th><th>DATE</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="dim">No CHAOS scores posted yet.</p>'}`;
   $('#tdScope').onchange = () => { TD.scope = $('#tdScope').value; tdScores(); };
   $('#tdBody').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { b.disabled = true; try{ await Cloud.deleteScore(b.dataset.del); tdScores(); } catch(err){ $('#tdErr').textContent = errMsg(err); b.disabled = false; } });
+}
+// ----- Admin: approve teacher requests, manage teachers -----
+async function tdAdmin(){
+  const body = $('#tdBody');
+  body.innerHTML = '<p class="dim">Loading...</p>';
+  let reqs = [], teachers = [];
+  try{ [reqs, teachers] = await Promise.all([Cloud.requests(), Cloud.teachers()]); } catch(err){ $('#tdErr').textContent = errMsg(err); }
+  const when = t => t && t.toDate ? t.toDate().toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : '';
+  body.innerHTML = `
+    <div class="td-sec"><h3>TEACHER REQUESTS</h3>
+      ${reqs.length ? `<div style="overflow-x:auto"><table class="t-table"><thead><tr><th>NAME</th><th>EMAIL</th><th>SCHOOL</th><th>NOTE</th><th>DATE</th><th></th></tr></thead><tbody>${reqs.map(r => `<tr><td><b>${esc(r.name)}</b></td><td>${esc(r.email)}</td><td>${esc(r.school || '—')}</td><td class="dim">${esc(r.note || '')}</td><td class="dim">${when(r.created_at)}</td>
+        <td style="text-align:right;white-space:nowrap"><button class="btn tbtn sm" type="button" data-approve="${esc(r.email)}">APPROVE</button> <button class="btn tbtn sm" type="button" data-deny="${esc(r.email)}">DENY</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="dim">No pending requests. When a teacher signs in to a dashboard and asks for access, it shows up here.</p>'}
+    </div>
+    <div class="td-sec"><h3>TEACHERS</h3>
+      <div style="overflow-x:auto"><table class="t-table"><thead><tr><th>NAME</th><th>EMAIL</th><th>SCHOOL</th><th>APPROVED</th><th></th></tr></thead><tbody>
+        ${TEACHER_EMAILS.map(e => `<tr><td><b>Admin</b></td><td>${esc(e)}</td><td>—</td><td class="dim">built in</td><td></td></tr>`).join('')}
+        ${teachers.map(t => `<tr><td><b>${esc(t.name || '—')}</b></td><td>${esc(t.email)}</td><td>${esc(t.school || '—')}</td><td class="dim">${when(t.approved_at)}</td>
+          <td style="text-align:right"><button class="btn tbtn sm" type="button" data-remove="${esc(t.email)}">REMOVE</button></td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="dim" style="margin:8px 0 0">Removing a teacher stops them managing classes and seeing progress. Their classes and students' scores stay.</p>
+    </div>`;
+  body.querySelectorAll('[data-approve]').forEach(b => b.onclick = async () => { b.disabled = true; try{ await Cloud.approve(reqs.find(r => r.email === b.dataset.approve), TD.email); popupMsg(`Approved ${b.dataset.approve}.`); tdAdmin(); } catch(err){ $('#tdErr').textContent = errMsg(err); b.disabled = false; } });
+  body.querySelectorAll('[data-deny]').forEach(b => b.onclick = async () => { b.disabled = true; try{ await Cloud.cancelRequest(b.dataset.deny); tdAdmin(); } catch(err){ $('#tdErr').textContent = errMsg(err); b.disabled = false; } });
+  body.querySelectorAll('[data-remove]').forEach(b => b.onclick = async () => { b.disabled = true; try{ await Cloud.removeTeacher(b.dataset.remove); popupMsg(`Removed ${b.dataset.remove}.`); tdAdmin(); } catch(err){ $('#tdErr').textContent = errMsg(err); b.disabled = false; } });
 }
 $('#tdTabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if(!b) return; TD.tab = b.dataset.tab; TD.open = null; tdRender(); });
 $('#tdClass').onchange = () => { TD.code = $('#tdClass').value; TD.scope = TD.code; TD.open = null; tdRender(); };
