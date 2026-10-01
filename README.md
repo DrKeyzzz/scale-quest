@@ -15,27 +15,23 @@ Only a finished **CHAOS** run can go on the board. Every CHAOS run is 20 questio
 - **Key bonus:** +10% for each key beyond the first (4 keys = x1.3, all 15 = x2.4).
 - Runs that use CONTINUE, practice runs and quit runs can't be posted.
 
-## Class leaderboard setup (Firebase, one time, about 10 minutes)
+## Students, classes and the Teacher Dashboard
 
-Scores are stored in a free Firebase (Firestore) database you own. The free Spark plan needs no credit card.
+Scale Quest shares the **Rhythm Trainer's Firebase project** (`rhythm-trainer-fc313`), so the same class codes and Google teacher sign-in work in both games.
 
-1. Go to https://console.firebase.google.com and click **Create a project**. Give it a general name you can reuse for all your class games (for example `milnes-class-games`). You can turn off Google Analytics.
-2. In the left menu: **Build → Firestore Database → Create database**. Pick a US location and **Start in production mode**.
-3. Open the **Rules** tab, replace everything with the contents of [`firestore.rules`](firestore.rules), and click **Publish**.
-4. Click the gear → **Project settings**. Under "Your apps", click the **web icon `</>`**, name the app `Class Games` (no Hosting), and click **Register app**. All your games can share this one web app config.
-5. Copy the `firebaseConfig = { ... }` object it shows and paste it into `const FIREBASE_CONFIG = null;` near the top of the script in `index.html` (replace `null`).
+**Welcome screen:** the first time a student opens the game on a device, they enter their **first name, last initial and class code** (or check "I'm not in a class"). If they've already used the Rhythm Trainer on that computer, their name fills in. The **👤 name** button in the top bar changes class or switches student.
 
-The config values are meant to be public; the rules are what protect the data.
+**Leaderboards:** the student's **class** board (each student's best CHAOS run) and the **World Top 10** (the 10 best runs from everyone). After a CHAOS run, students tap **POST MY SCORE** and see their rank, like "#2 in Period 3 · #14 in the world."
 
-**Two boards:**
-- **WORLD TOP 10** — the 10 best CHAOS runs from anyone who plays at the regular link.
-- **MY CLASS** — each student's best run, for students who open the class link, e.g. https://drkeyzzz.github.io/scale-quest/#milnes. The code is remembered on that device. To add a class, add its code to `CLASS_CODES` in `index.html` and to `classCodes()` in `firestore.rules`.
+**Progress tracking:** every answer is logged on the device. Students with a class code sync one summary per day (first name and last initial only): questions, accuracy, minutes, accuracy per key and per question type, most-missed questions (with what they answered instead) and CHAOS runs. Only that class's teacher can read it.
 
-Rude initials are blocked by a list in both the game and the rules.
+**Teacher Dashboard** (SETUP → TEACHER DASHBOARD → Sign in with Google)
+- **Progress:** pick a class and day (Today, Yesterday, Last 7 days or a date). Time, questions, accuracy, best CHAOS score, weakest keys and last active for each student; live updates every 30 seconds. Click a student for their key and question-type breakdown and most-missed questions. The top shows class accuracy by key and the most-missed questions. **Export CSV** for your gradebook.
+- **Assignment:** pick the keys to practice, a questions goal, a minutes goal and a note. Students see a banner with their progress and a **USE THESE KEYS** button.
+- **Classes:** the same classes as the Rhythm Trainer. Create or rename a class, or **clear Scale Quest data** for a new marking period. (Delete a class from the Rhythm Trainer's dashboard.)
+- **Scores:** delete a single CHAOS score (for example an inappropriate name). The admin email can also manage the World board.
 
-**One project, many games:** each game stores its scores under `games/<game-id>/scores` (Scale Quest uses `games/scale-quest/scores`) and gets its own section in the rules.
-
-**Managing scores:** Firestore Database → `games` → `scale-quest` → `scores` (world) or `classes` → `milnes` → `scores` (class). Delete a single score by opening it and choosing **Delete document**. To reset for a new marking period, delete the `scores` collection.
+**Rules:** [`firestore.rules`](firestore.rules) covers **both** games and is identical in both repos. Whenever it changes, paste it into Firebase → Firestore Database → Rules → **Publish**.
 
 ## Changing the scale data
 

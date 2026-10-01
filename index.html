@@ -40,7 +40,8 @@ button{font:inherit;color:inherit}
 .logo .a{color:var(--cyan)} .logo .b{color:var(--mag)}
 .logo small{display:block;font-size:9px;color:var(--dim);margin-top:8px;letter-spacing:.14em;text-shadow:none}
 .tools{display:flex;gap:8px;align-items:center}
-.classchip{font-family:var(--px);font-size:8px;letter-spacing:.06em;padding:8px 9px;border:3px solid var(--yel);color:var(--yel)}
+.who{color:var(--yel);border-color:var(--yel);max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xclasschip{font-family:var(--px);font-size:8px;letter-spacing:.06em;padding:8px 9px;border:3px solid var(--yel);color:var(--yel)}
 .btn{font-family:var(--px);border:3px solid var(--shadow);cursor:pointer;box-shadow:4px 4px 0 var(--shadow);transition:transform .06s,box-shadow .06s}
 .btn:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 var(--shadow)}
 .btn:disabled{opacity:.3;cursor:not-allowed}
@@ -287,6 +288,80 @@ button{font:inherit;color:inherit}
   .start,.chaos{padding:12px 36px}
 }
 
+/* ---------- welcome ---------- */
+.welcome{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:16px;background:radial-gradient(ellipse at 50% 0%,#2e1b7c 0%,var(--bg) 65%),var(--bg);overflow:auto}
+.wbox{width:min(520px,100%);display:flex;flex-direction:column;gap:14px;align-items:stretch;text-align:center;padding:26px 22px;background:var(--bg2);border:3px solid var(--cyan);box-shadow:0 0 0 3px var(--shadow),0 0 50px rgba(63,240,255,.3)}
+.wbox .logo{font-size:30px}
+.wp1{margin:0;font-family:var(--px);font-size:12px;color:var(--yel);animation:blink 1.1s steps(2) infinite}
+.wrow{display:grid;grid-template-columns:1fr 130px;gap:12px}
+.wbox label{display:flex;flex-direction:column;gap:6px;text-align:left;font-family:var(--px);font-size:9px;color:var(--dim);letter-spacing:.06em}
+.wbox input:not([type]),.wbox input[id="wFirst"],.wbox input[id="wInit"],.wbox input[id="wCode"]{font-family:var(--px);font-size:16px;padding:12px 10px;background:var(--shadow);color:var(--yel);border:3px solid var(--line);text-transform:uppercase;width:100%}
+.wbox input:focus{border-color:var(--yel);outline:none}
+.wbox input:disabled{opacity:.35}
+.wsolo{flex-direction:row!important;align-items:center;gap:10px!important;font-family:var(--vt)!important;font-size:22px!important;color:var(--ink)!important;cursor:pointer}
+.wsolo input{width:22px;height:22px;accent-color:var(--mag)}
+.werr{margin:0;min-height:24px;color:var(--bad);font-size:22px}
+.wnote{margin:0;color:var(--dim);font-size:18px}
+/* ---------- assignment banner ---------- */
+.assign{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:center;padding:8px 10px;border:3px dashed var(--yel)}
+.assign .ab-t{font-family:var(--px);font-size:9px;background:var(--yel);color:var(--shadow);padding:4px 6px}
+.assign .ab-k{font-family:var(--px);font-size:13px;color:var(--yel)}
+.assign .ab-p{font-family:var(--px);font-size:9px;color:var(--ink)} .assign .ab-p.met{color:var(--ok)}
+.assign .ab-u{font-family:var(--px);font-size:8px;color:var(--ok)}
+.assign .ab-b{font-size:9px;padding:8px 10px;background:var(--yel);color:var(--shadow)}
+.assign .ab-n{color:var(--dim);font-size:20px}
+.attract.has-assign .steps span{display:none}
+.attract.has-assign .steps{gap:6px}
+.board tr.me td{color:var(--cyan)}
+.board td.nm{white-space:nowrap}
+/* ---------- teacher dashboard ---------- */
+.app.teacher > :not(.topbar):not(.tview){display:none!important}
+.tview{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.td-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.td-head h2{margin:0 auto 0 0;font-family:var(--px);font-size:14px;color:var(--yel);font-weight:400}
+.td-head select,.td-sub select,.td-sub input,.td-form input,.td-form select,.t-row input{font-family:var(--vt);font-size:20px;padding:6px 8px;background:var(--shadow);color:var(--ink);border:2px solid var(--line)}
+.td-who{color:var(--dim);font-size:18px}
+.td-err{margin:0;color:var(--bad);font-size:20px;min-height:0}
+.td-err:empty{display:none}
+.td-sub{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.tbtn.sm{font-size:8px;padding:8px 10px}
+.td-live{font-family:var(--px);font-size:8px;color:var(--ok)}
+.td-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.td-tiles div{border:3px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:6px}
+.td-tiles span{font-family:var(--px);font-size:8px;color:var(--dim)}
+.td-tiles b{font-family:var(--px);font-size:16px;color:var(--yel);font-weight:400}
+.td-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.td-sec{border:3px solid var(--line);padding:12px}
+.td-sec h3{margin:0 0 10px;font-family:var(--px);font-size:10px;color:var(--cyan);font-weight:400}
+.hbar{display:grid;grid-template-columns:96px 1fr 50px 110px;gap:8px;align-items:center;font-size:20px;margin-bottom:4px}
+.hbar .tr{height:12px;background:var(--panel);border:2px solid var(--line);position:relative}
+.hbar .tr i{position:absolute;inset:0 auto 0 0;background:var(--ok)}
+.hbar .tr i.mid{background:var(--yel)} .hbar .tr i.lo{background:var(--bad)}
+.hbar small{color:var(--dim);font-size:17px}
+.miss{display:flex;justify-content:space-between;gap:10px;font-size:20px;padding:4px 0;border-bottom:2px dashed var(--line)}
+.miss small{color:var(--dim);font-size:18px}
+.td-table,.t-table{width:100%;border-collapse:collapse;font-size:20px}
+.td-table th,.t-table th{font-family:var(--px);font-size:8px;color:var(--dim);text-align:left;padding:8px 6px;border-bottom:3px solid var(--line);cursor:pointer;white-space:nowrap}
+.td-table td,.t-table td{padding:6px;border-bottom:2px dashed var(--line);vertical-align:top}
+.td-table tr[data-sid]{cursor:pointer}
+.td-table tr[data-sid]:hover td{background:rgba(255,255,255,.04)}
+.td-table tr.open td{background:rgba(63,240,255,.08)}
+.td-table th.sorted{color:var(--yel)}
+.chip{font-family:var(--px);font-size:9px;padding:3px 5px}
+.chip.hi{background:var(--ok);color:var(--shadow)} .chip.mid{background:var(--yel);color:var(--shadow)} .chip.lo{background:var(--bad);color:var(--shadow)}
+.dot{display:inline-block;width:9px;height:9px;margin-right:6px;background:var(--line)} .dot.on{background:var(--ok)}
+.code-pill{font-family:var(--px);font-size:12px;color:var(--yel);letter-spacing:.12em}
+.td-form{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.td-form label{display:flex;flex-direction:column;gap:6px;font-family:var(--px);font-size:8px;color:var(--dim)}
+.td-form .wide{grid-column:1/-1}
+.td-keys{display:flex;flex-wrap:wrap;gap:6px}
+.td-keys button{font-family:var(--px);font-size:11px;padding:8px 9px;background:var(--panel);color:var(--dim);border:2px solid var(--line);cursor:pointer}
+.td-keys button[aria-pressed="true"]{background:var(--yel);color:var(--shadow);border-color:var(--yel)}
+.t-row{display:flex;gap:10px;flex-wrap:wrap}
+.t-row input{flex:1;min-width:220px}
+.dim{color:var(--dim)}
+@media (max-width:760px){ .td-tiles{grid-template-columns:1fr 1fr} .td-grid{grid-template-columns:1fr} .td-form{grid-template-columns:1fr} }
+
 @media (max-width:760px){
   .krow{grid-template-columns:1fr;gap:6px}
   .kgrid{grid-template-columns:repeat(4,1fr)}
@@ -313,7 +388,7 @@ button{font:inherit;color:inherit}
   <header class="topbar">
     <h1 class="logo"><span class="a">SCALE</span> <span class="b">QUEST</span><small>MAJOR SCALE TRAINER</small></h1>
     <div class="tools">
-      <span class="classchip" id="classChip" hidden></span>
+      <button class="btn tbtn who" id="whoBtn" type="button">👤 SIGN IN</button>
       <button class="btn tbtn" id="boardBtn" type="button">BEST SCORES</button>
       <button class="btn tbtn" id="muteBtn" type="button">SOUND: ON</button>
       <button class="btn tbtn" id="gearBtn" type="button">SETUP</button>
@@ -347,6 +422,7 @@ button{font:inherit;color:inherit}
   <section class="panel stage" id="stage">
     <div class="attract" id="attract">
       <p class="insert" id="insertMsg">CHECK YOUR KEYS ABOVE</p>
+      <div class="assign" id="assignBanner" hidden></div>
       <div>
         <h2>HOW TO PLAY</h2>
         <ol class="steps">
@@ -394,37 +470,60 @@ button{font:inherit;color:inherit}
     </div>
   </section>
 
+  <section class="panel tview" id="teacherView" hidden>
+    <div class="td-head">
+      <h2>TEACHER DASHBOARD</h2>
+      <select id="tdClass" aria-label="Class"></select>
+      <span class="td-who" id="tdWho"></span>
+      <button class="btn tbtn" id="tdBack" type="button">BACK TO GAME</button>
+      <button class="btn tbtn" id="tdSignOut" type="button">SIGN OUT</button>
+    </div>
+    <div class="otabs td-tabs" id="tdTabs" role="group" aria-label="Dashboard sections">
+      <button type="button" data-tab="progress">PROGRESS</button><button type="button" data-tab="assign">ASSIGNMENT</button><button type="button" data-tab="classes">CLASSES</button><button type="button" data-tab="scores">SCORES</button>
+    </div>
+    <p class="td-err" id="tdErr" role="alert"></p>
+    <div id="tdBody"></div>
+  </section>
+
   <footer class="controls">
     <button class="btn start" id="startBtn" type="button" disabled>START</button>
     <button class="btn chaos" id="chaosBtn" type="button" disabled>CHAOS</button>
   </footer>
 </main>
 
+<div class="welcome" id="welcome" hidden>
+  <form class="wbox" id="wForm" autocomplete="off">
+    <h1 class="logo"><span class="a">SCALE</span> <span class="b">QUEST</span></h1>
+    <p class="wp1">PLAYER 1, ENTER YOUR NAME</p>
+    <div class="wrow">
+      <label for="wFirst">FIRST NAME<input id="wFirst" maxlength="15" autocapitalize="words"></label>
+      <label for="wInit" class="wi">LAST INITIAL<input id="wInit" maxlength="1" autocapitalize="characters"></label>
+    </div>
+    <label for="wCode">CLASS CODE<input id="wCode" maxlength="5" placeholder="FROM YOUR TEACHER" autocapitalize="characters" spellcheck="false"></label>
+    <label class="wsolo" for="wSolo"><input type="checkbox" id="wSolo"> I'm not in a class</label>
+    <p class="werr" id="wError" role="alert"></p>
+    <button class="btn start" id="wGo" type="submit">PRESS START</button>
+    <p class="wnote">Only your first name and last initial are saved. Same class code as the Rhythm Trainer.</p>
+  </form>
+</div>
 <div class="overlay" id="overlay" hidden><div class="opanel" id="opanel" role="dialog" aria-modal="true"></div></div>
 <div class="chaos-intro" id="chaosIntro" hidden><p>CHAOS<br>MODE<small id="chaosMix"></small></p></div>
 
 <script>
 /* ============================================================
-   CLASS LEADERBOARD (Firebase / Firestore)
-   Paste the firebaseConfig object from your shared Firebase project
-   below (see README.md). Leave it as null to keep scores on
-   each device only.
+   CLASSES, LEADERBOARDS & TEACHER DASHBOARD (Firebase)
+   Shares the Rhythm Trainer's Firebase project, so the same class
+   codes and teacher sign-in work in both games. These values are
+   meant to be public; firestore.rules decides who can do what.
    ============================================================ */
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBzSNDI_G3IT8l_ZXjIgu3kwzsqayFdfhA",
-  authDomain: "music-theory-d595f.firebaseapp.com",
-  projectId: "music-theory-d595f",
-  storageBucket: "music-theory-d595f.firebasestorage.app",
-  messagingSenderId: "346148016176",
-  appId: "1:346148016176:web:067fc5eb117eaba4beddf5",
+const FIREBASE = {
+  apiKey: 'AIzaSyDU9vbCWJ4yWuD8bAX984DmQF4dvo13BHs',
+  authDomain: 'rhythm-trainer-fc313.firebaseapp.com',
+  projectId: 'rhythm-trainer-fc313',
+  appId: '1:956677028482:web:c3ec72a279e61b6f6c929b',
 };
-// One Firebase project can serve many games; each keeps its scores under games/<GAME_ID>/scores.
-const GAME_ID = 'scale-quest';
-// Class boards: students open the game with the class code after #, e.g. .../scale-quest/#milnes
-// Every code here must also be listed in firestore.rules.
-const CLASS_CODES = ['milnes'];
-// Initials that can't go on a public board. The same list is in firestore.rules.
-const BLOCKED_INITIALS = ['ASS','FUK','FUC','FCK','FKU','FUQ','SHT','CUM','DIK','DIC','DCK','COK','KOK','TIT','VAG','PUS','SEX','FAG','FGT','NIG','NGR','NGA','KKK','HOE','WTF','XXX'];
+const ADMIN_EMAILS = ['milnesda@eht.k12.nj.us'];   // can manage the World board (must match firestore.rules)
+const DAILY_GOAL = 40;                              // questions per day when no assignment sets a goal
 
 /* ============================================================
    MUSIC DATA — every major scale, spelled correctly.
@@ -481,49 +580,91 @@ const store = {
 };
 
 /* ---------- class leaderboard (Google Sheet via Apps Script) ---------- */
-const remote = {
-  on: () => !!(FIREBASE_CONFIG && FIREBASE_CONFIG.projectId),
-  _db: null,
-  db(){
-    // Load Firebase only when the leaderboard is set up.
-    this._db = this._db || (async () => {
-      const v = '10.12.2', load = src => new Promise((ok, bad) => {
-        const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = bad; document.head.appendChild(el);
-      });
-      await load(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);
-      await load(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore-compat.js`);
-      if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-      return firebase.firestore();
-    })().catch(err => { this._db = null; throw err; });
-    return this._db;
+const Cloud = {
+  on: !!(FIREBASE.apiKey && FIREBASE.projectId),
+  _p: null,
+  fb(){
+    // The Firebase SDK loads only when it's first needed.
+    const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+    this._p = this._p || Promise.all([import(SDK + 'firebase-app.js'), import(SDK + 'firebase-firestore.js'), import(SDK + 'firebase-auth.js')])
+      .then(([appMod, fs, authMod]) => { const app = appMod.initializeApp(FIREBASE); return {fs, authMod, db: fs.getFirestore(app), auth: authMod.getAuth(app)}; })
+      .catch(err => { this._p = null; throw new Error("Couldn't reach the leaderboard. Check your internet connection."); });
+    return this._p;
   },
-  limit(p){ return Promise.race([p, new Promise((_, bad) => setTimeout(() => bad(new Error('timeout')), 10000))]); },
-  // World: games/<id>/scores. Class: games/<id>/classes/<code>/scores.
-  col(db, board){
-    const game = db.collection('games').doc(GAME_ID);
-    return board === 'class' ? game.collection('classes').doc(CLASS).collection('scores') : game.collection('scores');
+  wait(p){ return Promise.race([p, new Promise((_, bad) => setTimeout(() => bad(new Error('The leaderboard took too long to answer.')), 12000))]); },
+  err(e){
+    const c = e && e.code;
+    if(c === 'permission-denied') return new Error("That isn't allowed. Teachers: sign in with the Google account that owns this class.");
+    if(c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return new Error('Sign-in was cancelled.');
+    if(c === 'auth/unauthorized-domain') return new Error('Add this website to Firebase → Authentication → Settings → Authorized domains.');
+    return e instanceof Error ? e : new Error(String(e));
   },
-  // World board = the 10 best runs (small read, safe for public traffic).
-  // Class board = each student's best run, top 10.
-  async top(board){
-    const db = await this.limit(this.db());
-    const snap = await this.limit(this.col(db, board).orderBy('score', 'desc').limit(board === 'class' ? 40 : 10).get());
-    const rows = snap.docs.map(d => d.data()).map(x => ({name: x.name, score: x.score, keys: x.keyCount, streak: x.streak || 0}));
-    if(board !== 'class') return rows;
+  async run(fn){ try{ const f = await this.fb(); return await this.wait(fn(f)); } catch(e){ throw this.err(e); } },
+
+  // ----- classes (shared with the Rhythm Trainer) -----
+  getClass(code){ return this.run(async ({fs, db}) => { const d = await fs.getDoc(fs.doc(db, 'classes', code)); return d.exists() ? {code, ...d.data()} : null; }); },
+  async me(){ const {auth} = await this.fb(); return auth.currentUser ? auth.currentUser.email : null; },
+  signIn(){ return this.run(async ({authMod, auth}) => (await authMod.signInWithPopup(auth, new authMod.GoogleAuthProvider())).user.email); },
+  async signOut(){ const {authMod, auth} = await this.fb(); await authMod.signOut(auth); },
+  myClasses(){ return this.run(async ({fs, db, auth}) => {
+    const snap = await fs.getDocs(fs.query(fs.collection(db, 'classes'), fs.where('ownerEmail', '==', auth.currentUser.email)));
+    return snap.docs.map(d => ({code: d.id, ...d.data()})).sort((a,b) => String(a.name).localeCompare(String(b.name)));
+  }); },
+  createClass(name){ return this.run(async ({fs, db, auth}) => {
+    for(let i = 0; i < 6; i++){
+      const code = newClassCode(), ref = fs.doc(db, 'classes', code);
+      if((await fs.getDoc(ref)).exists()) continue;
+      await fs.setDoc(ref, {name, ownerEmail: auth.currentUser.email, created_at: fs.serverTimestamp()});
+      return code;
+    }
+    throw new Error('Could not make a new code. Try again.');
+  }); },
+  renameClass(code, name){ return this.run(({fs, db}) => fs.updateDoc(fs.doc(db, 'classes', code), {name})); },
+  saveAssignment(code, a){ return this.run(({fs, db}) => fs.updateDoc(fs.doc(db, 'classes', code), {scale_assignment: a || null})); },
+
+  // ----- progress: one summary per student per day; only the class's teacher can read it -----
+  saveProgress(id, data){ return this.run(({fs, db}) => fs.setDoc(fs.doc(db, 'scale_progress', id), {...data, updated_at: fs.serverTimestamp()})); },
+  progress(code){ return this.run(async ({fs, db, auth}) => {
+    const snap = await fs.getDocs(fs.query(fs.collection(db, 'scale_progress'), fs.where('owner', '==', auth.currentUser.email), fs.where('class_code', '==', code)));
+    return snap.docs.map(d => d.data());
+  }); },
+  deleteStudent(code, sid){ return this.run(async ({fs, db, auth}) => {
+    const snap = await fs.getDocs(fs.query(fs.collection(db, 'scale_progress'), fs.where('owner', '==', auth.currentUser.email), fs.where('class_code', '==', code)));
+    const b = fs.writeBatch(db); snap.docs.filter(d => d.data().sid === sid).forEach(d => b.delete(d.ref)); await b.commit();
+  }); },
+  // Deletes Scale Quest's scores and progress for a class (the class itself stays: the Rhythm Trainer uses it too).
+  clearClassData(code){ return this.run(async ({fs, db, auth}) => {
+    const a = await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code)));
+    const b = await fs.getDocs(fs.query(fs.collection(db, 'scale_progress'), fs.where('owner', '==', auth.currentUser.email), fs.where('class_code', '==', code)));
+    const docs = [...a.docs, ...b.docs];
+    for(let i = 0; i < docs.length; i += 400){ const w = fs.writeBatch(db); docs.slice(i, i + 400).forEach(d => w.delete(d.ref)); await w.commit(); }
+  }); },
+
+  // ----- leaderboards -----
+  row(d){ const x = d.data(); return {id: d.id, name: x.name, classCode: x.class_code || '', score: x.score, keys: x.key_count, streak: x.streak || 0, accuracy: x.accuracy, date: x.created_at && x.created_at.toDate ? x.created_at.toDate() : new Date()}; },
+  submit(e){ return this.run(async ({fs, db}) => {
+    const data = {name: e.name, score: e.score, points: e.points, streak: e.streak, accuracy: e.accuracy, questions: e.questions, key_count: e.keyCount, key_list: e.keyList, created_at: fs.serverTimestamp()};
+    if(e.classCode) data.class_code = e.classCode;
+    return (await fs.addDoc(fs.collection(db, 'scale_scores'), data)).id;
+  }); },
+  // World Top 10: the 10 best runs (a small read, safe for public traffic).
+  worldTop(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(10)))).docs.map(d => this.row(d))); },
+  worldRank(score){ return this.run(async ({fs, db}) => (await fs.getCountFromServer(fs.query(fs.collection(db, 'scale_scores'), fs.where('score', '>', score)))).data().count + 1); },
+  classAll(code){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code)))).docs.map(d => this.row(d))); },
+  // Class board: each student's best run.
+  async classTop(code){
     const best = {};
-    rows.forEach(x => { const b = best[x.name]; if(!b || x.score > b.score) best[x.name] = {...x, streak: Math.max(x.streak, b ? b.streak : 0)}; else b.streak = Math.max(b.streak, x.streak); });
-    return Object.values(best).sort((a,b) => b.score - a.score).slice(0, 10);
+    for(const x of await this.classAll(code)){ const b = best[x.name]; if(!b || x.score > b.score) best[x.name] = {...x, streak: Math.max(x.streak, b ? b.streak : 0)}; else b.streak = Math.max(b.streak, x.streak); }
+    return Object.values(best).sort((a,b) => b.score - a.score);
   },
-  // One run goes to the world board, and to the class board too when playing with a class code.
-  async save(entry){
-    const db = await this.limit(this.db()), batch = db.batch(), doc = {...entry, created: firebase.firestore.FieldValue.serverTimestamp()};
-    batch.set(this.col(db, 'world').doc(), doc);
-    if(CLASS) batch.set(this.col(db, 'class').doc(), doc);
-    await this.limit(batch.commit());
-    const [world, cls] = await Promise.all([this.top('world'), CLASS ? this.top('class') : []]);
-    return {world, cls};
-  },
+  worldAll(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(300)))).docs.map(d => this.row(d))); },
+  deleteScore(id){ return this.run(({fs, db}) => fs.deleteDoc(fs.doc(db, 'scale_scores', id))); },
 };
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // no 0/O or 1/I/L mix-ups
+const newClassCode = () => Array.from({length: 5}, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+const cleanCode = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const errMsg = e => (e && e.message ? e.message : String(e || 'Something went wrong.'));
 // Best score per student on this device, same shape as the class board.
 function localTop(n){
   const best = {};
@@ -536,18 +677,17 @@ function localTop(n){
 }
 function boardTable(list){
   if(!list.length) return '<p class="dim">No scores yet. Finish a CHAOS run to claim the top spot!</p>';
-  const esc = v => String(v).replace(/[^A-Z0-9?]/gi, '');
   return `<table class="board"><tbody>${list.map((x,i) =>
-    `<tr><td>${i+1}.</td><td>${esc(x.name)}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${esc(x.name)}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 
-/* ---------- class code (from the link, remembered on this device) ---------- */
-const CLASS = (() => {
-  const h = location.hash.replace('#', '').toLowerCase();
-  if(CLASS_CODES.includes(h)){ store.set('classCode', h); return h; }
-  const saved = store.get('classCode', '');
-  return CLASS_CODES.includes(saved) ? saved : '';
-})();
+/* ---------- student profile (welcome screen) ---------- */
+const PROFILE_KEY = 'profile';
+function getProfile(){ const p = store.get(PROFILE_KEY, null); return p && p.first && p.init ? p : null; }
+function setProfile(p){ store.set(PROFILE_KEY, p); }
+const displayName = p => `${p.first.charAt(0).toUpperCase()}${p.first.slice(1)} ${p.init}.`;
+const sidOf = p => (p.first + p.init).toLowerCase().replace(/[^a-z]/g, '');
+const studentKey = p => `${sidOf(p)}:${p.classCode || ''}`;
 
 /* ---------- state ---------- */
 const S = {
@@ -817,8 +957,141 @@ function timerLoop(){
   requestAnimationFrame(timerLoop);
 }
 
+/* ---------- answer log (this device, per student, one week) + class sync ---------- */
+const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const logKey = () => { const p = getProfile(); return 'log:' + (p ? studentKey(p) : 'guest'); };
+function readLog(){ return store.get(logKey(), {}) || {}; }
+function writeLog(log){ const ks = Object.keys(log).sort(); while(ks.length > 7) delete log[ks.shift()]; store.set(logKey(), log); }
+function todayOf(log){ const k = dayKey(); return log[k] || (log[k] = {q: [], runs: []}); }
+// What the student actually answered, so the teacher sees "often played F" next to a miss.
+function pickOf(q){
+  if(q.type === 'build') return '';
+  if(q.type === 'piano'){ const m = [...S.sel][0]; if(m == null) return ''; const i = scaleIdxOfPc(q.key, m % 12); return i >= 0 ? SCALES[q.key][i] : PC_NAMES[m % 12]; }
+  const letter = LETTERS[S.pos % 7], a = effAcc(letter);
+  return letter + (a === 1 ? '#' : a === -1 ? 'b' : '');
+}
+function logAnswer(q, ok){
+  const log = readLog();
+  todayOf(log).q.push({k: q.key, y: q.type[0], d: q.degree || 0, ok: ok ? 1 : 0, pk: ok ? '' : pickOf(q), t0: q.t0 || Date.now(), t1: Date.now(), m: S.run.mode[0]});
+  writeLog(log); scheduleSync(); setTimeout(renderAssignment, 0);
+}
+function logRun(run){ const log = readLog(); todayOf(log).runs.push(run); writeLog(log); scheduleSync(); }
+function activeMinutes(qs){
+  const ts = qs.flatMap(e => [e.t0, e.t1]).filter(Boolean).sort((a,b) => a - b);
+  let ms = 0; for(let i = 1; i < ts.length; i++){ const g = ts[i] - ts[i-1]; if(g <= 10*60*1000) ms += g; }
+  return Math.max(qs.length ? 1 : 0, Math.round(ms / 60000));
+}
+function buildDay(){
+  const day = todayOf(readLog()), qs = day.q, byKey = {}, types = {b:[0,0], p:[0,0], s:[0,0]}, missed = {};
+  let correct = 0;
+  for(const e of qs){
+    correct += e.ok;
+    const k = byKey[e.k] || (byKey[e.k] = [0,0]); k[0] += e.ok; k[1]++;
+    types[e.y][0] += e.ok; types[e.y][1]++;
+    const id = `${e.k}|${e.y === 'b' ? 'b' : e.d}`, m = missed[id] || (missed[id] = {w: 0, n: 0, picks: {}});
+    m.n++; if(!e.ok){ m.w++; if(e.pk) m.picks[e.pk] = (m.picks[e.pk] || 0) + 1; }
+  }
+  const miss = Object.entries(missed).filter(([, m]) => m.w).sort((a,b) => b[1].w - a[1].w).slice(0, 15)
+    .map(([id, m]) => [id, [m.w, m.n, (Object.entries(m.picks).sort((a,b) => b[1] - a[1])[0] || [''])[0]]]);
+  return {date: dayKey(), questions: qs.length, correct, minutes: activeMinutes(qs), byKey, types, missed: Object.fromEntries(miss),
+    runs: day.runs, best: day.runs.reduce((a, r) => Math.max(a, r.s), 0),
+    first: qs.length ? qs[0].t0 : 0, last: qs.length ? qs[qs.length-1].t1 : 0};
+}
+let syncTimer = 0;
+function scheduleSync(){ clearTimeout(syncTimer); syncTimer = setTimeout(syncProgress, 1500); }
+async function syncProgress(){
+  const p = getProfile();
+  if(!Cloud.on || !p || !p.classCode || !p.classOwner) return;
+  const d = buildDay();
+  if(!d.questions && !d.runs.length) return;
+  const data = {class_code: p.classCode, owner: p.classOwner, date: d.date, sid: sidOf(p), student: displayName(p),
+    questions: d.questions, correct: d.correct, minutes: d.minutes, first_at: d.first || Date.now(), last_at: d.last || Date.now(),
+    goal: goalFor(), by_key: d.byKey, types: d.types, missed: d.missed,
+    chaos: d.runs.slice(-20).map(r => ({s: r.s, a: r.a, k: r.k, t: r.t})), best_chaos: d.best};
+  try{ await Cloud.saveProgress(`${p.classCode}_${d.date}_${data.sid}`, data); } catch(e){ console.warn('Progress sync failed:', e); }
+}
+document.addEventListener('visibilitychange', () => { if(document.hidden){ clearTimeout(syncTimer); syncProgress(); } });
+
+/* ---------- assignment (set by the teacher, shown to the class) ---------- */
+S.assignment = null;
+const goalFor = () => (S.assignment && S.assignment.goal) || DAILY_GOAL;
+async function refreshClassInfo(){
+  const p = getProfile();
+  if(!Cloud.on || !p || !p.classCode){ S.assignment = null; renderAssignment(); return; }
+  try{
+    const c = await Cloud.getClass(p.classCode);
+    if(!c){ setProfile({...p, classCode: '', className: '', classOwner: ''}); S.assignment = null; updateWho(); renderAssignment(); renderBoard(); return; }
+    setProfile({...p, className: c.name, classOwner: c.ownerEmail || ''});
+    S.assignment = c.scale_assignment || null;
+    updateWho(); renderAssignment(); scheduleSync();
+  } catch(e){ /* offline: keep playing */ }
+}
+function renderAssignment(){
+  const a = S.assignment, box = $('#assignBanner');
+  $('#attract').classList.toggle('has-assign', !!(a && !S.run));
+  if(!a || S.run){ box.hidden = true; $('#insertMsg').hidden = false; return; }
+  const d = buildDay(), keys = (a.keys || []).filter(k => SCALES[k]);
+  const bits = [a.goal ? `${Math.min(d.questions, a.goal)}/${a.goal} QUESTIONS` : `${d.questions} QUESTIONS`, a.minutes ? `${Math.min(d.minutes, a.minutes)}/${a.minutes} MIN` : `${d.minutes} MIN`];
+  const met = (a.goal || a.minutes) && (!a.goal || d.questions >= a.goal) && (!a.minutes || d.minutes >= a.minutes);
+  const using = keys.length && keys.length === S.selected.size && keys.every(k => S.selected.has(k));
+  box.innerHTML = `<span class="ab-t">ASSIGNMENT</span><span class="ab-k">${keys.map(fmt).join(' ') || 'ANY KEYS'}</span>
+    <span class="ab-p ${met ? 'met' : ''}">${met ? '✓ GOAL MET · ' : 'YOU: '}${bits.join(' · ')}</span>
+    ${keys.length ? (using ? '<span class="ab-u">✓ USING THESE KEYS</span>' : '<button class="btn ab-b" type="button" id="useAssign">USE THESE KEYS</button>') : ''}
+    ${a.note ? `<span class="ab-n">“${esc(a.note)}”</span>` : ''}`;
+  box.hidden = false; $('#insertMsg').hidden = true;
+  const b = $('#useAssign'); if(b) b.onclick = () => { S.selected = new Set(keys); SFX.click(); updateCarts(); renderAssignment(); };
+}
+
+/* ---------- welcome screen + who's playing ---------- */
+function updateWho(){
+  const p = getProfile(), b = $('#whoBtn');
+  b.textContent = p ? `👤 ${displayName(p).toUpperCase()}${p.classCode ? ' · ' + String(p.className).toUpperCase() : ''}` : '👤 SIGN IN';
+}
+function showWelcome(keep){
+  closeOverlay();
+  let p = keep ? getProfile() : null;
+  if(!p && !keep){ try{ const r = JSON.parse(localStorage.getItem('rdt_profile_v1') || 'null'); if(r && r.first && !getProfile()) p = r; } catch(e){} }   // same student from the Rhythm Trainer
+  $('#wFirst').value = p ? p.first : ''; $('#wInit').value = p ? p.init : ''; $('#wCode').value = p ? p.classCode || '' : '';
+  $('#wSolo').checked = !!(p && !p.classCode); $('#wCode').disabled = $('#wSolo').checked; $('#wError').textContent = '';
+  $('#welcome').hidden = false; S.overlay = true;
+  setTimeout(() => (keep ? $('#wCode') : $('#wFirst')).focus(), 50);
+}
+async function submitWelcome(e){
+  e.preventDefault();
+  const first = $('#wFirst').value.trim().replace(/\s+/g, ' '), init = $('#wInit').value.trim().toUpperCase();
+  const solo = $('#wSolo').checked, code = cleanCode($('#wCode').value), err = $('#wError');
+  if(!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ' -]{0,14}$/.test(first)){ err.textContent = 'Enter your first name (letters only).'; $('#wFirst').focus(); return; }
+  if(!/^[A-Z]$/.test(init)){ err.textContent = 'Enter the first letter of your last name.'; $('#wInit').focus(); return; }
+  let className = '', classOwner = '', assignment = null;
+  if(!solo){
+    if(!code){ err.textContent = 'Enter the class code from your teacher, or check "I\'m not in a class."'; $('#wCode').focus(); return; }
+    $('#wGo').disabled = true; $('#wGo').textContent = 'CHECKING...';
+    try{
+      const c = await Cloud.getClass(code);
+      if(!c){ err.textContent = "We couldn't find that class code. Check it with your teacher."; $('#wCode').focus(); return; }
+      className = c.name; classOwner = c.ownerEmail || ''; assignment = c.scale_assignment || null;
+    } catch(ex){ err.textContent = `Couldn't check the code: ${errMsg(ex)}`; return; }
+    finally{ $('#wGo').disabled = false; $('#wGo').textContent = 'PRESS START'; }
+  }
+  setProfile({first, init, classCode: solo ? '' : code, className, classOwner});
+  S.assignment = assignment;
+  $('#welcome').hidden = true; S.overlay = false;
+  SFX.level(); updateWho(); renderAssignment(); renderBoard();
+}
+function whoMenu(){
+  if(S.overlay) return;
+  const p = getProfile(); if(!p){ showWelcome(false); return; }
+  const o = openOverlay(`<h2 class="otitle">${esc(displayName(p).toUpperCase())}</h2>
+    <p class="osub">${p.classCode ? `Class: <b>${esc(p.className)}</b> (code ${esc(p.classCode)})` : 'Not in a class: your scores go on the World board only.'}</p>
+    <div class="obtns"><button class="btn obtn alt" type="button" id="whoClose">CLOSE</button><button class="btn obtn" type="button" id="whoClass">CHANGE CLASS</button><button class="btn obtn mag" type="button" id="whoSwitch">SWITCH STUDENT</button></div>`);
+  o.querySelector('#whoClose').onclick = closeOverlay;
+  o.querySelector('#whoClass').onclick = () => showWelcome(true);
+  o.querySelector('#whoSwitch').onclick = () => showWelcome(false);
+}
+
 /* ---------- run flow ---------- */
 function setPlaying(on){
+  setTimeout(renderAssignment, 0);
   $('#app').classList.toggle('playing', on);
   $('#keySelect').classList.toggle('locked', on);
   $('#lockMsg').hidden = !on;
@@ -864,7 +1137,7 @@ function nextQuestion(){
   }
   r.lastKey = key; r.lastInstr = type === 'staff' ? 'staff' : 'piano';
   const degree = type === 'build' ? null : pickDegree(key);
-  r.q = {key, type, degree, answer: degree ? SCALES[key][(degree-1) % 7] : null, tries:0};
+  r.q = {key, type, degree, answer: degree ? SCALES[key][(degree-1) % 7] : null, tries:0, t0: Date.now()};
   renderQuestion();
 }
 function renderQuestion(){
@@ -923,7 +1196,7 @@ function onCorrect(){
   if(r.mode === 'chaos') r.times.push(elapsed());
   let bonus = 0;
   if(r.streak === 3) bonus = 50; else if(r.streak === 5) bonus = 100; else if(r.streak % 10 === 0) bonus = 250;
-  r.score += pts + speed + bonus; stat(q.key, true);
+  r.score += pts + speed + bonus; stat(q.key, true); logAnswer(q, true);
   flash('ok'); SFX.coin(); popup('+' + (pts + speed));
   if(speed) setTimeout(() => popup(`SPEED +${speed} · ${elapsed().toFixed(1)}s`, 'speed'), 120);
   if(bonus){ SFX.streak(); setTimeout(() => popup(`STREAK x${r.streak}! +${bonus}`, 'streak'), 250); }
@@ -1019,6 +1292,7 @@ function onWrong(){
     return;
   }
   S.busy = true; $('#submitBtn').disabled = true;
+  logAnswer(q, false);
   r.streak = 0; r.lives--; stat(q.key, false);
   flash('bad'); SFX.buzz();
   if(q.type === 'build'){
@@ -1129,32 +1403,29 @@ function endRun(reason){
     ${bars ? `<div class="bars">${bars}</div>` : '<p class="osub dim">No questions answered.</p>'}
     ${weak ? `<p class="weak">PRACTICE NEXT: ${fmt(weak.k)} MAJOR</p>` : (total ? '<p class="weak" style="color:var(--ok)">FLAWLESS! EVERY KEY AT 100%</p>' : '')}
     ${why ? `<p class="osub dim" style="font-size:20px">${why}</p>` : ''}
-    ${eligible ? `<form class="initials" id="initForm"><label for="initials">ENTER INITIALS</label>
-      <input id="initials" maxlength="3" autocomplete="off" value="${store.get('lastName','')}" data-focus>
-      <button class="btn obtn mag" type="submit">SAVE</button></form>` : ''}
+    ${eligible ? `<div class="initials" id="postArea">${getProfile()
+      ? `<button class="btn obtn mag" type="button" id="postBtn" data-focus>POST MY SCORE AS ${esc(displayName(getProfile()).toUpperCase())}</button>`
+      : '<button class="btn obtn mag" type="button" id="signInPost" data-focus>ENTER YOUR NAME TO POST</button>'}</div>` : ''}
     <div class="obtns"><button class="btn obtn" id="againBtn" type="button">PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, reason === 'quit' ? 'mag' : '');
-  const form = p.querySelector('#initForm');
-  if(form) form.addEventListener('submit', e => {
-    e.preventDefault();
-    const name = (p.querySelector('#initials').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3)) || '???';
-    if(BLOCKED_INITIALS.includes(name)){ p.querySelector('.initials label').textContent = 'PICK DIFFERENT INITIALS'; p.querySelector('#initials').value = ''; p.querySelector('#initials').focus(); SFX.soft(); return; }
+  if(ranked) logRun({s: final, a: acc, k: r.keys.length, t: Date.now()});
+  const sp = p.querySelector('#signInPost'); if(sp) sp.onclick = () => showWelcome(false);
+  const post = p.querySelector('#postBtn');
+  if(post) post.onclick = async () => {
+    const me = getProfile(), name = displayName(me), area = p.querySelector('#postArea');
     const list = store.get('ranked', []);
-    list.push({n:name, s:final, b:r.best, k:r.keys.length});
-    list.sort((a,b) => b.s - a.s); store.set('ranked', list.slice(0,30)); store.set('lastName', name);
+    list.push({n: name, s: final, b: r.best, k: r.keys.length});
+    list.sort((a,b) => b.s - a.s); store.set('ranked', list.slice(0, 30));
     SFX.coin();
-    if(!remote.on()){ form.outerHTML = `<p class="weak" style="color:var(--yel)">SAVED FOR ${name}!</p>`; return; }
-    form.outerHTML = '<p class="weak" style="color:var(--yel)" id="saveMsg">SAVING...</p>';
-    const msg = p.querySelector('#saveMsg');
-    remote.save({name, score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: r.keys.length, keys: r.keys.join(' ')})
-      .then(({world, cls}) => {
-        const w = world.findIndex(x => x.name === name && x.score === final), c = cls.findIndex(x => x.name === name && x.score === final);
-        const bits = [];
-        if(c >= 0) bits.push(`#${c+1} IN CLASS`);
-        if(w >= 0) bits.push(`#${w+1} IN THE WORLD`);
-        msg.textContent = bits.length ? `SAVED! ${name} IS ${bits.join(' · ')}` : `SAVED, ${name}! KEEP PRACTICING TO CLIMB THE BOARD.`;
-      })
-      .catch(() => { msg.textContent = 'SAVED ON THIS DEVICE. LEADERBOARD UNREACHABLE.'; msg.style.color = 'var(--bad)'; });
-  });
+    if(!Cloud.on){ area.innerHTML = `<p class="weak" style="color:var(--yel)">SAVED FOR ${esc(name.toUpperCase())}!</p>`; return; }
+    area.innerHTML = '<p class="weak" style="color:var(--yel)">POSTING...</p>';
+    try{
+      await Cloud.submit({name, classCode: me.classCode || '', score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: r.keys.length, keyList: r.keys.join(' ')});
+      const [w, cls] = await Promise.all([Cloud.worldRank(final), me.classCode ? Cloud.classTop(me.classCode) : null]);
+      const c = cls ? cls.findIndex(x => x.name === name) + 1 : 0;
+      const bits = [c ? `#${c} IN ${esc(String(me.className).toUpperCase())}` : '', `#${w} IN THE WORLD`].filter(Boolean);
+      area.innerHTML = `<p class="weak" style="color:var(--yel)">POSTED! ${bits.join(' · ')}</p>`;
+    } catch(err){ area.innerHTML = `<p class="weak" style="color:var(--bad)">SAVED ON THIS DEVICE. ${esc(errMsg(err)).toUpperCase()}</p>`; }
+  };
   p.querySelector('#againBtn').onclick = () => startRun(r.mode);
   p.querySelector('#menuBtn').onclick = toMenu;
 }
@@ -1162,38 +1433,36 @@ function toMenu(){
   closeOverlay(); S.run = null; S.busy = false;
   setPlaying(false); renderBoard(); updateCarts();
 }
+function markMe(list){ const p = getProfile(), n = p ? displayName(p) : null; return list.map(x => ({...x, me: x.name === n})); }
 function renderBoard(){
-  const wrap = $('#boardWrap');
-  if(!remote.on()){ $('#boardTitle').textContent = 'HIGH SCORES'; wrap.innerHTML = boardTable(localTop(5)); return; }
-  const board = CLASS ? 'class' : 'world';
-  $('#boardTitle').textContent = CLASS ? `MY CLASS · ${CLASS.toUpperCase()}` : 'WORLD TOP 5';
+  const wrap = $('#boardWrap'), p = getProfile();
+  if(!Cloud.on){ $('#boardTitle').textContent = 'HIGH SCORES'; wrap.innerHTML = boardTable(markMe(localTop(5))); return; }
+  const cls = p && p.classCode;
+  $('#boardTitle').textContent = cls ? `${String(p.className).toUpperCase()} TOP 5` : 'WORLD TOP 5';
   wrap.innerHTML = '<p class="dim">LOADING...</p>';
-  remote.top(board)
-    .then(list => { wrap.innerHTML = boardTable(list.slice(0,5)); })
-    .catch(() => { wrap.innerHTML = boardTable(localTop(5)) + '<p class="boardnote">Leaderboard is offline. Showing this device.</p>'; });
+  (cls ? Cloud.classTop(p.classCode) : Cloud.worldTop())
+    .then(list => { wrap.innerHTML = boardTable(markMe(list.slice(0,5))); })
+    .catch(() => { wrap.innerHTML = boardTable(markMe(localTop(5))) + '<p class="boardnote">Leaderboard is offline. Showing this device.</p>'; });
 }
 function boardPanel(){
-  const tabs = remote.on() ? [...(CLASS ? [['class', 'MY CLASS']] : []), ['world', 'WORLD TOP 10'], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
+  const pr = getProfile();
+  const tabs = Cloud.on ? [...(pr && pr.classCode ? [['class', String(pr.className).toUpperCase()]] : []), ['world', 'WORLD TOP 10'], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
   const p = openOverlay(`
     <h2 class="otitle">BEST SCORES</h2>
-    ${tabs.length > 1 ? `<div class="otabs" role="group" aria-label="Which scores">${tabs.map(([k,l]) => `<button type="button" data-tab="${k}" aria-pressed="false">${l}</button>`).join('')}</div>` : ''}
+    ${tabs.length > 1 ? `<div class="otabs" role="group" aria-label="Which scores">${tabs.map(([k,l]) => `<button type="button" data-tab="${k}" aria-pressed="false">${esc(l)}</button>`).join('')}</div>` : ''}
     <p class="boardnote" id="bpNote"></p>
     <div id="bpList" style="width:100%"></div>
     <div class="obtns"><button class="btn obtn alt" id="bpRefresh" type="button">REFRESH</button><button class="btn obtn" id="bpClose" type="button" data-focus>CLOSE</button></div>`);
   let tab = tabs[0][0];
-  const NOTES = {
-    class: `Each student's best CHAOS run in class ${CLASS.toUpperCase()}.`,
-    world: 'The 10 best CHAOS runs from everyone who plays.',
-    device: 'Scores saved on this computer.',
-  };
+  const NOTES = {class: `Each student's best CHAOS run in ${pr && pr.className}.`, world: 'The 10 best CHAOS runs from everyone who plays.', device: 'Scores saved on this computer.'};
   const show = () => {
-    const el = p.querySelector('#bpList');
+    const el = p.querySelector('#bpList'), want = tab;
     p.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tab === tab));
     p.querySelector('#bpNote').textContent = NOTES[tab];
-    if(tab === 'device'){ el.innerHTML = boardTable(localTop(10)); return; }
-    const want = tab;
+    if(tab === 'device'){ el.innerHTML = boardTable(markMe(localTop(10))); return; }
     el.innerHTML = '<p class="dim">LOADING...</p>';
-    remote.top(want).then(list => { if(tab === want) el.innerHTML = boardTable(list); })
+    (tab === 'class' ? Cloud.classTop(pr.classCode).then(l => l.slice(0, 10)) : Cloud.worldTop())
+      .then(list => { if(tab === want) el.innerHTML = boardTable(markMe(list)); })
       .catch(() => { if(tab === want) el.innerHTML = '<p class="dim">Couldn\'t reach the leaderboard. Check your internet and press REFRESH.</p>'; });
   };
   p.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; show(); });
@@ -1221,13 +1490,264 @@ function setupPanel(){
     <h2 class="otitle">SETUP</h2>
     <label class="toggle" for="ksToggle"><input type="checkbox" id="ksToggle" ${S.keySig ? 'checked' : ''}> Show key signature on staff</label>
     <p class="osub dim" style="font-size:20px">When on, the staff shows the key's sharps or flats, so students don't need the accidental buttons.</p>
-    <button class="btn obtn" id="closeSetup" type="button">DONE</button>`);
+    <div class="obtns"><button class="btn obtn alt" id="openTeacher" type="button">TEACHER DASHBOARD</button><button class="btn obtn" id="closeSetup" type="button">DONE</button></div>`);
+  p.querySelector('#openTeacher').onclick = teacherLogin;
   p.querySelector('#ksToggle').onchange = e => {
     S.keySig = e.target.checked; store.set('keySig', S.keySig);
     if(S.run && S.run.q && S.run.q.type === 'staff' && !S.busy){ drawKeySig(S.run.q.key); renderQuestion(); }
   };
   p.querySelector('#closeSetup').onclick = closeOverlay;
 }
+
+/* ---------- teacher dashboard ----------
+   Sign in with Google. Shows live practice for each of your classes,
+   lets you set an assignment, manage classes (shared with the Rhythm
+   Trainer) and clean up leaderboard scores. */
+const TD = {email: null, classes: [], code: null, tab: 'progress', range: 'today', date: dayKey(), docs: [], sort: {key: 'minutes', dir: -1}, open: null, timer: 0, scope: null};
+const pctOf = (c, n) => n ? Math.round(100 * c / n) : 0;
+const toneOf = x => x >= 0.85 ? 'hi' : x >= 0.65 ? 'mid' : 'lo';
+const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return dayKey(d); };
+const fmtClock = t => new Date(t).toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'});
+const relTime = t => { const m = Math.round((Date.now() - t) / 60000); return m < 2 ? 'Active now' : m < 60 ? `${m} min ago` : fmtClock(t); };
+const TYPE_NAME = {b: 'Build the scale', p: 'Piano notes', s: 'Staff notes'};
+const missLabel = id => { const [k, d] = id.split('|'); return d === 'b' ? `Build ${fmt(k)} major` : `${ORD[+d]} of ${fmt(k)} major`; };
+const tdClass = () => TD.classes.find(c => c.code === TD.code);
+
+function teacherLogin(){
+  const o = openOverlay(`<h2 class="otitle">TEACHER</h2>
+    <p class="osub">Sign in with Google to see your classes' progress, set assignments and manage scores. Use the same account as the Rhythm Trainer.</p>
+    <p class="werr" id="tlErr"></p>
+    <div class="obtns"><button class="btn obtn alt" type="button" id="tlCancel">CANCEL</button><button class="btn obtn" type="button" id="tlGo" data-focus>SIGN IN WITH GOOGLE</button></div>`);
+  o.querySelector('#tlCancel').onclick = closeOverlay;
+  o.querySelector('#tlGo').onclick = async () => {
+    try{ TD.email = await Cloud.signIn(); closeOverlay(); openTeacherView(); }
+    catch(err){ o.querySelector('#tlErr').textContent = errMsg(err); }
+  };
+}
+async function openTeacherView(){
+  if(S.run){ S.run.ended = true; toMenu(); }
+  $('#app').classList.add('teacher'); $('#teacherView').hidden = false; window.scrollTo({top: 0});
+  $('#tdWho').textContent = `Signed in as ${TD.email}`;
+  await tdLoadClasses(); tdRender();
+}
+function closeTeacherView(){ clearInterval(TD.timer); $('#app').classList.remove('teacher'); $('#teacherView').hidden = true; refreshClassInfo(); renderBoard(); }
+async function tdLoadClasses(){
+  $('#tdErr').textContent = '';
+  try{ TD.classes = await Cloud.myClasses(); } catch(err){ TD.classes = []; $('#tdErr').textContent = errMsg(err); }
+  if(!TD.classes.some(c => c.code === TD.code)) TD.code = TD.classes.length ? TD.classes[0].code : null;
+  $('#tdClass').innerHTML = TD.classes.length ? TD.classes.map(c => `<option value="${esc(c.code)}">${esc(c.name)} · ${esc(c.code)}</option>`).join('') : '<option value="">No classes yet</option>';
+  $('#tdClass').value = TD.code || '';
+}
+function tdRender(){
+  clearInterval(TD.timer);
+  if(!TD.code && (TD.tab === 'progress' || TD.tab === 'assign')) TD.tab = 'classes';
+  for(const b of $('#tdTabs').children) b.setAttribute('aria-pressed', String(b.dataset.tab === TD.tab));
+  ({progress: tdProgress, assign: tdAssign, classes: tdClasses, scores: tdScores})[TD.tab]();
+}
+
+// ----- Progress -----
+function mergeDocs(docs){
+  const by = {};
+  const add = (into, k, c, n) => { const a = into[k] || (into[k] = {c: 0, n: 0}); a.c += c; a.n += n; };
+  for(const d of docs){
+    const s = by[d.sid] || (by[d.sid] = {sid: d.sid, student: d.student, questions: 0, correct: 0, minutes: 0, first: Infinity, last: 0, byKey: {}, types: {}, missed: {}, chaos: [], best: 0, days: 0});
+    s.days++; s.student = d.student;
+    s.questions += d.questions || 0; s.correct += d.correct || 0; s.minutes += d.minutes || 0;
+    s.first = Math.min(s.first, d.first_at || Infinity); s.last = Math.max(s.last, d.last_at || 0);
+    for(const [k, [c, n]] of Object.entries(d.by_key || {})) add(s.byKey, k, c, n);
+    for(const [k, [c, n]] of Object.entries(d.types || {})) if(n) add(s.types, k, c, n);
+    for(const [id, [w, n, pick]] of Object.entries(d.missed || {})){ const a = s.missed[id] || (s.missed[id] = {w: 0, n: 0, picks: {}}); a.w += w; a.n += n; if(pick) a.picks[pick] = (a.picks[pick] || 0) + w; }
+    s.chaos.push(...(d.chaos || [])); s.best = Math.max(s.best, d.best_chaos || 0);
+  }
+  return Object.values(by).map(s => {
+    s.acc = s.questions ? s.correct / s.questions : 0;
+    const rated = Object.entries(s.byKey).filter(([, v]) => v.n >= 3).map(([k, v]) => ({k, acc: v.c / v.n}));
+    s.weak = rated.filter(x => x.acc < 0.85).sort((a,b) => a.acc - b.acc).slice(0, 3);
+    s.strong = rated.filter(x => x.acc >= 0.85).sort((a,b) => b.acc - a.acc).slice(0, 3);
+    return s;
+  });
+}
+function rangeDocs(){
+  const r = TD.range, keep = r === 'today' ? d => d.date === dayKey() : r === 'yesterday' ? d => d.date === daysAgo(1) : r === 'week' ? d => d.date >= daysAgo(6) : d => d.date === TD.date;
+  return TD.docs.filter(keep);
+}
+const rangeLabel = () => ({today: 'Today', yesterday: 'Yesterday', week: 'Last 7 days'}[TD.range] || TD.date);
+const hbars = rows => rows.map(([label, v, extra]) => `<div class="hbar"><span>${esc(label)}</span><span class="tr"><i class="${toneOf(v.c / v.n)}" style="width:${pctOf(v.c, v.n)}%"></i></span><b>${pctOf(v.c, v.n)}%</b><small>${extra || `${v.n} answers`}</small></div>`).join('');
+const missRows = (entries) => entries.map(([id, v]) => { const pick = Object.entries(v.picks || {}).sort((a,b) => b[1] - a[1])[0];
+  return `<div class="miss"><span>${esc(missLabel(id))}</span><small>missed ${v.w} of ${v.n}${pick ? ` · often answered ${esc(fmt(pick[0]))}` : ''}${v.kids ? ` · ${v.kids} student${v.kids > 1 ? 's' : ''}` : ''}</small></div>`; }).join('');
+
+async function tdProgress(keep){
+  const body = $('#tdBody');
+  if(!keep) body.innerHTML = '<p class="dim">Loading progress...</p>';
+  try{ TD.docs = await Cloud.progress(TD.code); $('#tdErr').textContent = ''; } catch(err){ $('#tdErr').textContent = errMsg(err); TD.docs = []; }
+  const studs = mergeDocs(rangeDocs()), k = TD.sort.key, dir = TD.sort.dir;
+  studs.sort((a,b) => (k === 'student' ? String(a.student).localeCompare(String(b.student)) : (a[k] - b[k])) * dir);
+  const cls = tdClass(), a = cls && cls.scale_assignment;
+  const qs = studs.reduce((t, s) => t + s.questions, 0), cor = studs.reduce((t, s) => t + s.correct, 0), mins = studs.reduce((t, s) => t + s.minutes, 0);
+  const active = studs.filter(s => Date.now() - s.last < 2*60000).length;
+  const byKey = {}, types = {}, missed = {};
+  for(const s of studs){
+    for(const [kk, v] of Object.entries(s.byKey)){ const x = byKey[kk] || (byKey[kk] = {c: 0, n: 0, kids: 0, low: 0}); x.c += v.c; x.n += v.n; if(v.n >= 3){ x.kids++; if(v.c / v.n < 0.7) x.low++; } }
+    for(const [kk, v] of Object.entries(s.types)){ const x = types[kk] || (types[kk] = {c: 0, n: 0}); x.c += v.c; x.n += v.n; }
+    for(const [id, v] of Object.entries(s.missed)){ const x = missed[id] || (missed[id] = {w: 0, n: 0, kids: 0, picks: {}}); x.w += v.w; x.n += v.n; x.kids++; for(const [pk, c] of Object.entries(v.picks)) x.picks[pk] = (x.picks[pk] || 0) + c; }
+  }
+  const keyRows = PLAY_ORDER.filter(kk => byKey[kk]).map(kk => [fmt(kk) + ' major', byKey[kk], byKey[kk].kids ? `${byKey[kk].low} of ${byKey[kk].kids} <70%` : '']).sort((x, y) => x[1].c / x[1].n - y[1].c / y[1].n);
+  const typeRows = Object.keys(TYPE_NAME).filter(t => types[t]).map(t => [TYPE_NAME[t], types[t]]);
+  const topMissed = Object.entries(missed).sort((x, y) => y[1].w - x[1].w).slice(0, 8);
+  const goal = a && a.goal;
+  const th = (key, label) => `<th data-sort="${key}" class="${TD.sort.key === key ? 'sorted' : ''}">${label}</th>`;
+  const rows = studs.map(s => `<tr data-sid="${esc(s.sid)}" class="${TD.open === s.sid ? 'open' : ''}">
+      <td><span class="dot ${Date.now() - s.last < 2*60000 ? 'on' : ''}"></span><b>${esc(s.student)}</b></td>
+      <td>${s.minutes} min</td><td>${s.questions}${goal && TD.range === 'today' ? ` <span class="dim">/ ${goal}</span>` : ''}</td>
+      <td><span class="chip ${toneOf(s.acc)}">${pctOf(s.correct, s.questions)}%</span></td><td>${s.best || '<span class="dim">—</span>'}</td>
+      <td>${s.weak.length ? s.weak.map(w => `${esc(fmt(w.k))} <span class="dim">${Math.round(w.acc * 100)}%</span>`).join(', ') : '<span class="dim">—</span>'}</td>
+      <td class="dim">${TD.range === 'today' ? relTime(s.last) : `${s.days} day${s.days > 1 ? 's' : ''}`}</td></tr>
+      ${TD.open === s.sid ? `<tr><td colspan="7">${tdStudentDetail(s)}</td></tr>` : ''}`).join('');
+  body.innerHTML = `
+    <div class="td-sub">
+      <select id="tdRange" aria-label="Date range"><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="week">Last 7 days</option><option value="date">Pick a date...</option></select>
+      <input type="date" id="tdDate" value="${TD.date}" ${TD.range === 'date' ? '' : 'hidden'} aria-label="Date">
+      <button class="btn tbtn sm" type="button" id="tdRefresh">REFRESH</button>
+      <button class="btn tbtn sm" type="button" id="tdCsv" ${studs.length ? '' : 'disabled'}>EXPORT CSV</button>
+      ${TD.range === 'today' ? '<span class="td-live">● LIVE · UPDATES EVERY 30 SECONDS</span>' : ''}
+    </div>
+    ${a ? `<p class="dim" style="margin:0">Assignment: <b>${(a.keys || []).map(fmt).join(' ') || 'any keys'}</b>${a.goal ? ` · ${a.goal} questions` : ''}${a.minutes ? ` · ${a.minutes} min` : ''}</p>` : ''}
+    <div class="td-tiles">
+      <div><span>STUDENTS</span><b>${studs.length}${TD.range === 'today' ? ` <small class="dim" style="font-size:9px">${active} ACTIVE</small>` : ''}</b></div>
+      <div><span>AVG TIME</span><b>${studs.length ? Math.round(mins / studs.length) : 0} MIN</b></div>
+      <div><span>QUESTIONS</span><b>${qs}</b></div>
+      <div><span>CLASS ACCURACY</span><b>${qs ? pctOf(cor, qs) + '%' : '—'}</b></div>
+    </div>
+    ${studs.length ? `
+    <div class="td-grid">
+      <div class="td-sec"><h3>ACCURACY BY KEY (WEAKEST FIRST)</h3>${hbars(keyRows)}<h3 style="margin-top:12px">BY QUESTION TYPE</h3>${hbars(typeRows)}</div>
+      <div class="td-sec"><h3>MOST-MISSED QUESTIONS</h3>${topMissed.length ? missRows(topMissed) : '<p class="dim">No misses yet.</p>'}</div>
+    </div>
+    <div class="td-sec"><h3>STUDENTS <span class="dim" style="font-family:var(--vt);font-size:18px">(click a name for details)</span></h3>
+      <div style="overflow-x:auto"><table class="td-table"><thead><tr>${th('student', 'STUDENT')}${th('minutes', 'TIME')}${th('questions', 'QUESTIONS')}${th('acc', 'ACCURACY')}${th('best', 'BEST CHAOS')}<th>WEAKEST KEYS</th><th>${TD.range === 'today' ? 'LAST ACTIVE' : 'DAYS'}</th></tr></thead><tbody>${rows}</tbody></table></div>
+    </div>` : `<p class="dim">No practice yet for ${esc(rangeLabel().toLowerCase())}. Students show up here as soon as they answer a question with class code <b>${esc(TD.code)}</b>.</p>`}`;
+  $('#tdRange').value = TD.range;
+  $('#tdRange').onchange = () => { TD.range = $('#tdRange').value; TD.open = null; tdProgress(); };
+  $('#tdDate').onchange = () => { TD.date = $('#tdDate').value; tdProgress(); };
+  $('#tdRefresh').onclick = () => tdProgress(true);
+  $('#tdCsv').onclick = () => tdCsv(studs);
+  body.querySelectorAll('[data-sort]').forEach(h => h.onclick = () => { const key = h.dataset.sort; TD.sort = {key, dir: TD.sort.key === key ? -TD.sort.dir : (key === 'student' ? 1 : -1)}; tdProgress(true); });
+  body.querySelectorAll('tr[data-sid]').forEach(r => r.onclick = () => { TD.open = TD.open === r.dataset.sid ? null : r.dataset.sid; tdProgress(true); });
+  const del = $('#tdDelStudent');
+  if(del) del.onclick = e => {
+    e.stopPropagation();
+    const st = studs.find(x => x.sid === TD.open);
+    const o = openOverlay(`<h2 class="otitle">REMOVE ${esc(st.student.toUpperCase())}?</h2><p class="osub">This deletes ${esc(st.student)}'s saved Scale Quest practice in ${esc(cls.name)}. Use it for test entries or a student who joined the wrong class.</p>
+      <p class="werr" id="dErr"></p><div class="obtns"><button class="btn obtn alt" type="button" id="dNo">CANCEL</button><button class="btn obtn mag" type="button" id="dYes">REMOVE</button></div>`, 'mag');
+    o.querySelector('#dNo').onclick = closeOverlay;
+    o.querySelector('#dYes').onclick = async () => { try{ await Cloud.deleteStudent(TD.code, st.sid); closeOverlay(); TD.open = null; tdProgress(); } catch(err){ o.querySelector('#dErr').textContent = errMsg(err); } };
+  };
+  if(TD.range === 'today') TD.timer = setInterval(() => { if(!document.hidden && TD.tab === 'progress' && !$('#teacherView').hidden && !S.overlay) tdProgress(true); }, 30000);
+}
+function tdStudentDetail(s){
+  const keyRows = PLAY_ORDER.filter(k => s.byKey[k]).map(k => [fmt(k) + ' major', s.byKey[k]]);
+  const typeRows = Object.keys(TYPE_NAME).filter(t => s.types[t]).map(t => [TYPE_NAME[t], s.types[t]]);
+  const missed = Object.entries(s.missed).sort((a,b) => b[1].w - a[1].w).slice(0, 8);
+  const runs = s.chaos.slice(-5).map(r => `${r.s} (${r.a}% · ${r.k} key${r.k > 1 ? 's' : ''})`).join(', ');
+  return `<div style="padding:6px 0">
+    <p style="margin:0 0 8px"><b>${esc(s.student)}</b> · ${s.minutes} min · ${s.questions} questions · CHAOS runs: ${s.chaos.length ? `${s.chaos.length}, best ${s.best}` : 'none'}${s.first !== Infinity ? ` · ${fmtClock(s.first)}–${fmtClock(s.last)}` : ''}</p>
+    ${runs ? `<p class="dim" style="margin:0 0 8px">Recent CHAOS: ${runs}</p>` : ''}
+    <div class="td-grid">
+      <div><h3 class="dim" style="font-family:var(--px);font-size:8px">KEYS</h3>${hbars(keyRows)}<h3 class="dim" style="font-family:var(--px);font-size:8px;margin-top:10px">QUESTION TYPES</h3>${hbars(typeRows)}</div>
+      <div><h3 class="dim" style="font-family:var(--px);font-size:8px">MOST MISSED</h3>${missed.length ? missRows(missed) : '<p class="dim">No misses.</p>'}</div>
+    </div>
+    <div class="obtns" style="justify-content:flex-start;margin-top:8px"><button class="btn tbtn sm" type="button" id="tdDelStudent">REMOVE THIS STUDENT'S DATA</button></div>
+  </div>`;
+}
+function tdCsv(studs){
+  const cls = tdClass(), q = v => `"${String(v).replace(/"/g, '""')}"`;
+  const head = ['Student', 'Range', 'Minutes', 'Questions', 'Accuracy %', 'Build accuracy %', 'Piano accuracy %', 'Staff accuracy %', 'CHAOS runs', 'Best CHAOS', 'Weakest keys', 'Strongest keys'];
+  const lines = [head.map(q).join(',')].concat(studs.map(s => [s.student, rangeLabel(), s.minutes, s.questions, pctOf(s.correct, s.questions),
+    ...['b', 'p', 's'].map(t => s.types[t] ? pctOf(s.types[t].c, s.types[t].n) : ''), s.chaos.length, s.best || '',
+    s.weak.map(w => `${fmt(w.k)} ${Math.round(w.acc * 100)}%`).join('; '), s.strong.map(w => `${fmt(w.k)} ${Math.round(w.acc * 100)}%`).join('; ')].map(q).join(',')));
+  const blob = new Blob([lines.join('\n')], {type: 'text/csv'}), link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `scale-quest-${(cls ? cls.name : 'class').replace(/[^A-Za-z0-9]+/g, '-')}-${TD.range === 'date' ? TD.date : TD.range}.csv`;
+  document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+}
+
+// ----- Assignment -----
+function tdAssign(){
+  const cls = tdClass(), a = (cls && cls.scale_assignment) || {}, picked = new Set(a.keys || []);
+  $('#tdBody').innerHTML = `
+    <p class="dim" style="margin:0">Choose the keys <b>${esc(cls.name)}</b> should practice. Students see a banner with a <b>USE THESE KEYS</b> button and their progress toward the goal. It stays until you change or clear it.</p>
+    <div class="td-sec"><h3>KEYS</h3><div class="td-keys" id="aKeys">${PLAY_ORDER.map(k => `<button type="button" data-k="${k}" aria-pressed="${picked.has(k)}">${fmt(k)}</button>`).join('')}</div></div>
+    <form class="td-form" id="assignForm" onsubmit="return false">
+      <label>GOAL: QUESTIONS<input id="aGoal" type="number" min="0" max="500" value="${a.goal ?? DAILY_GOAL}"></label>
+      <label>GOAL: MINUTES<input id="aMinutes" type="number" min="0" max="240" value="${a.minutes || ''}" placeholder="optional"></label>
+      <span></span>
+      <label class="wide">NOTE TO STUDENTS<input id="aNote" maxlength="140" value="${esc(a.note || '')}" placeholder="optional, e.g. Watch out for the sharps in D and A"></label>
+    </form>
+    <div class="obtns" style="justify-content:flex-start"><button class="btn obtn" type="button" id="aSave">SAVE ASSIGNMENT</button>${cls.scale_assignment ? '<button class="btn obtn alt" type="button" id="aClear">CLEAR ASSIGNMENT</button>' : ''}</div>`;
+  $('#aKeys').onclick = e => { const b = e.target.closest('[data-k]'); if(b) b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); };
+  $('#aSave').onclick = async () => {
+    const keys = [...$('#aKeys').querySelectorAll('[aria-pressed="true"]')].map(b => b.dataset.k);
+    const assignment = {keys, goal: Math.max(0, Math.min(500, +$('#aGoal').value || 0)), minutes: Math.max(0, Math.min(240, +$('#aMinutes').value || 0)), note: $('#aNote').value.trim().slice(0, 140), set_at: Date.now()};
+    try{ await Cloud.saveAssignment(TD.code, assignment); cls.scale_assignment = assignment; $('#tdErr').textContent = ''; tdAssign(); popupMsg(`Assignment saved for ${cls.name}.`); }
+    catch(err){ $('#tdErr').textContent = errMsg(err); }
+  };
+  const clr = $('#aClear');
+  if(clr) clr.onclick = async () => { try{ await Cloud.saveAssignment(TD.code, null); cls.scale_assignment = null; tdAssign(); popupMsg('Assignment cleared.'); } catch(err){ $('#tdErr').textContent = errMsg(err); } };
+}
+function popupMsg(text){ const e = $('#tdErr'); e.style.color = 'var(--ok)'; e.textContent = text; setTimeout(() => { e.textContent = ''; e.style.color = ''; }, 3000); }
+
+// ----- Classes (shared with the Rhythm Trainer) -----
+function tdClasses(){
+  const rows = TD.classes.map(c => `<tr><td><b>${esc(c.name)}</b></td><td><span class="code-pill">${esc(c.code)}</span></td><td class="dim">${c.scale_assignment ? esc((c.scale_assignment.keys || []).map(fmt).join(' ') || 'any keys') : 'No assignment'}</td>
+    <td style="text-align:right;white-space:nowrap"><button class="btn tbtn sm" type="button" data-rename="${esc(c.code)}">RENAME</button> <button class="btn tbtn sm" type="button" data-clear="${esc(c.code)}">CLEAR SCALE QUEST DATA</button></td></tr>`).join('');
+  $('#tdBody').innerHTML = `
+    <p class="dim" style="margin:0">These are the same classes and codes as the Rhythm Trainer. Students type the code on the welcome screen; from then on their practice shows up in <b>PROGRESS</b> and their CHAOS scores go on that class's board. (To delete a class completely, use the Rhythm Trainer's dashboard.)</p>
+    ${TD.classes.length ? `<div style="overflow-x:auto"><table class="t-table"><thead><tr><th>CLASS</th><th>CODE</th><th>ASSIGNMENT</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p><b>No classes yet.</b> Make your first one below.</p>'}
+    <form class="t-row" id="newClassForm"><input id="newClassName" maxlength="40" placeholder="New class name, e.g. Period 3 Theory" aria-label="New class name"><button class="btn obtn" type="submit">CREATE CLASS</button></form>`;
+  $('#newClassForm').onsubmit = async e => {
+    e.preventDefault();
+    const name = $('#newClassName').value.trim().replace(/\s+/g, ' ');
+    if(!name){ $('#tdErr').textContent = 'Type a class name first.'; return; }
+    try{ const code = await Cloud.createClass(name); TD.code = code; await tdLoadClasses(); tdRender(); popupMsg(`Created ${name}: code ${code}`); }
+    catch(err){ $('#tdErr').textContent = errMsg(err); }
+  };
+  $('#tdBody').querySelectorAll('[data-rename]').forEach(b => b.onclick = async () => {
+    const c = TD.classes.find(x => x.code === b.dataset.rename), name = (window.prompt('New name for this class:', c.name) || '').trim();
+    if(!name || name === c.name) return;
+    try{ await Cloud.renameClass(c.code, name.slice(0, 40)); await tdLoadClasses(); tdRender(); } catch(err){ $('#tdErr').textContent = errMsg(err); }
+  });
+  $('#tdBody').querySelectorAll('[data-clear]').forEach(b => b.onclick = () => {
+    const c = TD.classes.find(x => x.code === b.dataset.clear);
+    const o = openOverlay(`<h2 class="otitle">CLEAR ${esc(c.name.toUpperCase())}?</h2><p class="osub">This deletes all Scale Quest practice data and CHAOS scores for ${esc(c.name)}, for example at the start of a new marking period. The class code and Rhythm Trainer data stay.</p>
+      <p class="werr" id="dErr"></p><div class="obtns"><button class="btn obtn alt" type="button" id="dNo">CANCEL</button><button class="btn obtn mag" type="button" id="dYes">CLEAR DATA</button></div>`, 'mag');
+    o.querySelector('#dNo').onclick = closeOverlay;
+    o.querySelector('#dYes').onclick = async () => { try{ await Cloud.clearClassData(c.code); closeOverlay(); popupMsg(`${c.name} cleared.`); } catch(err){ o.querySelector('#dErr').textContent = errMsg(err); } };
+  });
+}
+
+// ----- Leaderboard scores -----
+async function tdScores(){
+  const isAdmin = ADMIN_EMAILS.includes(TD.email);
+  const options = TD.classes.map(c => [c.code, c.name]).concat(isAdmin ? [['__world', 'World (every score)']] : []);
+  if(!options.length){ $('#tdBody').innerHTML = '<p class="dim">Make a class first. Its CHAOS scores show up here.</p>'; return; }
+  if(!options.some(([k]) => k === TD.scope)) TD.scope = TD.code || options[0][0];
+  const world = TD.scope === '__world';
+  let list = [];
+  $('#tdBody').innerHTML = '<p class="dim">Loading scores...</p>';
+  try{ list = world ? await Cloud.worldAll() : (await Cloud.classAll(TD.scope)).sort((a,b) => b.score - a.score); } catch(err){ $('#tdErr').textContent = errMsg(err); }
+  const rows = list.map((e, i) => `<tr><td>${i+1}</td><td>${esc(e.name)}</td>${world ? `<td class="dim">${esc(e.classCode || '—')}</td>` : ''}<td>${e.score}</td><td>${e.keys}</td><td>${e.accuracy}%</td><td class="dim">${e.date.toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</td>
+    <td style="text-align:right"><button class="btn tbtn sm" type="button" data-del="${esc(e.id)}">DELETE</button></td></tr>`).join('');
+  $('#tdBody').innerHTML = `
+    <div class="td-sub"><select id="tdScope" aria-label="Leaderboard">${options.map(([k, n]) => `<option value="${esc(k)}" ${k === TD.scope ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
+      <span class="dim">Delete a score with an inappropriate name, or use CLASSES → CLEAR to reset a whole class.</span></div>
+    ${list.length ? `<div style="overflow-x:auto"><table class="t-table"><thead><tr><th>#</th><th>NAME</th>${world ? '<th>CLASS</th>' : ''}<th>SCORE</th><th>KEYS</th><th>ACCURACY</th><th>DATE</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="dim">No CHAOS scores posted yet.</p>'}`;
+  $('#tdScope').onchange = () => { TD.scope = $('#tdScope').value; tdScores(); };
+  $('#tdBody').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { b.disabled = true; try{ await Cloud.deleteScore(b.dataset.del); tdScores(); } catch(err){ $('#tdErr').textContent = errMsg(err); b.disabled = false; } });
+}
+$('#tdTabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if(!b) return; TD.tab = b.dataset.tab; TD.open = null; tdRender(); });
+$('#tdClass').onchange = () => { TD.code = $('#tdClass').value; TD.scope = TD.code; TD.open = null; tdRender(); };
+$('#tdBack').onclick = closeTeacherView;
+$('#tdSignOut').onclick = async () => { try{ await Cloud.signOut(); } catch(e){} TD.email = null; closeTeacherView(); };
 
 /* ---------- controls ---------- */
 $('#startBtn').onclick = () => { audio(); startRun('practice'); };
@@ -1256,8 +1776,11 @@ document.addEventListener('keydown', e => {
 
 /* ---------- boot ---------- */
 document.querySelectorAll('#accs button').forEach(b => b.querySelector('svg').innerHTML = ACC_SHAPE[b.dataset.acc]);
-if(CLASS){ $('#classChip').textContent = 'CLASS: ' + CLASS.toUpperCase(); $('#classChip').hidden = false; }
-renderKeyRows(); renderQpk(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); renderBoard(); updateCarts(); setPlaying(false);
+$('#wForm').onsubmit = submitWelcome;
+$('#wSolo').onchange = () => { $('#wCode').disabled = $('#wSolo').checked; };
+$('#whoBtn').onclick = whoMenu;
+renderKeyRows(); renderQpk(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); updateWho(); renderBoard(); updateCarts(); setPlaying(false);
+if(!getProfile()) showWelcome(false); else refreshClassInfo();
 </script>
 </body>
 </html>
