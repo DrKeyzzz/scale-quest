@@ -302,6 +302,7 @@ button{font:inherit;color:inherit}
 .wsolo input{width:22px;height:22px;accent-color:var(--mag)}
 .werr{margin:0;min-height:24px;color:var(--bad);font-size:22px}
 .wnote{margin:0;color:var(--dim);font-size:18px}
+.wguest{font-size:11px;padding:12px 18px;background:var(--panel);color:var(--ink);border-color:var(--line);align-self:center}
 /* ---------- assignment banner ---------- */
 .assign{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:center;padding:8px 10px;border:3px dashed var(--yel)}
 .assign .ab-t{font-family:var(--px);font-size:9px;background:var(--yel);color:var(--shadow);padding:4px 6px}
@@ -503,7 +504,8 @@ button{font:inherit;color:inherit}
     <label class="wsolo" for="wSolo"><input type="checkbox" id="wSolo"> I'm not in a class</label>
     <p class="werr" id="wError" role="alert"></p>
     <button class="btn start" id="wGo" type="submit">PRESS START</button>
-    <p class="wnote">Only your first name and last initial are saved. Same class code as the Rhythm Trainer.</p>
+    <button class="btn wguest" id="wGuest" type="button">PLAY AS GUEST</button>
+    <p class="wnote">Guests' practice and scores aren't saved. Only first names and last initials are stored. One sign-in works for the Rhythm Trainer, Scale Quest and Tidal Tones.</p>
   </form>
 </div>
 <div class="overlay" id="overlay" hidden><div class="opanel" id="opanel" role="dialog" aria-modal="true"></div></div>
@@ -700,9 +702,22 @@ function boardTable(list){
 }
 
 /* ---------- student profile (welcome screen) ---------- */
-const PROFILE_KEY = 'profile';
-function getProfile(){ const p = store.get(PROFILE_KEY, null); return p && p.first && p.init ? p : null; }
-function setProfile(p){ store.set(PROFILE_KEY, p); }
+// One sign-in for all of Mr. Milnes's games on this site: the Rhythm Trainer, Scale Quest and Tidal Tones share this key.
+const PROFILE_KEY = 'rdt_profile_v1', GUEST_KEY = 'music_guest';
+function getProfile(){
+  if(isGuest()) return null;
+  try{ const p = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); return p && p.first && p.init ? p : null; } catch(e){ return null; }
+}
+function setProfile(p){ try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); sessionStorage.removeItem(GUEST_KEY); } catch(e){} }
+// Guests play without saving anything (no progress, no scores, no device history) until the tab closes.
+function isGuest(){ try{ return sessionStorage.getItem(GUEST_KEY) === '1'; } catch(e){ return false; } }
+function playAsGuest(){
+  try{ sessionStorage.setItem(GUEST_KEY, '1'); } catch(e){}
+  S.assignment = null; $('#welcome').hidden = true; S.overlay = false;
+  SFX.click(); updateWho(); renderAssignment(); renderBoard();
+}
+// Older Scale Quest sign-ins move to the shared key once.
+try{ const old = store.get('profile', null); if(old && old.first && !localStorage.getItem(PROFILE_KEY)) localStorage.setItem(PROFILE_KEY, JSON.stringify(old)); } catch(e){}
 const displayName = p => `${p.first.charAt(0).toUpperCase()}${p.first.slice(1)} ${p.init}.`;
 const sidOf = p => (p.first + p.init).toLowerCase().replace(/[^a-z]/g, '');
 const studentKey = p => `${sidOf(p)}:${p.classCode || ''}`;
@@ -989,11 +1004,12 @@ function pickOf(q){
   return letter + (a === 1 ? '#' : a === -1 ? 'b' : '');
 }
 function logAnswer(q, ok){
+  if(isGuest()) return;
   const log = readLog();
   todayOf(log).q.push({k: q.key, y: q.type[0], d: q.degree || 0, ok: ok ? 1 : 0, pk: ok ? '' : pickOf(q), t0: q.t0 || Date.now(), t1: Date.now(), m: S.run.mode[0]});
   writeLog(log); scheduleSync(); setTimeout(renderAssignment, 0);
 }
-function logRun(run){ const log = readLog(); todayOf(log).runs.push(run); writeLog(log); scheduleSync(); }
+function logRun(run){ if(isGuest()) return; const log = readLog(); todayOf(log).runs.push(run); writeLog(log); scheduleSync(); }
 function activeMinutes(qs){
   const ts = qs.flatMap(e => [e.t0, e.t1]).filter(Boolean).sort((a,b) => a - b);
   let ms = 0; for(let i = 1; i < ts.length; i++){ const g = ts[i] - ts[i-1]; if(g <= 10*60*1000) ms += g; }
@@ -1063,12 +1079,11 @@ function renderAssignment(){
 /* ---------- welcome screen + who's playing ---------- */
 function updateWho(){
   const p = getProfile(), b = $('#whoBtn');
-  b.textContent = p ? `👤 ${displayName(p).toUpperCase()}${p.classCode ? ' · ' + String(p.className).toUpperCase() : ''}` : '👤 SIGN IN';
+  b.textContent = p ? `👤 ${displayName(p).toUpperCase()}${p.classCode ? ' · ' + String(p.className).toUpperCase() : ''}` : isGuest() ? '👤 GUEST' : '👤 SIGN IN';
 }
 function showWelcome(keep){
   closeOverlay();
-  let p = keep ? getProfile() : null;
-  if(!p && !keep){ try{ const r = JSON.parse(localStorage.getItem('rdt_profile_v1') || 'null'); if(r && r.first && !getProfile()) p = r; } catch(e){} }   // same student from the Rhythm Trainer
+  const p = keep ? getProfile() : null;
   $('#wFirst').value = p ? p.first : ''; $('#wInit').value = p ? p.init : ''; $('#wCode').value = p ? p.classCode || '' : '';
   $('#wSolo').checked = !!(p && !p.classCode); $('#wCode').disabled = $('#wSolo').checked; $('#wError').textContent = '';
   $('#welcome').hidden = false; S.overlay = true;
@@ -1423,7 +1438,7 @@ function endRun(reason){
     ${why ? `<p class="osub dim" style="font-size:20px">${why}</p>` : ''}
     ${eligible ? `<div class="initials" id="postArea">${getProfile()
       ? `<button class="btn obtn mag" type="button" id="postBtn" data-focus>POST MY SCORE AS ${esc(displayName(getProfile()).toUpperCase())}</button>`
-      : '<button class="btn obtn mag" type="button" id="signInPost" data-focus>ENTER YOUR NAME TO POST</button>'}</div>` : ''}
+      : `${isGuest() ? '<p class="weak" style="color:var(--dim)">GUEST GAME: THIS SCORE ISN\'T SAVED.</p>' : ''}<button class="btn obtn mag" type="button" id="signInPost" data-focus>${isGuest() ? 'SIGN IN FOR NEXT TIME' : 'ENTER YOUR NAME TO POST'}</button>`}</div>` : ''}
     <div class="obtns"><button class="btn obtn" id="againBtn" type="button">PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, reason === 'quit' ? 'mag' : '');
   if(ranked) logRun({s: final, a: acc, k: r.keys.length, t: Date.now()});
   const sp = p.querySelector('#signInPost'); if(sp) sp.onclick = () => showWelcome(false);
@@ -1814,8 +1829,9 @@ document.querySelectorAll('#accs button').forEach(b => b.querySelector('svg').in
 $('#wForm').onsubmit = submitWelcome;
 $('#wSolo').onchange = () => { $('#wCode').disabled = $('#wSolo').checked; };
 $('#whoBtn').onclick = whoMenu;
+$('#wGuest').onclick = playAsGuest;
 renderKeyRows(); renderQpk(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); updateWho(); renderBoard(); updateCarts(); setPlaying(false);
-if(!getProfile()) showWelcome(false); else refreshClassInfo();
+if(!getProfile() && !isGuest()) showWelcome(false); else refreshClassInfo();
 </script>
 </body>
 </html>

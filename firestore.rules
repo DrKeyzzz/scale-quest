@@ -3,8 +3,9 @@ rules_version = '2';
 // Firestore security rules for Mr. Milnes's music games:
 //   Rhythm Dictation Trainer  https://drkeyzzz.github.io/rhythm-trainer/
 //   Scale Quest               https://drkeyzzz.github.io/scale-quest/
-// Both games share this project, its classes and teacher sign-in.
-// The SAME file lives in both GitHub repos; keep them identical.
+//   Tidal Tones               https://drkeyzzz.github.io/tidal-tones/
+// All the games share this project, its classes and teacher sign-in.
+// The SAME file lives in every game's GitHub repo; keep them identical.
 // Paste this into Firebase → Firestore Database → Rules, then click Publish.
 // The admin email below can manage the World leaderboard (every score).
 // Any teacher who signs in with Google can create classes and manage only their own.
@@ -139,6 +140,33 @@ service cloud.firestore {
         && d.streak is int && d.streak >= 0 && d.streak <= 20
         && d.accuracy is int && d.accuracy >= 0 && d.accuracy <= 100
         && d.key_list is string && d.key_list.size() <= 60
+        && d.created_at == request.time;
+    }
+  
+
+    // ================= Tidal Tones =================
+    // Leaderboard runs: anyone can see them and add one in the right shape; nobody can edit them.
+    match /tidal_scores/{scoreId} {
+      allow read: if true;
+      allow create: if tidalScore(request.resource.data);
+      allow update: if false;
+      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+    }
+
+    function tidalScore(d) {
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'hits', 'acc', 'level', 'mode', 'diff', 'clef', 'answer', 'names', 'created_at'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
+        && d.get('class_code', '') is string
+        && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
+        && d.score is int && d.score >= 0 && d.score <= 2000000
+        && d.hits is int && d.hits >= 0 && d.hits <= 10000
+        && d.acc is int && d.acc >= 0 && d.acc <= 100
+        && d.level is int && d.level >= 0 && d.level <= 1000
+        && d.mode in ['arcade', 'sprint']
+        && d.diff in ['easy', 'medium', 'hard', 'custom']
+        && d.clef in ['treble', 'bass', 'alto', 'grand']
+        && d.answer in ['names', 'any', 'exact', 'intervals']
+        && d.names in ['letters', 'solfege']
         && d.created_at == request.time;
     }
   }
