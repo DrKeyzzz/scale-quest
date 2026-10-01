@@ -499,7 +499,7 @@ button{font:inherit;color:inherit}
       <label for="wFirst">FIRST NAME<input id="wFirst" maxlength="15" autocapitalize="words"></label>
       <label for="wInit" class="wi">LAST INITIAL<input id="wInit" maxlength="1" autocapitalize="characters"></label>
     </div>
-    <label for="wCode">CLASS CODE<input id="wCode" maxlength="5" placeholder="FROM YOUR TEACHER" autocapitalize="characters" spellcheck="false"></label>
+    <label for="wCode">CLASS CODE<input id="wCode" maxlength="7" placeholder="FROM YOUR TEACHER" autocapitalize="characters" spellcheck="false"></label>
     <label class="wsolo" for="wSolo"><input type="checkbox" id="wSolo"> I'm not in a class</label>
     <p class="werr" id="wError" role="alert"></p>
     <button class="btn start" id="wGo" type="submit">PRESS START</button>
@@ -610,7 +610,14 @@ const Cloud = {
     const snap = await fs.getDocs(fs.query(fs.collection(db, 'classes'), fs.where('ownerEmail', '==', auth.currentUser.email)));
     return snap.docs.map(d => ({code: d.id, ...d.data()})).sort((a,b) => String(a.name).localeCompare(String(b.name)));
   }); },
-  createClass(name){ return this.run(async ({fs, db, auth}) => {
+  // A teacher can pick their own code (4–7 letters/numbers); otherwise a random one is made.
+  createClass(name, custom){ return this.run(async ({fs, db, auth}) => {
+    if(custom){
+      const ref = fs.doc(db, 'classes', custom);
+      if((await fs.getDoc(ref)).exists()) throw new Error(`The code ${custom} is already taken. Try another.`);
+      await fs.setDoc(ref, {name, ownerEmail: auth.currentUser.email, created_at: fs.serverTimestamp()});
+      return custom;
+    }
     for(let i = 0; i < 6; i++){
       const code = newClassCode(), ref = fs.doc(db, 'classes', code);
       if((await fs.getDoc(ref)).exists()) continue;
@@ -618,6 +625,16 @@ const Cloud = {
       return code;
     }
     throw new Error('Could not make a new code. Try again.');
+  }); },
+  // New code for an existing class: copies the class (name and assignments) to the new code and removes the old one.
+  changeCode(cls, code){ return this.run(async ({fs, db, auth}) => {
+    const ref = fs.doc(db, 'classes', code);
+    if((await fs.getDoc(ref)).exists()) throw new Error(`The code ${code} is already taken. Try another.`);
+    const data = {name: cls.name, ownerEmail: auth.currentUser.email, created_at: fs.serverTimestamp()};
+    if(cls.assignment) data.assignment = cls.assignment;
+    if(cls.scale_assignment) data.scale_assignment = cls.scale_assignment;
+    await fs.setDoc(ref, data);
+    await fs.deleteDoc(fs.doc(db, 'classes', cls.code));
   }); },
   renameClass(code, name){ return this.run(({fs, db}) => fs.updateDoc(fs.doc(db, 'classes', code), {name})); },
   saveAssignment(code, a){ return this.run(({fs, db}) => fs.updateDoc(fs.doc(db, 'classes', code), {scale_assignment: a || null})); },
@@ -662,6 +679,7 @@ const Cloud = {
 };
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // no 0/O or 1/I/L mix-ups
 const newClassCode = () => Array.from({length: 5}, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+const validCode = c => /^[A-Z0-9]{4,7}$/.test(c);
 const cleanCode = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const errMsg = e => (e && e.message ? e.message : String(e || 'Something went wrong.'));
@@ -1699,22 +1717,39 @@ function popupMsg(text){ const e = $('#tdErr'); e.style.color = 'var(--ok)'; e.t
 // ----- Classes (shared with the Rhythm Trainer) -----
 function tdClasses(){
   const rows = TD.classes.map(c => `<tr><td><b>${esc(c.name)}</b></td><td><span class="code-pill">${esc(c.code)}</span></td><td class="dim">${c.scale_assignment ? esc((c.scale_assignment.keys || []).map(fmt).join(' ') || 'any keys') : 'No assignment'}</td>
-    <td style="text-align:right;white-space:nowrap"><button class="btn tbtn sm" type="button" data-rename="${esc(c.code)}">RENAME</button> <button class="btn tbtn sm" type="button" data-clear="${esc(c.code)}">CLEAR SCALE QUEST DATA</button></td></tr>`).join('');
+    <td style="text-align:right;white-space:nowrap"><button class="btn tbtn sm" type="button" data-rename="${esc(c.code)}">RENAME</button> <button class="btn tbtn sm" type="button" data-recode="${esc(c.code)}">CHANGE CODE</button> <button class="btn tbtn sm" type="button" data-clear="${esc(c.code)}">CLEAR SCALE QUEST DATA</button></td></tr>`).join('');
   $('#tdBody').innerHTML = `
     <p class="dim" style="margin:0">These are the same classes and codes as the Rhythm Trainer. Students type the code on the welcome screen; from then on their practice shows up in <b>PROGRESS</b> and their CHAOS scores go on that class's board. (To delete a class completely, use the Rhythm Trainer's dashboard.)</p>
     ${TD.classes.length ? `<div style="overflow-x:auto"><table class="t-table"><thead><tr><th>CLASS</th><th>CODE</th><th>ASSIGNMENT</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p><b>No classes yet.</b> Make your first one below.</p>'}
-    <form class="t-row" id="newClassForm"><input id="newClassName" maxlength="40" placeholder="New class name, e.g. Period 3 Theory" aria-label="New class name"><button class="btn obtn" type="submit">CREATE CLASS</button></form>`;
+    <form class="t-row" id="newClassForm"><input id="newClassName" maxlength="40" placeholder="New class name, e.g. Period 3 Theory" aria-label="New class name"><input id="newClassCode" maxlength="7" style="flex:0 1 230px;min-width:180px;text-transform:uppercase" placeholder="Code (optional), e.g. CP2026" aria-label="Class code (optional)"><button class="btn obtn" type="submit">CREATE CLASS</button></form>
+    <p class="dim" style="margin:0">Leave the code blank for a random one, or pick your own: 4–7 letters and numbers.</p>`;
   $('#newClassForm').onsubmit = async e => {
     e.preventDefault();
-    const name = $('#newClassName').value.trim().replace(/\s+/g, ' ');
+    const name = $('#newClassName').value.trim().replace(/\s+/g, ' '), custom = cleanCode($('#newClassCode').value);
     if(!name){ $('#tdErr').textContent = 'Type a class name first.'; return; }
-    try{ const code = await Cloud.createClass(name); TD.code = code; await tdLoadClasses(); tdRender(); popupMsg(`Created ${name}: code ${code}`); }
+    if(custom && !validCode(custom)){ $('#tdErr').textContent = 'A code needs 4–7 letters and numbers.'; return; }
+    try{ const code = await Cloud.createClass(name, custom); TD.code = code; await tdLoadClasses(); tdRender(); popupMsg(`Created ${name}: code ${code}`); }
     catch(err){ $('#tdErr').textContent = errMsg(err); }
   };
   $('#tdBody').querySelectorAll('[data-rename]').forEach(b => b.onclick = async () => {
     const c = TD.classes.find(x => x.code === b.dataset.rename), name = (window.prompt('New name for this class:', c.name) || '').trim();
     if(!name || name === c.name) return;
     try{ await Cloud.renameClass(c.code, name.slice(0, 40)); await tdLoadClasses(); tdRender(); } catch(err){ $('#tdErr').textContent = errMsg(err); }
+  });
+  $('#tdBody').querySelectorAll('[data-recode]').forEach(b => b.onclick = () => {
+    const c = TD.classes.find(x => x.code === b.dataset.recode);
+    const o = openOverlay(`<h2 class="otitle">NEW CODE FOR ${esc(c.name.toUpperCase())}</h2>
+      <p class="osub">Pick 4–7 letters and numbers. The old code <b>${esc(c.code)}</b> stops working, and students re-enter the new one. Scores and practice saved under the old code stay in the database but won't show for the new code, so this is best done before students start.</p>
+      <input id="rcCode" maxlength="7" value="" placeholder="e.g. CP2026" style="font-family:var(--px);font-size:18px;padding:10px;width:220px;text-align:center;text-transform:uppercase;background:var(--shadow);color:var(--yel);border:3px solid var(--yel)" aria-label="New code">
+      <p class="werr" id="rcErr"></p><div class="obtns"><button class="btn obtn alt" type="button" id="rcNo">CANCEL</button><button class="btn obtn" type="button" id="rcYes">CHANGE CODE</button></div>`);
+    o.querySelector('#rcNo').onclick = closeOverlay;
+    o.querySelector('#rcYes').onclick = async () => {
+      const code = cleanCode(o.querySelector('#rcCode').value);
+      if(!validCode(code)){ o.querySelector('#rcErr').textContent = 'A code needs 4–7 letters and numbers.'; return; }
+      if(code === c.code){ closeOverlay(); return; }
+      try{ await Cloud.changeCode(c, code); closeOverlay(); TD.code = code; await tdLoadClasses(); tdRender(); popupMsg(`${c.name} now uses code ${code}.`); }
+      catch(err){ o.querySelector('#rcErr').textContent = errMsg(err); }
+    };
   });
   $('#tdBody').querySelectorAll('[data-clear]').forEach(b => b.onclick = () => {
     const c = TD.classes.find(x => x.code === b.dataset.clear);
