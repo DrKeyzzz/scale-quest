@@ -39,7 +39,7 @@ button{font:inherit;color:inherit}
 .logo{margin:0;font-family:var(--px);font-size:24px;letter-spacing:.04em;text-shadow:4px 4px 0 var(--shadow);font-weight:400}
 .logo .a{color:var(--cyan)} .logo .b{color:var(--mag)}
 .logo small{display:block;font-size:9px;color:var(--dim);margin-top:8px;letter-spacing:.14em;text-shadow:none}
-.tools{display:flex;gap:8px;align-items:center}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}
 .who{color:var(--yel);border-color:var(--yel);max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .xclasschip{font-family:var(--px);font-size:8px;letter-spacing:.06em;padding:8px 9px;border:3px solid var(--yel);color:var(--yel)}
 .btn{font-family:var(--px);border:3px solid var(--shadow);cursor:pointer;box-shadow:4px 4px 0 var(--shadow);transition:transform .06s,box-shadow .06s}
@@ -394,6 +394,7 @@ button{font:inherit;color:inherit}
       <button class="btn tbtn" id="muteBtn" type="button">SOUND: ON</button>
       <button class="btn tbtn" id="gearBtn" type="button">SETUP</button>
       <button class="btn tbtn quit" id="quitBtn" type="button" hidden>QUIT</button>
+      <button class="btn tbtn" id="teacherTopBtn" type="button">TEACHER DASHBOARD</button>
     </div>
   </header>
 
@@ -1151,6 +1152,7 @@ function setPlaying(on){
   $('#question').hidden = !on;
   $('#question').style.display = on ? 'contents' : 'none';
   $('#quitBtn').hidden = !on;
+  $('#teacherTopBtn').hidden = on;
 }
 function startRun(mode){
   closeOverlay();
@@ -1540,8 +1542,7 @@ function setupPanel(){
     <h2 class="otitle">SETUP</h2>
     <label class="toggle" for="ksToggle"><input type="checkbox" id="ksToggle" ${S.keySig ? 'checked' : ''}> Show key signature on staff</label>
     <p class="osub dim" style="font-size:20px">When on, the staff shows the key's sharps or flats, so students don't need the accidental buttons.</p>
-    <div class="obtns"><button class="btn obtn alt" id="openTeacher" type="button">TEACHER DASHBOARD</button><button class="btn obtn" id="closeSetup" type="button">DONE</button></div>`);
-  p.querySelector('#openTeacher').onclick = teacherLogin;
+    <div class="obtns"><button class="btn obtn" id="closeSetup" type="button">DONE</button></div>`);
   p.querySelector('#ksToggle').onchange = e => {
     S.keySig = e.target.checked; store.set('keySig', S.keySig);
     if(S.run && S.run.q && S.run.q.type === 'staff' && !S.busy){ drawKeySig(S.run.q.key); renderQuestion(); }
@@ -1891,6 +1892,7 @@ $('#quitBtn').onclick = () => {
   if(Object.keys(r.stats).length) endRun('quit'); else { r.ended = true; toMenu(); }
 };
 $('#gearBtn').onclick = () => { if(!S.overlay) setupPanel(); };
+$('#teacherTopBtn').onclick = () => { if(!S.overlay) teacherLogin(); };
 $('#boardBtn').onclick = () => { if(!S.overlay) boardPanel(); };
 function renderMute(){ $('#muteBtn').textContent = S.muted ? 'SOUND: OFF' : 'SOUND: ON'; }
 $('#muteBtn').onclick = () => {
