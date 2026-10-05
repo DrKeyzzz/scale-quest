@@ -78,6 +78,49 @@ button{font:inherit;color:inherit}
 .qpk{display:flex;gap:8px;align-items:center}
 .qpk .slabel{font-size:8px;line-height:1.5;text-align:right}
 .qpk .seg button{font-size:10px;padding:8px 10px}
+/* ---------- stars: PRACTICE (small, calm) < CHAOS (pulsing) < SUPERNOVA (swelling, rays, sparks) ---------- */
+.star{display:inline-block;vertical-align:middle;overflow:visible}
+.star .rays{transform-origin:50% 50%;transform-box:fill-box}
+.star.t1{width:22px;height:22px;animation:glow1 2.4s ease-in-out infinite}
+.star.t1 .core{fill:#bff6ff}
+.star.t2{width:28px;height:28px;animation:pulse2 1.1s ease-in-out infinite}
+.star.t2 .core{fill:#ffd1f3}
+.star.t3{width:40px;height:40px;animation:pulse3 .9s ease-in-out infinite;filter:drop-shadow(0 0 6px #ffe48a) drop-shadow(0 0 14px #ff9d2e)}
+.star.t3 .core{fill:#fffbe6}
+.star.t3 .rays{fill:#ffcf4a;animation:spin 6s linear infinite}
+.star.badge{width:16px;height:16px;margin-left:4px;animation:pulse3 1.2s ease-in-out infinite;filter:drop-shadow(0 0 3px #ffcf4a)}
+.star.badge .core{fill:#fff3b0} .star.badge .rays{fill:#ffb52e;animation:spin 8s linear infinite}
+@keyframes glow1{50%{opacity:.6}}
+@keyframes pulse2{50%{transform:scale(1.15)}}
+@keyframes pulse3{0%,100%{transform:scale(1)}50%{transform:scale(1.22)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.start .star,.chaos .star{margin-right:8px;margin-top:-4px}
+.nova{font-size:20px;padding:14px 30px 14px 22px;color:#2a1600;letter-spacing:.06em;display:inline-flex;align-items:center;gap:10px;
+  background:radial-gradient(circle at 30% 30%,#fffbe6 0%,#ffe48a 35%,#ffb52e 70%,#ff7a1a 100%);animation:novaglow 1.6s ease-in-out infinite}
+.nova:disabled{animation:none}
+@keyframes novaglow{0%,100%{box-shadow:4px 4px 0 var(--shadow),0 0 14px rgba(255,190,60,.5)}50%{box-shadow:4px 4px 0 var(--shadow),0 0 34px rgba(255,190,60,.95)}}
+.novatag{font-family:var(--px);font-size:7px;padding:2px 4px;margin-left:4px;border:2px solid #ffcf4a;color:#ffcf4a;vertical-align:middle}
+.app.novaRun .hud,.app.novaRun .stage{border-color:#ffcf4a;box-shadow:0 0 0 3px var(--shadow),0 0 28px rgba(255,190,60,.45)}
+.app.novaRun #hudKey{color:#fff3b0}
+.modetag.nova{background:#ffcf4a;color:var(--shadow)}
+.nova-intro{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(7,3,26,.94);pointer-events:none}
+.nova-intro .big{width:min(46vh,320px);height:min(46vh,320px);animation:swell 2.2s cubic-bezier(.2,.7,.2,1) forwards;filter:drop-shadow(0 0 20px #ffe48a) drop-shadow(0 0 60px #ff9d2e)}
+.nova-intro .big .core{fill:#fffbe6} .nova-intro .big .rays{fill:#ffcf4a;animation:spin 3s linear infinite}
+.nova-intro p{position:absolute;bottom:16vh;margin:0;font-family:var(--px);font-size:clamp(22px,5vw,44px);color:#fff3b0;text-shadow:0 0 18px #ff9d2e;letter-spacing:.12em}
+@keyframes swell{0%{transform:scale(.08);opacity:0}25%{opacity:1}70%{transform:scale(1.1)}80%{transform:scale(.95)}90%{transform:scale(1.25)}100%{transform:scale(1)}}
+.opanel.nova-panel{border-color:#ffcf4a;box-shadow:0 0 0 3px var(--shadow),0 0 60px rgba(255,190,60,.55)}
+.burst{position:relative;width:170px;height:170px;display:grid;place-items:center}
+.burst .big{width:150px;height:150px;animation:swell 1.8s cubic-bezier(.2,.7,.2,1) forwards,pulse3 1s ease-in-out 1.8s infinite;filter:drop-shadow(0 0 16px #ffe48a) drop-shadow(0 0 40px #ff9d2e)}
+.burst .big .core{fill:#fffbe6} .burst .big .rays{fill:#ffcf4a;animation:spin 4s linear infinite}
+.burst i{position:absolute;left:50%;top:50%;width:6px;height:6px;background:#ffe48a;box-shadow:0 0 8px #ffb52e;animation:spark 1.6s ease-out infinite}
+@keyframes spark{0%{transform:translate(-50%,-50%) rotate(var(--a)) translateY(0);opacity:1}100%{transform:translate(-50%,-50%) rotate(var(--a)) translateY(-110px);opacity:0}}
+.cert{width:100%;border:3px double #ffcf4a;padding:12px;display:flex;flex-direction:column;gap:6px;align-items:center;background:rgba(255,207,74,.06)}
+.cert .who{font-family:var(--px);font-size:16px;color:#fff3b0}
+.cert .line{font-size:20px;color:var(--ink)}
+.misses{width:100%;text-align:left}
+.misses summary{font-family:var(--px);font-size:9px;color:var(--dim);cursor:pointer}
+.misses li{font-size:19px;margin:4px 0}
+@media (min-width:1000px){ .controls{flex-wrap:nowrap;gap:12px} .controls .start,.controls .chaos{padding:15px 26px;font-size:18px} .controls .nova{padding:13px 22px 13px 16px;font-size:18px} }
 .famtabs{display:flex;gap:2px;flex:none;border-right:3px solid var(--line);padding-right:12px}
 .famtabs button{font-family:var(--px);font-size:11px;padding:8px 10px 6px;background:none;color:var(--dim);border:0;border-bottom:3px solid transparent;cursor:pointer}
 .famtabs button:hover{color:var(--ink)}
@@ -537,6 +580,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
   <footer class="controls">
     <button class="btn start" id="startBtn" type="button" disabled>START</button>
     <button class="btn chaos" id="chaosBtn" type="button" disabled>CHAOS</button>
+    <button class="btn nova" id="novaBtn" type="button" title="All 150 scales. 20 questions. 2 hearts."><span id="novaBtnStar"></span>SUPERNOVA</button>
     <span class="qpk" title="How many questions each scale gets in practice before moving to the next one"><span class="slabel">QUESTIONS<br>PER SCALE</span><span class="seg" id="qpkSeg" role="group" aria-label="Practice questions per scale"></span></span>
   </footer>
 </main>
@@ -558,6 +602,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
   </form>
 </div>
 <div class="overlay" id="overlay" hidden><div class="opanel" id="opanel" role="dialog" aria-modal="true"></div></div>
+<div class="nova-intro" id="novaIntro" hidden><span id="novaIntroStar"></span><p>SUPERNOVA</p></div>
 <div class="chaos-intro" id="chaosIntro" hidden><p>CHAOS<br>MODE<small id="chaosMix"></small></p></div>
 
 <script>
@@ -669,6 +714,15 @@ const ORD = {1:'tonic (1st)',2:'2nd',3:'3rd',4:'4th',5:'5th',6:'6th',7:'7th',8:'
 /* Ranked CHAOS: every run is the same length, so scores compare fairly.
    Final score = points × key bonus (+10% for each key beyond the first). */
 const CHAOS_LEN = 20;
+// SUPERNOVA: every scale, 20 questions, 2 hearts, no second tries, no explanations until the end.
+const NOVA_HEARTS = 2;
+const isTimed = m => m === 'chaos' || m === 'nova';
+// The mode ladder's stars: t1 practice, t2 chaos, t3 supernova (also 'badge' and 'big').
+function starSVG(cls){
+  const pts = n => Array.from({length: n * 2}, (_, i) => { const a = Math.PI * i / n - Math.PI / 2, rr = i % 2 ? 19 : 46; return `${(50 + rr * Math.cos(a)).toFixed(1)},${(50 + rr * Math.sin(a)).toFixed(1)}`; }).join(' ');
+  const rays = /t3|badge|big/.test(cls) ? `<g class="rays">${Array.from({length: 12}, (_, i) => `<polygon points="49,2 51,2 50,22" transform="rotate(${i * 30} 50 50)"/>`).join('')}</g>` : '';
+  return `<svg class="star ${cls}" viewBox="0 0 100 100" aria-hidden="true">${rays}<polygon class="core" points="${pts(/t1/.test(cls) ? 4 : 5)}"/></svg>`;
+}
 const keyBonus = n => Math.round((1 + 0.1*(Math.min(15, n)-1)) * 10) / 10;   // counts up to 15 scales
 const pick = a => a[Math.floor(Math.random()*a.length)];
 const $ = s => document.querySelector(s);
@@ -850,6 +904,28 @@ const Cloud = {
       return new Set(rows.filter(x => x.name !== name && x.score > mine).map(x => x.name)).size + 1;
     });
   },
+  // ----- SUPERNOVA -----
+  novaSubmit(e){ return this.run(async ({fs, db}) => {
+    const dev = await devPost(e.name, () => this.fb(), () => this.signIn());
+    const data = {name: dev ? DEV_NAME : e.name, score: e.score, points: e.points, streak: e.streak, accuracy: e.accuracy, reached: e.reached, finished: !!e.finished, created_at: fs.serverTimestamp()};
+    if(e.classCode) data.class_code = e.classCode;
+    if(dev) data.dev = true;
+    await fs.addDoc(fs.collection(db, 'nova_scores'), data);
+    Object.keys(LB_CACHE).filter(k => k.startsWith('nova')).forEach(k => delete LB_CACHE[k]);
+  }); },
+  novaRow(d){ const x = d.data(); return {id: d.id, dev: !!x.dev, name: x.name, classCode: x.class_code || '', score: x.score, reached: x.reached, finished: !!x.finished}; },
+  // Class (plus the developer's runs) or World: each player's best run, finished runs first.
+  novaBoard(code){ return this.cached('nova|' + (code || 'world'), () => this.run(async ({fs, db}) => {
+    const col = fs.collection(db, 'nova_scores');
+    let rows = (await fs.getDocs(code ? fs.query(col, fs.where('class_code', '==', code)) : fs.query(col, fs.orderBy('score', 'desc'), fs.limit(60)))).docs.map(d => this.novaRow(d));
+    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat((await devRows(fs, db, 'nova_scores')).map(d => this.novaRow(d)).filter(x => !seen.has(x.id))); }
+    const best = {};
+    for(const x of rows){ const b = best[x.name + '|' + x.classCode]; if(!b || (x.finished > b.finished) || (x.finished === b.finished && x.score > b.score)) best[x.name + '|' + x.classCode] = x; }
+    return Object.values(best).sort((a,b) => (b.finished - a.finished) || (b.score - a.score));
+  })); },
+  // Everyone who has finished a SUPERNOVA ("name|class"), for the star next to their name on every board.
+  novaFinishers(){ return this.cached('nova|finishers', () => this.run(async ({fs, db}) =>
+    new Set((await fs.getDocs(fs.query(fs.collection(db, 'nova_scores'), fs.where('finished', '==', true)))).docs.map(d => `${d.data().name}|${d.data().class_code || ''}`)))); },
   worldAll(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(300)))).docs.map(d => this.row(d))); },
   deleteScore(id){ return this.run(({fs, db}) => fs.deleteDoc(fs.doc(db, 'scale_scores', id))); },
 };
@@ -872,7 +948,7 @@ function localTop(n){
 function boardTable(list){
   if(!list.length) return '<p class="dim">No scores yet. Finish a CHAOS run to claim the top spot!</p>';
   return `<table class="board"><tbody>${list.map((x,i) =>
-    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 
 /* ---------- student profile (welcome screen) ---------- */
@@ -939,6 +1015,8 @@ const SFX = {
   buzz:  () => tone(150, {type:'sawtooth', dur:.38, vol:.12, slide:75}),
   level: () => [523,659,784,1047,1319].forEach((f,i) => tone(f, {dur:.14, vol:.09, at:i*.09})),
   streak:() => [784,988,1175,1568].forEach((f,i) => tone(f, {dur:.08, vol:.07, at:.3+i*.05})),
+  nova:  () => { tone(60, {type:'sine', dur:2.2, vol:.12, slide:220}); [262,330,392,523,659,784,1047].forEach((f,i) => tone(f, {type:'triangle', dur:.5, vol:.06, at:.9 + i*.13})); },
+  novaWin: () => { [523,659,784,1047,1319,1568,2093].forEach((f,i) => tone(f, {dur:.22, vol:.08, at:i*.1})); [1047,1319,1568].forEach(f => tone(f, {type:'triangle', dur:1.6, vol:.06, at:.8})); },
   chaos: () => { tone(1400, {type:'sawtooth', dur:1, vol:.09, slide:60}); tone(95, {type:'square', dur:1, vol:.08, slide:45, at:.1}); },
   over:  () => [392,330,262,196].forEach((f,i) => tone(f, {dur:.22, vol:.09, at:i*.18})),
   win:   () => [523,659,784,1047,784,1047,1319].forEach((f,i) => tone(f, {dur:.16, vol:.09, at:i*.11})),
@@ -1175,13 +1253,16 @@ function updateHUD(){
   const r = S.run; if(!r) return;
   const q = r.q;
   $('#hudKey').textContent = q ? scaleName(q.key).toUpperCase() : '—';
-  const tag = $('#modeTag'); tag.textContent = r.mode === 'chaos' ? 'CHAOS' : 'PRACTICE'; tag.classList.toggle('chaos', r.mode === 'chaos');
-  $('#hudQ').textContent = r.mode === 'chaos' ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
+  const tag = $('#modeTag'); tag.textContent = r.mode === 'nova' ? 'SUPERNOVA' : r.mode === 'chaos' ? 'CHAOS' : 'PRACTICE'; tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
+  $('#hudQ').textContent = isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
   $('#hudScore').textContent = String(r.score).padStart(6, '0');
   $('#hudStreak').textContent = 'x' + r.streak;
-  $('#hudLives').innerHTML = [0,1,2].map(i => heart(i < r.lives)).join('');
-  $('#hudLives').setAttribute('aria-label', r.lives + ' of 3 health');
-  $('#ladder').innerHTML = r.mode === 'practice'
+  $('#hudLives').innerHTML = Array.from({length: r.mode === 'nova' ? NOVA_HEARTS : 3}, (_, i) => heart(i < r.lives)).join('');
+  $('#hudLives').setAttribute('aria-label', `${r.lives} of ${r.mode === 'nova' ? NOVA_HEARTS : 3} health`);
+  // A long run (SUPERNOVA, or CHAOS with lots of scales) shows a one-line summary instead of every scale.
+  $('#ladder').innerHTML = r.mode === 'nova' ? `<span class="cur">ALL ${r.keys.length} SCALES</span>`
+    : r.keys.length > 12 ? `<span>${r.mode === 'practice' ? `${r.keyIdx + 1} OF ${r.keys.length} · ` : ''}${selSummary(r.keys)}</span>`
+    : r.mode === 'practice'
     ? r.keys.map((k,i) => `<span class="${i < r.keyIdx ? 'done' : i === r.keyIdx ? 'cur' : ''}">${shortName(k)}</span>`).join('')
     : r.keys.map(k => `<span>${shortName(k)}</span>`).join('');
 }
@@ -1204,9 +1285,9 @@ const timer = {start: 0, pausedAt: 0};
 function timerStart(){ timer.start = performance.now(); timer.pausedAt = 0; }
 function timerPause(){ if(!timer.pausedAt) timer.pausedAt = performance.now(); }
 function elapsed(){ return ((timer.pausedAt || performance.now()) - timer.start) / 1000; }
-function speedBonus(q){ if(S.run.mode !== 'chaos') return 0; const f = Math.max(0, 1 - elapsed() / TIME_WINDOW[q.type]); return Math.round(SPEED_MAX * f / 5) * 5; }
+function speedBonus(q){ if(!isTimed(S.run.mode)) return 0; const f = Math.max(0, 1 - elapsed() / TIME_WINDOW[q.type]); return Math.round(SPEED_MAX * f / 5) * 5; }
 function timerLoop(){
-  const q = S.run && !S.run.ended && S.run.mode === 'chaos' && S.run.q;
+  const q = S.run && !S.run.ended && isTimed(S.run.mode) && S.run.q;
   if(q){
     const hold = S.busy || S.overlay;
     if(hold && !timer.pausedAt) timer.pausedAt = performance.now();
@@ -1299,7 +1380,8 @@ function buildDay(){
   const miss = Object.entries(missed).filter(([, m]) => m.w).sort((a,b) => b[1].w - a[1].w).slice(0, 15)
     .map(([id, m]) => [id, [m.w, m.n, (Object.entries(m.picks).sort((a,b) => b[1] - a[1])[0] || [''])[0]]]);
   return {date: dayKey(), questions: qs.length, correct, minutes: activeMinutes(qs), byKey, types, missed: Object.fromEntries(miss),
-    runs: day.runs, best: day.runs.reduce((a, r) => Math.max(a, r.s), 0),
+    runs: day.runs.filter(r => !r.nova), best: day.runs.filter(r => !r.nova).reduce((a, r) => Math.max(a, r.s), 0),
+    nova: day.runs.filter(r => r.nova).reduce((a, r) => [a[0] + 1, a[1] + (r.f ? 1 : 0), Math.max(a[2], r.r || 0)], [0, 0, 0]),
     first: qs.length ? qs[0].t0 : 0, last: qs.length ? qs[qs.length-1].t1 : 0};
 }
 let syncTimer = 0;
@@ -1310,11 +1392,12 @@ async function syncProgress(){
   const p = getProfile();
   if(!Cloud.on || !p || !p.classCode || !p.classOwner) return;
   const d = buildDay();
-  if(!d.questions && !d.runs.length) return;
+  if(!d.questions && !d.runs.length && !d.nova[0]) return;
   const data = {class_code: p.classCode, owner: p.classOwner, date: d.date, sid: sidOf(p), student: displayName(p),
     questions: d.questions, correct: d.correct, minutes: d.minutes, first_at: d.first || Date.now(), last_at: d.last || Date.now(),
     goal: goalFor(), by_key: d.byKey, types: d.types, missed: d.missed,
     chaos: d.runs.slice(-20).map(r => ({s: r.s, a: r.a, k: r.k, t: r.t})), best_chaos: d.best};
+  if(d.nova[0]) data.nova = d.nova;   // [attempts, finished, furthest question]
   try{ await Cloud.saveProgress(`${p.classCode}_${d.date}_${data.sid}`, data); } catch(e){ console.warn('Progress sync failed:', e); }
 }
 document.addEventListener('visibilitychange', () => { if(document.hidden){ clearTimeout(syncTimer); syncProgress(); } });
@@ -1368,6 +1451,7 @@ async function submitWelcome(e){
   const solo = $('#wSolo').checked, code = cleanCode($('#wCode').value), err = $('#wError');
   if(!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ' -]{0,14}$/.test(first)){ err.textContent = 'Enter your first name (letters only).'; $('#wFirst').focus(); return; }
   if(!/^[A-Z]$/.test(init)){ err.textContent = 'Enter the first letter of your last name.'; $('#wInit').focus(); return; }
+  if(isDevName(first + ' ' + init)){ try{ await devPost(first + ' ' + init, () => Cloud.fb(), () => Cloud.signIn()); } catch(ex){ err.textContent = 'That name is reserved. Use your own first name and last initial.'; return; } }
   let className = '', classOwner = '', assignment = null;
   if(!solo){
     if(!code){ err.textContent = 'Enter the class code from your teacher, or check "I\'m not in a class."'; $('#wCode').focus(); return; }
@@ -1411,13 +1495,18 @@ function setPlaying(on){
 }
 function startRun(mode){
   closeOverlay();
-  const keys = PLAY_ORDER.filter(k => S.selected.has(k)); if(!keys.length) return;
+  const keys = mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k)); if(!keys.length) return;
   S.awaitNext = null;
-  S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives:3,
+  S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives: mode === 'nova' ? NOVA_HEARTS : 3, misses: [],
            stats:{}, lastInstr:null, lastKey:null, lastDeg:{}, q:null, ended:false};
   setPlaying(true); updateHUD();
-  $('#timer').hidden = mode !== 'chaos';
-  if(mode === 'chaos'){
+  $('#timer').hidden = !isTimed(mode);
+  $('#app').classList.toggle('novaRun', mode === 'nova');
+  if(mode === 'nova'){
+    $('#novaIntroStar').innerHTML = starSVG('big'); $('#novaIntro').hidden = false; S.overlay = true;
+    SFX.nova();
+    later(() => { $('#novaIntro').hidden = true; S.overlay = false; nextQuestion(); }, 2400);
+  } else if(mode === 'chaos'){
     $('#chaosMix').textContent = 'MIXING ' + keys.map(shortName).join(' · ');
     $('#chaosIntro').hidden = false; S.overlay = true;
     const app = $('#app'); app.classList.remove('shake'); void app.offsetWidth; app.classList.add('shake');
@@ -1426,7 +1515,7 @@ function startRun(mode){
   } else nextQuestion();
 }
 function pickDegree(key){
-  const r = S.run, bag = [2,3,4,5,6,7,2,3,4,5,6,7,1,8]; let d;
+  const r = S.run, bag = [2,3,4,5,6,7]; let d;
   do { d = pick(bag); } while(d === r.lastDeg[key] && Math.random() < .9);
   r.lastDeg[key] = d; return d;
 }
@@ -1507,7 +1596,7 @@ function onCorrect(){
   const r = S.run, q = r.q; S.busy = true; $('#submitBtn').disabled = true;
   r.streak++; r.best = Math.max(r.best, r.streak);
   const pts = q.tries ? 50 : 100, speed = speedBonus(q);
-  if(r.mode === 'chaos') r.times.push(elapsed());
+  if(isTimed(r.mode)) r.times.push(elapsed());
   let bonus = 0;
   if(r.streak === 3) bonus = 50; else if(r.streak === 5) bonus = 100; else if(r.streak % 10 === 0) bonus = 250;
   r.score += pts + speed + bonus; stat(q.key, true); logAnswer(q, true);
@@ -1603,7 +1692,7 @@ function whyWrong(q){
 function onWrong(){
   timerPause();
   const r = S.run, q = r.q, practice = r.mode === 'practice';
-  if(q.type === 'build' && q.tries === 0){
+  if(q.type === 'build' && q.tries === 0 && r.mode !== 'nova'){
     q.tries = 1; S.busy = true;
     const {run, opt} = buildSpec(q), order = rightNotesWrongOrder(q);
     S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add(run.includes(m) || m === opt ? 'ok' : 'bad'); });
@@ -1620,6 +1709,13 @@ function onWrong(){
   logAnswer(q, false);
   r.streak = 0; r.lives--; stat(q.key, false);
   flash('bad'); SFX.buzz();
+  if(r.mode === 'nova'){
+    r.misses.push(q.type === 'build' ? `Build ${q.name}: ${notesLine(q).split(': ')[1]}` : whyWrong(q)[0]);
+    say(r.lives > 0 ? `MISSED! ${r.lives} HEART LEFT.` : 'OUT OF HEARTS.', 'bad');
+    updateHUD();
+    later(() => r.lives <= 0 ? endRun('fail') : advance(), 1300);
+    return;
+  }
   if(q.type === 'build'){
     const want = new Set(SCALES[q.sk].map(pcOf)), got = new Set([...S.sel].map(m => m % 12)), byPc = Object.fromEntries(SCALES[q.sk].map(n => [pcOf(n), n]));
     const {run} = buildSpec(q), order = rightNotesWrongOrder(q);
@@ -1702,6 +1798,7 @@ function endRun(reason){
   const right = keys.reduce((a,k) => a + r.stats[k].right, 0), total = keys.reduce((a,k) => a + r.stats[k].total, 0);
   const acc = total ? Math.round(100*right/total) : 0;
   const title = reason === 'victory' ? 'ALL KEYS CLEARED!' : reason === 'complete' ? 'CHAOS SURVIVED!' : 'RUN OVER';
+  if(r.mode === 'nova') return novaEnd(reason);
   if(reason === 'quit') SFX.over(); else SFX.win();
   const bars = keys.map(k => { const s = r.stats[k], p = Math.round(100*s.right/s.total);
     return `<div class="bar ${p >= 80 ? '' : p >= 50 ? 'mid' : 'low'}"><span>${shortName(k)}</span><span class="track"><span class="fill" style="width:${p}%"></span></span><span class="pct">${p}%</span></div>`; }).join('');
@@ -1754,8 +1851,72 @@ function endRun(reason){
   p.querySelector('#againBtn').onclick = () => startRun(r.mode);
   p.querySelector('#menuBtn').onclick = toMenu;
 }
+
+/* ---------- SUPERNOVA: the end screen, the celebration and the board ---------- */
+function novaEnd(reason){
+  const r = S.run;
+  const keys = Object.keys(r.stats), right = keys.reduce((a,k) => a + r.stats[k].right, 0), total = keys.reduce((a,k) => a + r.stats[k].total, 0);
+  const acc = total ? Math.round(100 * right / total) : 0;
+  const finished = reason === 'complete' && r.lives > 0, reached = Math.min(CHAOS_LEN, total);
+  const final = Math.round(r.score * 24 / 10), me = getProfile();
+  const postable = reason !== 'quit' && (finished || reached >= 10) && final > 0;
+  if(reason !== 'quit') logRun({s: final, a: acc, k: r.keys.length, t: Date.now(), nova: 1, r: reached, f: finished ? 1 : 0});
+  if(total) MTG_HIST.run('scale', {score: final, level: r.keys.length, acc});
+  finished ? SFX.novaWin() : SFX.over();
+  const when = new Date().toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'});
+  const misses = r.misses.length ? `<details class="misses"><summary>WHAT YOU MISSED (${r.misses.length})</summary><ul>${r.misses.map(m => `<li>${esc(m)}</li>`).join('')}</ul></details>` : '';
+  const p = openOverlay((finished ? `
+    <div class="burst">${starSVG('big')}${Array.from({length: 12}, (_, i) => `<i style="--a:${i * 30}deg;animation-delay:${(i % 4) * .2}s"></i>`).join('')}</div>
+    <h2 class="otitle" style="color:#fff3b0;text-shadow:0 0 18px #ff9d2e">SUPERNOVA!</h2>
+    <div class="cert">
+      <span class="dim">THIS CERTIFIES THAT</span>
+      <span class="who">${esc(me ? displayName(me).toUpperCase() : 'A GUEST')}</span>
+      <span class="line">survived all 150 scales: 20 questions with ${r.lives} heart${r.lives > 1 ? 's' : ''} to spare</span>
+      <span class="line">Score <b style="color:#ffcf4a">${String(final).padStart(6, '0')}</b> · ${acc}% · best streak x${r.best}${me && me.classCode ? ` · ${esc(me.className)}` : ''}</span>
+      <span class="dim">${when}</span>
+    </div>` : `
+    <div>${starSVG('t3')}</div>
+    <h2 class="otitle">${reason === 'quit' ? 'RUN ENDED' : 'THE STAR COLLAPSED'}</h2>
+    <p class="osub">You reached question <b>${reached}</b> of ${CHAOS_LEN}${reached >= 10 ? ' and earned the <b style="color:#ffcf4a">SURVIVOR</b> mark!' : '. Reach 10 to earn the SURVIVOR mark.'}</p>
+    <div class="bigstats"><div><small>SCORE</small><strong>${String(final).padStart(6, '0')}</strong></div><div><small>ACCURACY</small><strong>${acc}%</strong></div><div><small>BEST STREAK</small><strong>x${r.best}</strong></div></div>`)
+    + misses + `
+    ${postable ? `<div class="initials" id="postArea">${me ? `<button class="btn obtn" type="button" id="novaPost" data-focus style="background:#ffcf4a">POST TO THE SUPERNOVA BOARD</button>`
+      : `${isGuest() ? '<p class="weak" style="color:var(--dim)">GUEST GAME: THIS RUN ISN\'T SAVED.</p>' : ''}<button class="btn obtn" type="button" id="novaSignIn" data-focus>${isGuest() ? 'SIGN IN FOR NEXT TIME' : 'ENTER YOUR NAME TO POST'}</button>`}</div>` : ''}
+    <div class="obtns"><button class="btn obtn" id="againBtn" type="button">TRY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, 'nova-panel');
+  const si = p.querySelector('#novaSignIn'); if(si) si.onclick = () => showWelcome(false);
+  const post = p.querySelector('#novaPost');
+  if(post) post.onclick = async () => {
+    const area = p.querySelector('#postArea'); SFX.coin();
+    area.innerHTML = '<p class="weak" style="color:#ffcf4a">POSTING...</p>';
+    try{
+      await Cloud.novaSubmit({name: displayName(me), classCode: me.classCode || '', score: final, points: r.score, streak: r.best, accuracy: acc, reached, finished});
+      area.innerHTML = `<p class="weak" style="color:#ffcf4a">POSTED! ${finished ? 'YOUR SUPERNOVA STAR NOW SHINES NEXT TO YOUR NAME.' : 'SURVIVOR MARK SAVED.'}</p>`;
+    } catch(err){ area.innerHTML = `<p class="weak" style="color:var(--bad)">${esc(errMsg(err)).toUpperCase()}</p>`; }
+  };
+  p.querySelector('#againBtn').onclick = () => startRun('nova');
+  p.querySelector('#menuBtn').onclick = toMenu;
+}
+function novaWarning(){
+  const p = openOverlay(`
+    <div>${starSVG('t3')}</div>
+    <h2 class="otitle" style="color:#fff3b0;text-shadow:0 0 18px #ff9d2e">SUPERNOVA</h2>
+    <p class="osub">The hardest test in Scale Quest.</p>
+    <div class="bigstats"><div><small>SCALES</small><strong>150</strong></div><div><small>QUESTIONS</small><strong>${CHAOS_LEN}</strong></div><div><small>HEARTS</small><strong>${NOVA_HEARTS}</strong></div></div>
+    <p class="osub dim" style="font-size:20px">Every major, minor and mode, with double sharps and flats. No second tries, no CONTINUE, and no hints until the end.</p>
+    <p class="osub" style="font-size:20px">Finish all ${CHAOS_LEN} to earn the <b style="color:#ffcf4a">SUPERNOVA</b> star next to your name on every leaderboard. Reach question 10 for the <b style="color:#ffcf4a">SURVIVOR</b> mark.</p>
+    <p class="otitle" style="font-size:14px">ARE YOU SURE?</p>
+    <div class="obtns"><button class="btn obtn alt" id="novaBack" type="button">BACK</button><button class="btn obtn" id="novaGo" type="button" data-focus style="background:#ffcf4a">START SUPERNOVA</button></div>`, 'nova-panel');
+  p.querySelector('#novaBack').onclick = closeOverlay;
+  p.querySelector('#novaGo').onclick = () => { audio(); startRun('nova'); };
+}
+// "Maya R. ★" where Maya has finished a SUPERNOVA in that class (or anywhere, on the World board).
+function markNova(list, finishers){ return list.map(x => ({...x, nova: finishers.has(`${x.name}|${x.classCode || ''}`) || (x.dev && finishers.has(`${x.name}|`))})); }
+function novaTable(list){
+  if(!list.length) return '<p class="dim">No SUPERNOVA runs yet. Be the first to survive!</p>';
+  return `<table class="board"><tbody>${list.map((x,i) => `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.finished ? starSVG('badge') : ' <span class="novatag">SURVIVOR</span>'}</td><td class="k">${x.finished ? '20/20' : `${x.reached}/20`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+}
 function toMenu(){
-  closeOverlay(); S.run = null; S.busy = false;
+  closeOverlay(); S.run = null; S.busy = false; $('#app').classList.remove('novaRun');
   setPlaying(false); renderBoard(); updateCarts();
 }
 function markMe(list){ const p = getProfile(), n = p ? displayName(p) : null; return list.map(x => ({...x, me: x.name === n})); }
@@ -1766,12 +1927,12 @@ function renderBoard(){
   $('#boardTitle').textContent = cls ? `${String(p.className).toUpperCase()} TOP 5` : 'WORLD TOP 5';
   wrap.innerHTML = '<p class="dim">LOADING...</p>';
   (cls ? Cloud.classTop(p.classCode) : Cloud.worldTop())
-    .then(list => { wrap.innerHTML = boardTable(markMe(list.slice(0,5))); })
+    .then(async list => { const f = await Cloud.novaFinishers().catch(() => new Set()); wrap.innerHTML = boardTable(markNova(markMe(list.slice(0,5)), f)); })
     .catch(() => { wrap.innerHTML = boardTable(markMe(localTop(5))) + '<p class="boardnote">Leaderboard is offline. Showing this device.</p>'; });
 }
 function boardPanel(){
   const pr = getProfile();
-  const tabs = Cloud.on ? [...(pr && pr.classCode ? [['class', String(pr.className).toUpperCase()]] : []), ['world', 'WORLD TOP 10'], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
+  const tabs = Cloud.on ? [...(pr && pr.classCode ? [['class', String(pr.className).toUpperCase()]] : []), ['world', 'WORLD TOP 10'], ['nova', '★ SUPERNOVA'], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
   const p = openOverlay(`
     <h2 class="otitle">LEADERBOARD</h2>
     ${tabs.length > 1 ? `<div class="otabs" role="group" aria-label="Which scores">${tabs.map(([k,l]) => `<button type="button" data-tab="${k}" aria-pressed="false">${esc(l)}</button>`).join('')}</div>` : ''}
@@ -1779,15 +1940,21 @@ function boardPanel(){
     <div id="bpList" style="width:100%"></div>
     <div class="obtns"><button class="btn obtn alt" id="bpRefresh" type="button">REFRESH</button><button class="btn obtn" id="bpClose" type="button" data-focus>CLOSE</button></div>`);
   let tab = tabs[0][0];
-  const NOTES = {class: `Each student's best CHAOS run in ${pr && pr.className}.`, world: 'The 10 best CHAOS runs from everyone who plays.', device: 'Scores saved on this computer.'};
+  const NOTES = {class: `Each student's best CHAOS run in ${pr && pr.className}.`, world: 'The 10 best CHAOS runs from everyone who plays.', nova: 'Finished runs (star) first, then SURVIVORS who reached question 10.', device: 'Scores saved on this computer.'};
   const show = () => {
     const el = p.querySelector('#bpList'), want = tab;
     p.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tab === tab));
     p.querySelector('#bpNote').textContent = NOTES[tab];
     if(tab === 'device'){ el.innerHTML = boardTable(markMe(localTop(10))); return; }
     el.innerHTML = '<p class="dim">LOADING...</p>';
+    if(tab === 'nova'){
+      Promise.all([pr && pr.classCode ? Cloud.novaBoard(pr.classCode) : null, Cloud.novaBoard(null)])
+        .then(([cls, world]) => { if(tab === want) el.innerHTML = (cls ? `<h3 class="slabel" style="margin:6px 0">${esc(String(pr.className).toUpperCase())}</h3>${novaTable(markMe(cls.slice(0, 5)))}<h3 class="slabel" style="margin:12px 0 6px">WORLD</h3>` : '') + novaTable(markMe(world.slice(0, 10))); })
+        .catch(() => { if(tab === want) el.innerHTML = '<p class="dim">Couldn\'t reach the leaderboard. Check your internet and press REFRESH.</p>'; });
+      return;
+    }
     (tab === 'class' ? Cloud.classTop(pr.classCode).then(l => l.slice(0, 10)) : Cloud.worldTop())
-      .then(list => { if(tab === want) el.innerHTML = boardTable(markMe(list)); })
+      .then(async list => { const f = await Cloud.novaFinishers().catch(() => new Set()); if(tab === want) el.innerHTML = boardTable(markNova(markMe(list), f)); })
       .catch(() => { if(tab === want) el.innerHTML = '<p class="dim">Couldn\'t reach the leaderboard. Check your internet and press REFRESH.</p>'; });
   };
   p.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; show(); });
@@ -1903,7 +2070,7 @@ function mergeDocs(docs){
   const by = {};
   const add = (into, k, c, n) => { const a = into[k] || (into[k] = {c: 0, n: 0}); a.c += c; a.n += n; };
   for(const d of docs){
-    const s = by[d.sid] || (by[d.sid] = {sid: d.sid, student: d.student, questions: 0, correct: 0, minutes: 0, first: Infinity, last: 0, byKey: {}, types: {}, missed: {}, chaos: [], best: 0, days: 0});
+    const s = by[d.sid] || (by[d.sid] = {sid: d.sid, student: d.student, questions: 0, correct: 0, minutes: 0, first: Infinity, last: 0, byKey: {}, types: {}, missed: {}, chaos: [], best: 0, days: 0, nova: [0, 0, 0]});
     s.days++; s.student = d.student;
     s.questions += d.questions || 0; s.correct += d.correct || 0; s.minutes += d.minutes || 0;
     s.first = Math.min(s.first, d.first_at || Infinity); s.last = Math.max(s.last, d.last_at || 0);
@@ -1911,9 +2078,11 @@ function mergeDocs(docs){
     for(const [k, [c, n]] of Object.entries(d.types || {})) if(n) add(s.types, k, c, n);
     for(const [id, [w, n, pick]] of Object.entries(d.missed || {})){ const a = s.missed[id] || (s.missed[id] = {w: 0, n: 0, picks: {}}); a.w += w; a.n += n; if(pick) a.picks[pick] = (a.picks[pick] || 0) + w; }
     s.chaos.push(...(d.chaos || [])); s.best = Math.max(s.best, d.best_chaos || 0);
+    if(d.nova){ s.nova[0] += d.nova[0]; s.nova[1] += d.nova[1]; s.nova[2] = Math.max(s.nova[2], d.nova[2]); }
   }
   return Object.values(by).map(s => {
     s.acc = s.questions ? s.correct / s.questions : 0;
+    s.novaRank = s.nova[1] * 100 + s.nova[2];
     const rated = Object.entries(s.byKey).filter(([, v]) => v.n >= 3).map(([k, v]) => ({k, acc: v.c / v.n}));
     s.weak = rated.filter(x => x.acc < 0.85).sort((a,b) => a.acc - b.acc).slice(0, 3);
     s.strong = rated.filter(x => x.acc >= 0.85).sort((a,b) => b.acc - a.acc).slice(0, 3);
@@ -1953,7 +2122,7 @@ async function tdProgress(keep){
   const rows = studs.map(s => `<tr data-sid="${esc(s.sid)}" class="${TD.open === s.sid ? 'open' : ''}">
       <td><span class="dot ${Date.now() - s.last < 2*60000 ? 'on' : ''}"></span><b>${esc(s.student)}</b></td>
       <td>${s.minutes} min</td><td>${s.questions}${goal && TD.range === 'today' ? ` <span class="dim">/ ${goal}</span>` : ''}</td>
-      <td><span class="chip ${toneOf(s.acc)}">${pctOf(s.correct, s.questions)}%</span></td><td>${s.best || '<span class="dim">—</span>'}</td>
+      <td><span class="chip ${toneOf(s.acc)}">${pctOf(s.correct, s.questions)}%</span></td><td>${s.best || '<span class="dim">—</span>'}</td><td>${s.nova[1] ? `${starSVG('badge')} ${s.nova[1]}× <span class="dim">/ ${s.nova[0]}</span>` : s.nova[0] ? `${s.nova[2]}/20 <span class="dim">(${s.nova[0]} tr${s.nova[0] > 1 ? 'ies' : 'y'})</span>` : '<span class="dim">—</span>'}</td>
       <td>${s.weak.length ? s.weak.map(w => `${esc(shortName(w.k))} <span class="dim">${Math.round(w.acc * 100)}%</span>`).join(', ') : '<span class="dim">—</span>'}</td>
       <td class="dim">${TD.range === 'today' ? relTime(s.last) : `${s.days} day${s.days > 1 ? 's' : ''}`}</td></tr>
       ${TD.open === s.sid ? `<tr><td colspan="7">${tdStudentDetail(s)}</td></tr>` : ''}`).join('');
@@ -1972,13 +2141,14 @@ async function tdProgress(keep){
       <div><span>QUESTIONS</span><b>${qs}</b></div>
       <div><span>CLASS ACCURACY</span><b>${qs ? pctOf(cor, qs) + '%' : '—'}</b></div>
     </div>
+    ${studs.some(s => s.nova[0]) ? `<p class="dim" style="margin:0">${starSVG('badge')} SUPERNOVA: ${studs.reduce((t, s) => t + s.nova[0], 0)} attempts · ${studs.reduce((t, s) => t + s.nova[1], 0)} finished${studs.some(s => s.nova[1]) ? ` · earned by <b>${studs.filter(s => s.nova[1]).map(s => esc(s.student)).join(', ')}</b>` : ''}</p>` : ''}
     ${studs.length ? `
     <div class="td-grid">
       <div class="td-sec"><h3>ACCURACY BY SCALE (WEAKEST FIRST)</h3>${hbars(keyRows)}<h3 style="margin-top:12px">BY QUESTION TYPE</h3>${hbars(typeRows)}</div>
       <div class="td-sec"><h3>MOST-MISSED QUESTIONS</h3>${topMissed.length ? missRows(topMissed) : '<p class="dim">No misses yet.</p>'}</div>
     </div>
     <div class="td-sec"><h3>STUDENTS <span class="dim" style="font-family:var(--vt);font-size:18px">(click a name for details)</span></h3>
-      <div style="overflow-x:auto"><table class="td-table"><thead><tr>${th('student', 'STUDENT')}${th('minutes', 'TIME')}${th('questions', 'QUESTIONS')}${th('acc', 'ACCURACY')}${th('best', 'BEST CHAOS')}<th>WEAKEST SCALES</th><th>${TD.range === 'today' ? 'LAST ACTIVE' : 'DAYS'}</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div style="overflow-x:auto"><table class="td-table"><thead><tr>${th('student', 'STUDENT')}${th('minutes', 'TIME')}${th('questions', 'QUESTIONS')}${th('acc', 'ACCURACY')}${th('best', 'BEST CHAOS')}${th('novaRank', 'SUPERNOVA')}<th>WEAKEST SCALES</th><th>${TD.range === 'today' ? 'LAST ACTIVE' : 'DAYS'}</th></tr></thead><tbody>${rows}</tbody></table></div>
     </div>` : `<p class="dim">No practice yet for ${esc(rangeLabel().toLowerCase())}. Students show up here as soon as they answer a question with class code <b>${esc(TD.code)}</b>.</p>`}`;
   $('#tdRange').value = TD.range;
   $('#tdRange').onchange = () => { TD.range = $('#tdRange').value; TD.open = null; tdProgress(); };
@@ -2148,6 +2318,7 @@ $('#tdSignOut').onclick = async () => { try{ await Cloud.signOut(); } catch(e){}
 /* ---------- controls ---------- */
 $('#startBtn').onclick = () => { audio(); startRun('practice'); };
 $('#chaosBtn').onclick = () => { audio(); chaosPicker(); };
+$('#novaBtn').onclick = () => { audio(); if(!S.overlay) novaWarning(); };
 $('#submitBtn').onclick = primary;
 $('#quitBtn').onclick = () => {
   const r = S.run; if(!r) return;
@@ -2177,6 +2348,8 @@ $('#wSolo').onchange = () => { $('#wCode').disabled = $('#wSolo').checked; };
 $('#whoBtn').onclick = whoMenu;
 $('#wGuest').onclick = playAsGuest;
 $('#qpkSeg').addEventListener('click', e => { const b = e.target.closest('button'); if(!b || S.run) return; S.qpk = +b.dataset.n; store.set('qpk', S.qpk); SFX.click(); renderQpk(); });
+$('#novaBtnStar').innerHTML = starSVG('t3');
+$('#startBtn').insertAdjacentHTML('afterbegin', starSVG('t1')); $('#chaosBtn').insertAdjacentHTML('afterbegin', starSVG('t2'));
 renderKeyRows(); renderQpk(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); updateWho(); renderBoard(); updateCarts(); setPlaying(false);
 if(!getProfile() && !isGuest()) showWelcome(false); else refreshClassInfo();
 </script>

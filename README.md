@@ -33,6 +33,15 @@ Scale Quest shares the **Rhythm Trainer's Firebase project** (`rhythm-trainer-fc
 
 **Rules:** [`firestore.rules`](firestore.rules) covers **both** games and is identical in both repos. Whenever it changes, paste it into Firebase → Firestore Database → Rules → **Publish**.
 
+## SUPERNOVA (the ultimate test)
+
+- One button next to START and CHAOS. It always uses **all 150 scales**: 20 questions, **2 hearts**, no CONTINUE, no second try at building a scale, and no explanations until the end (the end screen lists every miss). Same timer and speed bonus as CHAOS.
+- Modes are shown as a ladder of stars: PRACTICE (small calm star), CHAOS (pulsing star), SUPERNOVA (big swelling star with rays).
+- **Finish all 20** for a celebration screen with a certificate and a permanent animated star next to your name on every Scale Quest leaderboard. Reach question 10 for the **SURVIVOR** mark.
+- The **★ SUPERNOVA** tab on the leaderboard shows class and world runs (finished first). Runs are stored in `nova_scores`.
+- The teacher dashboard shows SUPERNOVA attempts, finishes and who earned it.
+- Questions ask for the 2nd through 7th (never the tonic or octave).
+
 ## Minor scales and modes
 
 - The top bar has **MAJOR / MINOR / MODES** tabs; scales checked in any tab stay selected and can be mixed.
