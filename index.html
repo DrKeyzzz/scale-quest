@@ -728,8 +728,8 @@ const Cloud = {
 
   // ----- progress: one summary per student per day; only the class's teacher can read it -----
   saveProgress(id, data){ return this.run(({fs, db}) => fs.setDoc(fs.doc(db, 'scale_progress', id), {...data, updated_at: fs.serverTimestamp()})); },
-  progress(code){ return this.run(async ({fs, db, auth}) => {
-    const snap = await fs.getDocs(fs.query(fs.collection(db, 'scale_progress'), fs.where('owner', '==', auth.currentUser.email), fs.where('class_code', '==', code)));
+  progress(code, day){ return this.run(async ({fs, db, auth}) => {
+    const snap = await fs.getDocs(fs.query(fs.collection(db, 'scale_progress'), fs.where('owner', '==', auth.currentUser.email), fs.where('class_code', '==', code), ...(day ? [fs.where('date', '==', day)] : [])));
     return snap.docs.map(d => d.data());
   }); },
   deleteStudent(code, sid){ return this.run(async ({fs, db, auth}) => {
@@ -1172,7 +1172,9 @@ function buildDay(){
     first: qs.length ? qs[0].t0 : 0, last: qs.length ? qs[qs.length-1].t1 : 0};
 }
 let syncTimer = 0;
-function scheduleSync(){ clearTimeout(syncTimer); syncTimer = setTimeout(syncProgress, 1500); }
+// at most one progress save a minute per student (plus one when the page is hidden), so a busy class stays inside Firebase's free daily limit
+let lastSync = 0;
+function scheduleSync(){ clearTimeout(syncTimer); syncTimer = setTimeout(() => { lastSync = Date.now(); syncProgress(); }, Math.max(1500, lastSync + 60000 - Date.now())); }
 async function syncProgress(){
   const p = getProfile();
   if(!Cloud.on || !p || !p.classCode || !p.classOwner) return;
@@ -1813,7 +1815,8 @@ const missRows = (entries) => entries.map(([id, v]) => { const pick = Object.ent
 async function tdProgress(keep){
   const body = $('#tdBody');
   if(!keep) body.innerHTML = '<p class="dim">Loading progress...</p>';
-  try{ TD.docs = await Cloud.progress(TD.code); $('#tdErr').textContent = ''; } catch(err){ $('#tdErr').textContent = errMsg(err); TD.docs = []; }
+  const LOAD = (code, day) => Cloud.progress(code, day);
+  try{ TD.docs = keep && TD.range === 'today' && TD.docsCode === TD.code ? TD.docs.filter(d => d.date !== dayKey()).concat((await LOAD(TD.code, dayKey())).filter(d => d.date === dayKey())) : await LOAD(TD.code); TD.docsCode = TD.code; $('#tdErr').textContent = ''; } catch(err){ $('#tdErr').textContent = errMsg(err); TD.docs = []; }
   const studs = mergeDocs(rangeDocs()), k = TD.sort.key, dir = TD.sort.dir;
   studs.sort((a,b) => (k === 'student' ? String(a.student).localeCompare(String(b.student)) : (a[k] - b[k])) * dir);
   const cls = tdClass(), a = cls && cls.scale_assignment;
