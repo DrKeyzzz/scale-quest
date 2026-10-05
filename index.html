@@ -1143,7 +1143,7 @@ function pickOf(q){
   return letter + (a === 1 ? '#' : a === -1 ? 'b' : '');
 }
 function logAnswer(q, ok){
-  MTG_HIST.note('scale', [fmt(q.key) + ' major', TYPE_NAME[q.type[0]]], ok);
+  MTG_HIST.note('scale', [scaleName(q.key), TYPE_NAME[q.type[0]]], ok);
   if(isGuest()) return;
   const log = readLog();
   todayOf(log).q.push({k: q.key, y: q.type[0], d: q.degree || 0, ok: ok ? 1 : 0, pk: ok ? '' : pickOf(q), t0: q.t0 || Date.now(), t1: Date.now(), m: S.run.mode[0]});
