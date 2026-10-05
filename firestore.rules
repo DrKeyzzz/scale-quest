@@ -263,7 +263,7 @@ service cloud.firestore {
         && d.hits is int && d.hits >= 0 && d.hits <= 100000
         && d.acc is int && d.acc >= 0 && d.acc <= 100
         && d.level is int && d.level >= 1 && d.level <= 1000
-        && d.bpm is int && d.bpm >= 40 && d.bpm <= 120
+        && d.bpm is int && d.bpm >= 40 && d.bpm <= 400
         && d.diff in ['easy', 'medium', 'hard', 'expert']
         && d.style in ['midi', 'keys', 'rhythm']
         && d.clef in ['treble', 'bass', 'none']
