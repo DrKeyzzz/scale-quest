@@ -38,11 +38,10 @@ Scale Quest shares the **Rhythm Trainer's Firebase project** (`rhythm-trainer-fc
 - The top bar has **MAJOR / MINOR / MODES** tabs; scales checked in any tab stay selected and can be mixed.
 - **SELECT ▾** checks or unchecks whole groups: the mode or minor form you're looking at (e.g. all Dorian), the whole tab (all modes), **everything** (150 scales), or **clear all**. The button shows how many are checked.
 - **Melodic minor** goes up with a raised 6th and 7th and comes down as natural minor. Building it asks "going up" or "going down"; questions about its 6th or 7th say which direction. (The first build of a melodic minor in practice is always going up.)
-- With **Show key signature** on, minor scales and modes use their parent major's key signature, so harmonic and melodic minor's raised notes still need a sharp or natural.
+- The staff never shows a key signature: students add every sharp, flat, double sharp or double flat themselves (the 3rd of G♭ major = B + ♭).
 - Every scale is spelled correctly, with **double sharps (𝄪) and double flats (𝄫)** where the theory needs them (G♯ harmonic minor has F𝄪, G♭ Dorian has B𝄫). The staff has 𝄫 ♭ ♮ ♯ 𝄪 buttons. 150 scales in all.
-- Scales from theoretical keys (like G♭ Dorian, whose parent is F♭ major) show no key signature even when the option is on, so students write every accidental.
 - The CHAOS key bonus counts up to 15 scales.
-- **Questions per scale** (practice mode) is in **SETUP**.
+- **Questions per scale** (practice mode) is next to the START button.
 
 ## Changing the scale data
 

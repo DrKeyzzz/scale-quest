@@ -75,6 +75,9 @@ button{font:inherit;color:inherit}
 .cart.on .ccheck{opacity:1;color:var(--shadow)}
 .cats{display:flex;flex-wrap:nowrap;gap:8px 12px;align-items:center;min-width:0}
 .cats > .seg{flex:none}
+.qpk{display:flex;gap:8px;align-items:center}
+.qpk .slabel{font-size:8px;line-height:1.5;text-align:right}
+.qpk .seg button{font-size:10px;padding:8px 10px}
 .famtabs{display:flex;gap:2px;flex:none;border-right:3px solid var(--line);padding-right:12px}
 .famtabs button{font-family:var(--px);font-size:11px;padding:8px 10px 6px;background:none;color:var(--dim);border:0;border-bottom:3px solid transparent;cursor:pointer}
 .famtabs button:hover{color:var(--ink)}
@@ -431,7 +434,6 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
       <button class="btn tbtn who" id="whoBtn" type="button">👤 SIGN IN</button>
       <button class="btn tbtn" id="boardBtn" type="button">LEADERBOARD</button>
       <button class="btn tbtn" id="muteBtn" type="button">SOUND: ON</button>
-      <button class="btn tbtn" id="gearBtn" type="button">SETUP</button>
       <button class="btn tbtn quit" id="quitBtn" type="button" hidden>QUIT</button>
       <button class="btn tbtn" id="teacherTopBtn" type="button">TEACHER DASHBOARD</button>
     </div>
@@ -535,6 +537,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
   <footer class="controls">
     <button class="btn start" id="startBtn" type="button" disabled>START</button>
     <button class="btn chaos" id="chaosBtn" type="button" disabled>CHAOS</button>
+    <span class="qpk" title="How many questions each scale gets in practice before moving to the next one"><span class="slabel">QUESTIONS<br>PER SCALE</span><span class="seg" id="qpkSeg" role="group" aria-label="Practice questions per scale"></span></span>
   </footer>
 </main>
 
@@ -897,7 +900,7 @@ const studentKey = p => `${sidOf(p)}:${p.classCode || ''}`;
 const S = {
   selected: new Set(),
   qpk: store.get('qpk', 5),
-  keySig: store.get('keySig', false),
+  keySig: false,   // no key signatures: students write every accidental themselves
   muted: store.get('muted', false),
   run: null, busy: false, overlay: false,
   sel: new Set(), pos: 6, accSel: null,
@@ -1028,7 +1031,7 @@ $('#keySelect').addEventListener('click', e => {
   S.selected.has(k) ? S.selected.delete(k) : S.selected.add(k);
   SFX.click(); updateCarts();
 });
-// Questions per scale (practice mode) lives in SETUP.
+// Questions per scale (practice mode), next to START.
 function renderQpk(){
   const el = $('#qpkSeg'); if(!el) return;
   el.innerHTML = [3,5,8,10].map(n => `<button type="button" data-n="${n}" aria-pressed="${n===S.qpk}"${S.run ? ' disabled' : ''}>${n}</button>`).join('');
@@ -1468,9 +1471,7 @@ function renderQuestion(){
   } else {
     tag.textContent = 'STAFF'; tag.className = 'qtag staff';
     $('#qText').innerHTML = `Place the <em>${ORD[q.degree]}</em> of ${K}`;
-    $('#qHelp').textContent = S.keySig && stdSig(q.key) ? 'Use ▲ ▼ to move the note. The key signature is shown.'
-      : S.keySig ? 'Use ▲ ▼ to move the note. This scale has no standard key signature, so add every accidental.'
-      : 'Use ▲ ▼ to move the note. Add ♯, ♭, 𝄪 or 𝄫 if it needs one.';
+    $('#qHelp').textContent = 'Use ▲ ▼ to move the note. Add ♯, ♭, 𝄪 or 𝄫 if it needs one.';
   }
   const staff = q.type === 'staff';
   $('#pianoWrap').hidden = staff; $('#staffWrap').hidden = !staff;
@@ -1809,26 +1810,6 @@ function chaosPicker(){
   p.querySelector('#goChaos').onclick = () => startRun('chaos');
   p.querySelector('#cancelChaos').onclick = closeOverlay;
 }
-function setupPanel(){
-  const p = openOverlay(`
-    <h2 class="otitle">SETUP</h2>
-    <label class="toggle" for="ksToggle"><input type="checkbox" id="ksToggle" ${S.keySig ? 'checked' : ''}> Show key signature on staff</label>
-    <p class="osub dim" style="font-size:20px">When on, the staff shows the key's sharps or flats, so students don't need the accidental buttons.</p>
-    <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><span class="slabel">QUESTIONS PER SCALE (PRACTICE)</span><div class="seg" id="qpkSeg" role="group" aria-label="Questions per scale"></div>
-      <span class="dim" style="font-size:18px">How many questions each scale gets before practice moves to the next one.${S.run ? ' Quit to change it.' : ''}</span></div>
-    <div class="obtns"><button class="btn obtn" id="closeSetup" type="button">DONE</button></div>`);
-  renderQpk();
-  p.querySelector('#qpkSeg').onclick = e => {
-    const b = e.target.closest('button'); if(!b || S.run) return;
-    S.qpk = +b.dataset.n; store.set('qpk', S.qpk); SFX.click(); renderQpk();
-  };
-  p.querySelector('#ksToggle').onchange = e => {
-    S.keySig = e.target.checked; store.set('keySig', S.keySig);
-    if(S.run && S.run.q && S.run.q.type === 'staff' && !S.busy){ drawKeySig(S.run.q.key); renderQuestion(); }
-  };
-  p.querySelector('#closeSetup').onclick = closeOverlay;
-}
-
 /* ---------- teacher dashboard ----------
    Sign in with Google. Shows live practice for each of your classes,
    lets you set an assignment, manage classes (shared with the Rhythm
@@ -2172,7 +2153,6 @@ $('#quitBtn').onclick = () => {
   const r = S.run; if(!r) return;
   if(Object.keys(r.stats).length) endRun('quit'); else { r.ended = true; toMenu(); }
 };
-$('#gearBtn').onclick = () => { if(!S.overlay) setupPanel(); };
 $('#teacherTopBtn').onclick = () => { if(!S.overlay) teacherLogin(); };
 $('#boardBtn').onclick = () => { if(!S.overlay) boardPanel(); };
 function renderMute(){ $('#muteBtn').textContent = S.muted ? 'SOUND: OFF' : 'SOUND: ON'; }
@@ -2196,6 +2176,7 @@ $('#wForm').onsubmit = submitWelcome;
 $('#wSolo').onchange = () => { $('#wCode').disabled = $('#wSolo').checked; };
 $('#whoBtn').onclick = whoMenu;
 $('#wGuest').onclick = playAsGuest;
+$('#qpkSeg').addEventListener('click', e => { const b = e.target.closest('button'); if(!b || S.run) return; S.qpk = +b.dataset.n; store.set('qpk', S.qpk); SFX.click(); renderQpk(); });
 renderKeyRows(); renderQpk(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); updateWho(); renderBoard(); updateCarts(); setPlaying(false);
 if(!getProfile() && !isGuest()) showWelcome(false); else refreshClassInfo();
 </script>
