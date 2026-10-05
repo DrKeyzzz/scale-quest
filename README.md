@@ -42,6 +42,7 @@ Scale Quest shares the **Rhythm Trainer's Firebase project** (`rhythm-trainer-fc
 - Every scale is spelled correctly, with **double sharps (𝄪) and double flats (𝄫)** where the theory needs them (G♯ harmonic minor has F𝄪, G♭ Dorian has B𝄫). The staff has 𝄫 ♭ ♮ ♯ 𝄪 buttons. 150 scales in all.
 - Scales from theoretical keys (like G♭ Dorian, whose parent is F♭ major) show no key signature even when the option is on, so students write every accidental.
 - The CHAOS key bonus counts up to 15 scales.
+- **Questions per scale** (practice mode) is in **SETUP**.
 
 ## Changing the scale data
 

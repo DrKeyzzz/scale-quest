@@ -75,8 +75,11 @@ button{font:inherit;color:inherit}
 .cart.on .ccheck{opacity:1;color:var(--shadow)}
 .cats{display:flex;flex-wrap:nowrap;gap:8px 12px;align-items:center;min-width:0}
 .cats > .seg{flex:none}
-.qpk{display:flex;gap:8px;align-items:center;flex:none}
-.qpk .seg button{font-size:9px;padding:7px 9px}
+.famtabs{display:flex;gap:2px;flex:none;border-right:3px solid var(--line);padding-right:12px}
+.famtabs button{font-family:var(--px);font-size:11px;padding:8px 10px 6px;background:none;color:var(--dim);border:0;border-bottom:3px solid transparent;cursor:pointer}
+.famtabs button:hover{color:var(--ink)}
+.famtabs button[aria-pressed="true"]{color:var(--yel);border-bottom-color:var(--yel)}
+#formSeg button{font-size:8px;padding:7px 8px}
 @media (max-width:1100px){.cats{flex-wrap:wrap}}
 .cats .seg button{font-size:9px;padding:7px 9px}
 .selsum{flex:1 1 0;justify-content:flex-end;font-size:18px;color:var(--dim);display:flex;gap:8px;align-items:center;min-width:0;max-width:100%}
@@ -436,14 +439,12 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
 
   <section class="panel keyselect" id="keySelect" aria-label="Choose scales">
     <div class="cats">
-      <div class="seg" id="catSeg" role="group" aria-label="Scale family"><button type="button" data-cat="major">MAJOR</button><button type="button" data-cat="minor">MINOR</button><button type="button" data-cat="modes">MODES</button></div>
+      <div class="famtabs" id="catSeg" role="tablist" aria-label="Scale family"><button type="button" data-cat="major">MAJOR</button><button type="button" data-cat="minor">MINOR</button><button type="button" data-cat="modes">MODES</button></div>
       <div class="seg" id="formSeg" role="group" aria-label="Scale type"></div>
       <span class="selwrap">
         <button type="button" class="selbtn" id="selBtn" aria-haspopup="true" aria-expanded="false" title="Check or uncheck whole groups of scales">SELECT ▾</button>
         <span class="selmenu" id="selMenu" role="menu" hidden></span>
       </span>
-      <span class="selsum"></span>
-      <span class="qpk"><span class="slabel">QUESTIONS PER SCALE</span><span class="seg" id="qpkSeg" role="group" aria-label="Questions per scale"></span></span>
       <span class="lockmsg" id="lockMsg" hidden>QUIT TO CHANGE KEYS</span>
     </div>
     <div class="krow sharp"><button type="button" class="rowlabel" data-row="sharp" aria-pressed="false" title="Select all sharp keys (click again for none)"><span>SHARP<br>KEYS ♯</span></button><div class="kgrid" id="sharpRow"></div></div>
@@ -470,7 +471,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
       <div>
         <h2>HOW TO PLAY</h2>
         <ol class="steps">
-          <li><span class="n">1</span><div><b>CHECK YOUR KEYS</b><span>Click any keys in the top bar to add them to your quest.</span></div></li>
+          <li><span class="n">1</span><div><b>CHECK YOUR SCALES</b><span>Pick major, minor or modes in the top bar, then check the scales you want (SELECT ▾ checks whole groups).</span></div></li>
           <li><span class="n">2</span><div><b>PRESS START</b><span>Clear one key at a time on piano and staff. No clock, so take your time.</span></div></li>
           <li><span class="n">3</span><div><b>HIT CHAOS</b><span>20 timed questions from every checked key. Answer fast for bonus points and post a high score.</span></div></li>
         </ol>
@@ -952,13 +953,19 @@ function renderKeyRows(){
         <span class="cname">${fmt(tonicOf(k))}${S.cat === 'minor' ? 'm' : ''}</span><span class="cbadge">${ok ? (S.cat === 'modes' ? SCALE_TYPES[S.modeType].name.toUpperCase() : sigLabel(k)) : '—'}</span><span class="ccheck" aria-hidden="true">✓</span>
       </button>`; }).join('');
   });
-  document.querySelectorAll('#catSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.cat === S.cat));
-  const forms = S.cat === 'minor' ? MINOR_FORMS.map(f => [f, SCALE_TYPES[f].name.split(' ')[0].toUpperCase()]) : S.cat === 'modes' ? MODE_TYPES.map(m => [m, SCALE_TYPES[m].name.slice(0, 3).toUpperCase(), SCALE_TYPES[m].name]) : [];
+  document.querySelectorAll('#catSeg button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.cat === S.cat); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', b.dataset.cat === S.cat); });
+  const forms = S.cat === 'minor' ? MINOR_FORMS.map(f => [f, SCALE_TYPES[f].name.split(' ')[0].toUpperCase()]) : S.cat === 'modes' ? MODE_TYPES.map(m => [m, SCALE_TYPES[m].name.toUpperCase()]) : [];
   $('#formSeg').innerHTML = forms.map(([k, l, full]) => `<button type="button" data-form="${k}" aria-pressed="${k === (S.cat === 'minor' ? S.form : S.modeType)}"${full ? ` title="${full}" aria-label="${full}"` : ''}>${l}</button>`).join('');
   $('#formSeg').hidden = !forms.length;
   updateCarts();
 }
 // Every scale in the current tab: all 15 majors, all three minor forms, or all six modes.
+// "C · G · Am HARM" for a few scales; "15 MAJOR · 45 MINOR · 90 MODES" once there are too many to list.
+function selSummary(sel){
+  if(sel.length <= 6) return sel.map(shortName).join(' · ').toUpperCase();
+  const n = f => sel.filter(f).length, maj = n(k => typeOf(k) === 'major'), min = n(k => MINOR_FORMS.includes(typeOf(k))), mod = n(k => MODE_TYPES.includes(typeOf(k)));
+  return [maj && `${maj} MAJOR`, min && `${min} MINOR`, mod && `${mod} ${mod === 1 ? 'MODE' : 'MODES'}`].filter(Boolean).join(' · ');
+}
 // Groups for the SELECT menu: this mode or minor form, this tab's whole family, or everything.
 const inForm = (k, t) => typeOf(k) === t;
 function selectGroups(){
@@ -995,7 +1002,7 @@ function updateCarts(){
   renderSelMenu();
   const none = S.selected.size === 0, sel = PLAY_ORDER.filter(k => S.selected.has(k));
   $('#startBtn').disabled = none; $('#chaosBtn').disabled = none;
-  $('#insertMsg').textContent = none ? 'CHECK YOUR SCALES ABOVE' : `${sel.map(shortName).join(' · ').toUpperCase()} · PRESS START OR CHAOS`;
+  $('#insertMsg').textContent = none ? 'CHECK YOUR SCALES ABOVE' : `${selSummary(sel)} · PRESS START OR CHAOS`;
 }
 $('#keySelect').addEventListener('click', e => {
   if(S.run) return;
@@ -1021,13 +1028,11 @@ $('#keySelect').addEventListener('click', e => {
   S.selected.has(k) ? S.selected.delete(k) : S.selected.add(k);
   SFX.click(); updateCarts();
 });
+// Questions per scale (practice mode) lives in SETUP.
 function renderQpk(){
-  $('#qpkSeg').innerHTML = [3,5,8,10].map(n => `<button type="button" data-n="${n}" aria-pressed="${n===S.qpk}">${n}</button>`).join('');
+  const el = $('#qpkSeg'); if(!el) return;
+  el.innerHTML = [3,5,8,10].map(n => `<button type="button" data-n="${n}" aria-pressed="${n===S.qpk}"${S.run ? ' disabled' : ''}>${n}</button>`).join('');
 }
-$('#qpkSeg').addEventListener('click', e => {
-  const b = e.target.closest('button'); if(!b || S.run) return;
-  S.qpk = +b.dataset.n; store.set('qpk', S.qpk); SFX.click(); renderQpk();
-});
 
 /* ---------- piano (C4–B5) ---------- */
 const PIANO_LO = 60, PIANO_HI = 83, PK = {};
@@ -1809,7 +1814,14 @@ function setupPanel(){
     <h2 class="otitle">SETUP</h2>
     <label class="toggle" for="ksToggle"><input type="checkbox" id="ksToggle" ${S.keySig ? 'checked' : ''}> Show key signature on staff</label>
     <p class="osub dim" style="font-size:20px">When on, the staff shows the key's sharps or flats, so students don't need the accidental buttons.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><span class="slabel">QUESTIONS PER SCALE (PRACTICE)</span><div class="seg" id="qpkSeg" role="group" aria-label="Questions per scale"></div>
+      <span class="dim" style="font-size:18px">How many questions each scale gets before practice moves to the next one.${S.run ? ' Quit to change it.' : ''}</span></div>
     <div class="obtns"><button class="btn obtn" id="closeSetup" type="button">DONE</button></div>`);
+  renderQpk();
+  p.querySelector('#qpkSeg').onclick = e => {
+    const b = e.target.closest('button'); if(!b || S.run) return;
+    S.qpk = +b.dataset.n; store.set('qpk', S.qpk); SFX.click(); renderQpk();
+  };
   p.querySelector('#ksToggle').onchange = e => {
     S.keySig = e.target.checked; store.set('keySig', S.keySig);
     if(S.run && S.run.q && S.run.q.type === 'staff' && !S.busy){ drawKeySig(S.run.q.key); renderQuestion(); }
