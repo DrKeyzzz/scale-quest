@@ -383,7 +383,7 @@ button{font:inherit;color:inherit}
 </style>
 <style>
 /* Music Theory Games home link: the same in every game, on its own row at the top left of the header */
-.mtg-home { order: -1; flex: 0 0 100%; display: flex; }
+.mtg-home { order: -1; flex: 0 0 100%; display: flex; gap: 8px; flex-wrap: wrap; }
 .mtg-home a { display: inline-flex; align-items: center; gap: 7px; width: fit-content; font: 600 13px/1 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .06em; color: inherit; text-decoration: none; opacity: .82; padding: 6px 12px 6px 10px; border: 1px solid color-mix(in srgb, currentColor 35%, transparent); border-radius: 999px; }
 .mtg-home a:hover, .mtg-home a:focus-visible { opacity: 1; border-color: currentColor; }
 .mtg-home svg { width: 15px; height: 15px; flex: none; }
@@ -395,7 +395,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
 
 <main class="app" id="app">
   <header class="topbar">
-    <div class="mtg-home"><a href="https://drkeyzzz.github.io/" title="All the Music Theory Games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>Music Theory Games</a></div>
+    <div class="mtg-home"><a href="https://drkeyzzz.github.io/" title="All the Music Theory Games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>Music Theory Games</a><a href="https://drkeyzzz.github.io/report/" title="See your report: what you're doing well and what to practice next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>My Report</a></div>
     <h1 class="logo"><span class="a">SCALE</span> <span class="b">QUEST</span><small>MAJOR SCALE TRAINER</small></h1>
     <div class="tools">
       <button class="btn tbtn who" id="whoBtn" type="button">👤 SIGN IN</button>
@@ -1017,6 +1017,46 @@ function timerLoop(){
   requestAnimationFrame(timerLoop);
 }
 
+/* ---------- Music Theory Games: shared practice history for the student report (identical in every game) ----------
+   One localStorage key per student, 'mtg_hist_v1:<first+initial>', kept with no time limit:
+   { v: 1, name, days: { 'YYYY-MM-DD': { <game>: { plays, answers, correct, ms, best, level, bpm, caught, skills: { label: [right, total] }, last } } } }
+   The report at https://drkeyzzz.github.io/report/ reads it. Guests are not recorded. */
+const MTG_HIST = (() => {
+  const prof = () => { try { if (sessionStorage.getItem('music_guest') === '1') return null; const p = JSON.parse(localStorage.getItem('rdt_profile_v1') || 'null'); return p && p.first && p.init ? p : null; } catch { return null; } };
+  const day = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  function edit(game, fn) {
+    const p = prof(); if (!p) return;
+    const k = 'mtg_hist_v1:' + (p.first + p.init).toLowerCase().replace(/[^a-z]/g, '');
+    let h = null; try { h = JSON.parse(localStorage.getItem(k) || 'null'); } catch {}
+    if (!h || !h.days) h = { v: 1, days: {} };
+    h.name = `${p.first.charAt(0).toUpperCase()}${p.first.slice(1)} ${p.init}.`; h.classCode = p.classCode || '';
+    const d = h.days[day()] || (h.days[day()] = {});
+    const g = d[game] || (d[game] = { plays: 0, answers: 0, correct: 0, ms: 0, best: 0, level: 0, skills: {}, last: 0 });
+    fn(g);
+    try { localStorage.setItem(k, JSON.stringify(h)); } catch {}
+  }
+  return {
+    // one answered note/question/rhythm: ok = right; labels = the skills it shows (e.g. ['Eighth notes', 'F4'])
+    note(game, labels, ok) {
+      edit(game, g => {
+        const now = Date.now();
+        if (g.last && now - g.last < 600000) g.ms += now - g.last;     // gaps over 10 minutes aren't practice time
+        g.last = now; g.answers++; if (ok) g.correct++;
+        for (const lab of [].concat(labels || [])) { if (!lab) continue; const s = g.skills[lab] || (g.skills[lab] = [0, 0]); s[1]++; if (ok) s[0]++; }
+      });
+    },
+    // one finished game or round
+    run(game, r) {
+      edit(game, g => {
+        g.plays++; g.best = Math.max(g.best, Math.round(r.score || 0)); g.level = Math.max(g.level, r.level || 0);
+        if (r.bpm) g.bpm = Math.max(g.bpm || 0, r.bpm);
+        if (r.caught) g.caught = (g.caught || 0) + r.caught;
+        if (r.acc != null) g.acc = Math.max(g.acc || 0, Math.round(r.acc));
+      });
+    },
+  };
+})();
+
 /* ---------- answer log (this device, per student, one week) + class sync ---------- */
 const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const logKey = () => { const p = getProfile(); return 'log:' + (p ? studentKey(p) : 'guest'); };
@@ -1031,6 +1071,7 @@ function pickOf(q){
   return letter + (a === 1 ? '#' : a === -1 ? 'b' : '');
 }
 function logAnswer(q, ok){
+  MTG_HIST.note('scale', [fmt(q.key) + ' major', TYPE_NAME[q.type[0]]], ok);
   if(isGuest()) return;
   const log = readLog();
   todayOf(log).q.push({k: q.key, y: q.type[0], d: q.degree || 0, ok: ok ? 1 : 0, pk: ok ? '' : pickOf(q), t0: q.t0 || Date.now(), t1: Date.now(), m: S.run.mode[0]});
@@ -1468,6 +1509,7 @@ function endRun(reason){
       ? `<button class="btn obtn mag" type="button" id="postBtn" data-focus>POST MY SCORE AS ${esc(displayName(getProfile()).toUpperCase())}</button>`
       : `${isGuest() ? '<p class="weak" style="color:var(--dim)">GUEST GAME: THIS SCORE ISN\'T SAVED.</p>' : ''}<button class="btn obtn mag" type="button" id="signInPost" data-focus>${isGuest() ? 'SIGN IN FOR NEXT TIME' : 'ENTER YOUR NAME TO POST'}</button>`}</div>` : ''}
     <div class="obtns"><button class="btn obtn" id="againBtn" type="button">PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, reason === 'quit' ? 'mag' : '');
+  if(total) MTG_HIST.run('scale', {score: r.mode === 'chaos' ? final : 0, level: r.keys.length, acc});
   if(ranked) logRun({s: final, a: acc, k: r.keys.length, t: Date.now()});
   const sp = p.querySelector('#signInPost'); if(sp) sp.onclick = () => showWelcome(false);
   const post = p.querySelector('#postBtn');
