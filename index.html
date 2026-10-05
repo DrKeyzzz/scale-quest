@@ -850,14 +850,15 @@ const Cloud = {
   }); },
 
   // ----- leaderboards -----
-  row(d){ const x = d.data(); return {id: d.id, dev: !!x.dev, name: x.name, classCode: x.class_code || '', score: x.score, keys: x.key_count, streak: x.streak || 0, accuracy: x.accuracy, date: x.created_at && x.created_at.toDate ? x.created_at.toDate() : new Date()}; },
+  row(d){ const x = d.data(); return {id: d.id, dev: !!x.dev, icon: x.icon || '', name: x.name, classCode: x.class_code || '', score: x.score, keys: x.key_count, streak: x.streak || 0, accuracy: x.accuracy, date: x.created_at && x.created_at.toDate ? x.created_at.toDate() : new Date()}; },
   submit(e){ return this.run(async ({fs, db}) => {
     const dev = await devPost(e.name, () => this.fb(), () => this.signIn());
     const data = {name: dev ? DEV_NAME : e.name, score: e.score, points: e.points, streak: e.streak, accuracy: e.accuracy, questions: e.questions, key_count: e.keyCount, key_list: e.keyList, created_at: fs.serverTimestamp()};
     if(e.classCode) data.class_code = e.classCode;
+    if(iconOf(getProfile())) data.icon = iconOf(getProfile());
     if(dev) data.dev = true;
     const id = (await fs.addDoc(fs.collection(db, 'scale_scores'), data)).id;
-    this.addToBoards({id, dev: !!data.dev, name: data.name, classCode: e.classCode || '', score: e.score, keys: e.keyCount, streak: e.streak || 0, accuracy: e.accuracy, date: new Date()});
+    this.addToBoards({id, dev: !!data.dev, icon: data.icon || '', name: data.name, classCode: e.classCode || '', score: e.score, keys: e.keyCount, streak: e.streak || 0, accuracy: e.accuracy, date: new Date()});
     return id;
   }); },
   // Board results are kept 60 s per query shape, so reopening a board costs no reads.
@@ -913,11 +914,12 @@ const Cloud = {
     const dev = await devPost(e.name, () => this.fb(), () => this.signIn());
     const data = {name: dev ? DEV_NAME : e.name, score: e.score, points: e.points, streak: e.streak, accuracy: e.accuracy, reached: e.reached, finished: !!e.finished, created_at: fs.serverTimestamp()};
     if(e.classCode) data.class_code = e.classCode;
+    if(iconOf(getProfile())) data.icon = iconOf(getProfile());
     if(dev) data.dev = true;
     await fs.addDoc(fs.collection(db, 'nova_scores'), data);
     Object.keys(LB_CACHE).filter(k => k.startsWith('nova')).forEach(k => delete LB_CACHE[k]);
   }); },
-  novaRow(d){ const x = d.data(); return {id: d.id, dev: !!x.dev, name: x.name, classCode: x.class_code || '', score: x.score, reached: x.reached, finished: !!x.finished}; },
+  novaRow(d){ const x = d.data(); return {id: d.id, dev: !!x.dev, icon: x.icon || '', name: x.name, classCode: x.class_code || '', score: x.score, reached: x.reached, finished: !!x.finished}; },
   // Class (plus the developer's runs) or World: each player's best run, finished runs first.
   novaBoard(code){ return this.cached('nova|' + (code || 'world'), () => this.run(async ({fs, db}) => {
     const col = fs.collection(db, 'nova_scores');
@@ -952,7 +954,7 @@ function localTop(n){
 function boardTable(list){
   if(!list.length) return '<p class="dim">No scores yet. Finish a CHAOS run to claim the top spot!</p>';
   return `<table class="board"><tbody>${list.map((x,i) =>
-    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${ICONS.includes(x.icon) ? `<span class="nm-ic">${x.icon}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 
 /* ---------- student profile (welcome screen) ---------- */
@@ -1439,11 +1441,52 @@ function renderAssignment(){
 /* ---------- welcome screen + who's playing ---------- */
 function updateWho(){
   const p = getProfile(), b = $('#whoBtn');
-  b.textContent = p ? `👤 ${displayName(p).toUpperCase()}${p.classCode ? ' · ' + String(p.className).toUpperCase() : ''}` : isGuest() ? '👤 GUEST' : '👤 SIGN IN';
+  b.textContent = p ? `${iconOf(p) || '👤'} ${displayName(p).toUpperCase()}${p.classCode ? ' · ' + String(p.className).toUpperCase() : ''}` : isGuest() ? '👤 GUEST' : '👤 SIGN IN';
+}
+// ---------- player icons (shared by every game: saved with the sign-in, shown next to names on leaderboards) ----------
+const ICONS = ['🎹','🎸','🎺','🎷','🥁','🎻','🪕','🎤','🎧','🎼','🎵','🪘','🪗','⭐','🔥','🚀'];   // must match iconOk() in firestore.rules
+const iconOf = p => (p && ICONS.includes(p.icon) ? p.icon : '');
+let iconBox = null;
+function iconPicker() {
+  if (iconBox) return iconBox;
+  const before = document.querySelector('label[for="wCode"], label.w-code, label[for="w-code"]'); if (!before) return null;
+  const st = document.createElement('style');
+  st.textContent = '.icon-pick{display:flex;flex-direction:column;gap:6px;text-align:left}.icon-pick .ip-l{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.8}.icon-pick .ip-g{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}.icon-pick button{font-size:22px;line-height:1;padding:7px 0;border-radius:10px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.18);cursor:pointer;font-family:inherit}.icon-pick button:hover{border-color:rgba(255,255,255,.5)}.icon-pick button[aria-pressed="true"]{border-color:#ffc85c;background:rgba(255,200,92,.22);box-shadow:0 0 12px -2px #ffc85c}.nm-ic{margin-right:6px}';
+  document.head.appendChild(st);
+  iconBox = document.createElement('div'); iconBox.className = 'icon-pick';
+  iconBox.innerHTML = '<span class="ip-l">Pick your icon</span><div class="ip-g" role="group" aria-label="Your icon">' + ICONS.map(i => '<button type="button" data-icon="' + i + '" aria-pressed="false" aria-label="Icon ' + i + '">' + i + '</button>').join('') + '</div>';
+  before.parentNode.insertBefore(iconBox, before);
+  iconBox.addEventListener('click', e => { const b = e.target.closest('[data-icon]'); if (b) setPickedIcon(b.dataset.icon); });
+  return iconBox;
+}
+function setPickedIcon(ic) { const box = iconPicker(); if (!box) return; box.dataset.icon = ic || ''; box.querySelectorAll('[data-icon]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.icon === ic))); }
+// no pick = a random icon, so every name still stands out
+const pickedIcon = () => { const box = iconPicker(); return box && ICONS.includes(box.dataset.icon) ? box.dataset.icon : ICONS[Math.floor(Math.random() * ICONS.length)]; };
+
+// ---------- "practice this" links from My Report: ?focus=<skill> sets the game up for that skill ----------
+function focusToast(html) {
+  const d = document.createElement('div'); d.setAttribute('role', 'status');
+  d.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:300;max-width:min(560px,92vw);padding:12px 18px;border-radius:14px;background:#141d2c;color:#f1ece0;border:2px solid #ffc85c;box-shadow:0 10px 30px rgba(0,0,0,.5);font:600 16px/1.35 system-ui,sans-serif;text-align:center';
+  d.innerHTML = html; document.body.appendChild(d); setTimeout(() => d.remove(), 8000);
+}
+function applyFocusFromUrl() {
+  const q = new URLSearchParams(location.search), f = q.get('focus'); if (!f) return;
+  q.delete('focus'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+  try { applyFocus(f); } catch (e) { console.warn('focus link:', e); }
+}
+function applyFocus(label){
+  const id = PLAY_ORDER.find(k => scaleName(k).toLowerCase() === String(label).toLowerCase());
+  if(!id){ focusToast('Pick the scales you want to practice, then press <b>START</b>.'); return; }
+  S.selected = new Set([id]);
+  const t = typeOf(id); S.cat = t === 'major' ? 'major' : MINOR_FORMS.includes(t) ? 'minor' : 'modes';
+  if(S.cat === 'minor') S.form = t; if(S.cat === 'modes') S.modeType = t;
+  renderKeyRows();
+  focusToast(`🎯 Practice set up: <b>${esc(scaleName(id))}</b>. Press <b>START</b> when you're ready!`);
 }
 function showWelcome(keep){
   closeOverlay();
   const p = keep ? getProfile() : null;
+  setPickedIcon(p && p.icon);
   $('#wFirst').value = p ? p.first : ''; $('#wInit').value = p ? p.init : ''; $('#wCode').value = p ? p.classCode || '' : '';
   $('#wSolo').checked = !!(p && !p.classCode); $('#wCode').disabled = $('#wSolo').checked; $('#wError').textContent = '';
   $('#welcome').hidden = false; S.overlay = true;
@@ -1467,7 +1510,7 @@ async function submitWelcome(e){
     } catch(ex){ err.textContent = `Couldn't check the code: ${errMsg(ex)}`; return; }
     finally{ $('#wGo').disabled = false; $('#wGo').textContent = 'PRESS START'; }
   }
-  setProfile({first, init, classCode: solo ? '' : code, className, classOwner});
+  setProfile({first, init, classCode: solo ? '' : code, className, classOwner, icon: pickedIcon()});
   S.assignment = assignment;
   $('#welcome').hidden = true; S.overlay = false;
   SFX.level(); updateWho(); renderAssignment(); renderBoard();
@@ -1917,7 +1960,7 @@ function novaWarning(){
 function markNova(list, finishers){ return list.map(x => ({...x, nova: finishers.has(`${x.name}|${x.classCode || ''}`) || (x.dev && finishers.has(`${x.name}|`))})); }
 function novaTable(list){
   if(!list.length) return '<p class="dim">No SUPERNOVA runs yet. Be the first to survive!</p>';
-  return `<table class="board"><tbody>${list.map((x,i) => `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.finished ? starSVG('badge') : ' <span class="novatag">SURVIVOR</span>'}</td><td class="k">${x.finished ? '20/20' : `${x.reached}/20`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+  return `<table class="board"><tbody>${list.map((x,i) => `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${ICONS.includes(x.icon) ? `<span class="nm-ic">${x.icon}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.finished ? starSVG('badge') : ' <span class="novatag">SURVIVOR</span>'}</td><td class="k">${x.finished ? '20/20' : `${x.reached}/20`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 function toMenu(){
   closeOverlay(); S.run = null; S.busy = false; $('#app').classList.remove('novaRun');
@@ -2356,6 +2399,7 @@ $('#novaBtnStar').innerHTML = starSVG('t3');
 $('#startBtn').insertAdjacentHTML('afterbegin', starSVG('t1')); $('#chaosBtn').insertAdjacentHTML('afterbegin', starSVG('t2'));
 renderKeyRows(); renderQpk(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); updateWho(); renderBoard(); updateCarts(); setPlaying(false);
 if(!getProfile() && !isGuest()) showWelcome(false); else refreshClassInfo();
+applyFocusFromUrl();
 </script>
 </body>
 </html>
