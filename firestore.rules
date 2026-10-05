@@ -255,7 +255,7 @@ service cloud.firestore {
     }
 
     function sightScore(d) {
-      return d.keys().hasOnly(['name', 'class_code', 'score', 'hits', 'acc', 'level', 'bpm', 'diff', 'style', 'clef', 'created_at'])
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'hits', 'acc', 'level', 'bpm', 'diff', 'style', 'clef', 'instrument', 'created_at'])
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
         && d.get('class_code', '') is string
         && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
@@ -265,8 +265,9 @@ service cloud.firestore {
         && d.level is int && d.level >= 1 && d.level <= 1000
         && d.bpm is int && d.bpm >= 40 && d.bpm <= 400
         && d.diff in ['easy', 'medium', 'hard', 'expert']
-        && d.style in ['midi', 'keys', 'rhythm']
-        && d.clef in ['treble', 'bass', 'none']
+        && d.style in ['midi', 'keys', 'rhythm', 'live']
+        && d.clef in ['treble', 'bass', 'alto', 'treble8', 'none']
+        && d.get('instrument', '') is string && d.get('instrument', '').size() <= 24
         && d.created_at == request.time;
     }
   }
