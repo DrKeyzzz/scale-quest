@@ -779,19 +779,57 @@ const Cloud = {
     const data = {name: dev ? DEV_NAME : e.name, score: e.score, points: e.points, streak: e.streak, accuracy: e.accuracy, questions: e.questions, key_count: e.keyCount, key_list: e.keyList, created_at: fs.serverTimestamp()};
     if(e.classCode) data.class_code = e.classCode;
     if(dev) data.dev = true;
-    return (await fs.addDoc(fs.collection(db, 'scale_scores'), data)).id;
+    const id = (await fs.addDoc(fs.collection(db, 'scale_scores'), data)).id;
+    this.addToBoards({id, dev: !!data.dev, name: data.name, classCode: e.classCode || '', score: e.score, keys: e.keyCount, streak: e.streak || 0, accuracy: e.accuracy, date: new Date()});
+    return id;
   }); },
+  // Board results are kept 60 s per query shape, so reopening a board costs no reads.
+  cached(key, load){
+    const c = LB_CACHE[key];
+    if(c && Date.now() - c.t < 60000) return Promise.resolve(c.v);
+    return load().then(v => { LB_CACHE[key] = {t: Date.now(), v}; return v; });
+  },
+  // A just-posted run goes straight into any cached board it belongs on.
+  addToBoards(x){
+    const w = LB_CACHE['scale_scores|world'], c = x.classCode && LB_CACHE['scale_scores|class|' + x.classCode];
+    if(w){ const l = w.v; if(l.length < 10 || x.score > l[l.length - 1].score) w.v = [...l, x].sort((a,b) => b.score - a.score).slice(0, 10); }
+    if(c){ const b = c.v, l = b.rows; if(b.full || x.score > l[l.length - 1].score) c.v = {full: b.full, rows: [...l, x].sort((a,b) => b.score - a.score).slice(0, b.full ? undefined : LB_N)}; }
+  },
+  // Equality + orderBy needs a composite index. If it's missing, warn once (the message has the create link) and use the old query this session.
+  async indexed(shape, fast, slow){
+    if(!LB_NOINDEX[shape]){
+      try{ return await fast(); }
+      catch(e){ if(!e || e.code !== 'failed-precondition') throw e; LB_NOINDEX[shape] = true; console.warn('[index needed]', e.message); }
+    }
+    return slow();
+  },
   // World Top 10: the 10 best runs (a small read, safe for public traffic).
-  worldTop(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(10)))).docs.map(d => this.row(d))); },
+  worldTop(){ return this.cached('scale_scores|world', () => this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(10)))).docs.map(d => this.row(d)))); },
   worldRank(score){ return this.run(async ({fs, db}) => (await fs.getCountFromServer(fs.query(fs.collection(db, 'scale_scores'), fs.where('score', '>', score)))).data().count + 1); },
+  // Teacher dashboard: every score in the class.
   classAll(code){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code)))).docs.map(d => this.row(d))); },
-  // Class board = the class's runs plus the developer's (shown on every class board).
-  async classBoard(code){ const [own, dev] = await Promise.all([this.classAll(code), this.run(async ({fs, db}) => (await devRows(fs, db, 'scale_scores')).map(d => this.row(d)))]); const seen = new Set(own.map(x => x.id)); return own.concat(dev.filter(x => !seen.has(x.id))); },
-  // Class board: each student's best run.
-  async classTop(code){
+  // Student class board: the class's top LB_N runs ({full: true} when that's every run in the class).
+  // The developer's runs are added to every class board.
+  classBoard(code){ return this.cached('scale_scores|class|' + code, () => this.run(({fs, db}) => this.indexed('scale_scores|class',
+    async () => { const rows = (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code), fs.orderBy('score', 'desc'), fs.limit(LB_N)))).docs.map(d => this.row(d)); return {rows, full: rows.length < LB_N}; },
+    async () => ({rows: (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code)))).docs.map(d => this.row(d)), full: true}))
+    .then(async b => { const seen = new Set(b.rows.map(x => x.id)); return {...b, rows: b.rows.concat((await devRows(fs, db, 'scale_scores')).map(d => this.row(d)).filter(x => !seen.has(x.id)))}; }))); },
+  bestOf(rows){
     const best = {};
-    for(const x of await this.classBoard(code)){ const b = best[x.name]; if(!b || x.score > b.score) best[x.name] = {...x, streak: Math.max(x.streak, b ? b.streak : 0)}; else b.streak = Math.max(b.streak, x.streak); }
+    for(const x of rows){ const b = best[x.name]; if(!b || x.score > b.score) best[x.name] = {...x, streak: Math.max(x.streak, b ? b.streak : 0)}; else b.streak = Math.max(b.streak, x.streak); }
     return Object.values(best).sort((a,b) => b.score - a.score);
+  },
+  // Class board: each student's best run.
+  async classTop(code){ return this.bestOf((await this.classBoard(code)).rows); },
+  // A student's place on the class board; past the top LB_N runs, reads only the runs that beat this one.
+  async classRank(code, name, score){
+    const b = await this.classBoard(code), i = this.bestOf(b.rows).findIndex(x => x.name === name);
+    if(i >= 0 || b.full) return i + 1;
+    return this.run(async ({fs, db}) => {
+      const rows = (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code), fs.where('score', '>', score), fs.orderBy('score', 'desc')))).docs.map(d => this.row(d));
+      const mine = Math.max(score, ...rows.filter(x => x.name === name).map(x => x.score));
+      return new Set(rows.filter(x => x.name !== name && x.score > mine).map(x => x.name)).size + 1;
+    });
   },
   worldAll(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(300)))).docs.map(d => this.row(d))); },
   deleteScore(id){ return this.run(({fs, db}) => fs.deleteDoc(fs.doc(db, 'scale_scores', id))); },
@@ -1664,8 +1702,7 @@ function endRun(reason){
     area.innerHTML = '<p class="weak" style="color:var(--yel)">POSTING...</p>';
     try{
       await Cloud.submit({name, classCode: me.classCode || '', score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: Math.min(15, r.keys.length), keyList: r.keys.join(' ').slice(0, 60)});
-      const [w, cls] = await Promise.all([Cloud.worldRank(final), me.classCode ? Cloud.classTop(me.classCode) : null]);
-      const c = cls ? cls.findIndex(x => x.name === name) + 1 : 0;
+      const [w, c] = await Promise.all([Cloud.worldRank(final), me.classCode ? Cloud.classRank(me.classCode, name, final) : 0]);
       const bits = [c ? `#${c} IN ${esc(String(me.className).toUpperCase())}` : '', `#${w} IN THE WORLD`].filter(Boolean);
       area.innerHTML = `<p class="weak" style="color:var(--yel)">POSTED! ${bits.join(' · ')}</p>`;
     } catch(err){ area.innerHTML = `<p class="weak" style="color:var(--bad)">SAVED ON THIS DEVICE. ${esc(errMsg(err)).toUpperCase()}</p>`; }
