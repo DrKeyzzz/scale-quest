@@ -326,6 +326,7 @@ button{font:inherit;color:inherit}
 .attract.has-assign .steps{gap:6px}
 .board tr.me td{color:var(--cyan)}
 .board td.nm{white-space:nowrap}
+.devtag{font-family:var(--px);font-size:7px;padding:2px 4px;margin-left:4px;background:var(--mag);color:var(--shadow);vertical-align:middle}
 /* ---------- teacher dashboard ---------- */
 .app.teacher > :not(.topbar):not(.tview){display:none!important}
 .tview{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
@@ -660,6 +661,25 @@ const store = {
 };
 
 /* ---------- class leaderboard (Google Sheet via Apps Script) ---------- */
+// ---------- developer scores ----------
+// Mr. Milnes plays as "Milnes D.". When he posts while signed in with his Google account, the score is marked
+// dev: true and shows on every class's board with a DEV badge. The rules stop anyone else using that name.
+const DEV_NAME = 'Milnes D.', DEV_EMAILS = ['milnesda@eht.k12.nj.us'];
+const isDevName = n => /^\s*milnes\s*d\.?\s*$/i.test(String(n || ''));
+// true = post as the developer; asks him to sign in once if needed. Throws for anyone else using the name.
+async function devPost(name, getAuth, signIn) {
+  if (!isDevName(name)) return false;
+  const { auth } = await getAuth();
+  if (auth.authStateReady) await auth.authStateReady();
+  let email = auth.currentUser && auth.currentUser.email;
+  if (!email || !DEV_EMAILS.includes(String(email).toLowerCase())) email = await signIn();
+  if (!DEV_EMAILS.includes(String(email).toLowerCase())) throw new Error('Only the developer can post as Milnes D.');
+  return true;
+}
+// Every developer score in a collection (merged into class boards).
+async function devRows(fs, db, col, extra = []) {
+  try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra))).docs; } catch (e) { return []; }
+}
 const Cloud = {
   on: !!(FIREBASE.apiKey && FIREBASE.projectId),
   _p: null,
@@ -753,20 +773,24 @@ const Cloud = {
   }); },
 
   // ----- leaderboards -----
-  row(d){ const x = d.data(); return {id: d.id, name: x.name, classCode: x.class_code || '', score: x.score, keys: x.key_count, streak: x.streak || 0, accuracy: x.accuracy, date: x.created_at && x.created_at.toDate ? x.created_at.toDate() : new Date()}; },
+  row(d){ const x = d.data(); return {id: d.id, dev: !!x.dev, name: x.name, classCode: x.class_code || '', score: x.score, keys: x.key_count, streak: x.streak || 0, accuracy: x.accuracy, date: x.created_at && x.created_at.toDate ? x.created_at.toDate() : new Date()}; },
   submit(e){ return this.run(async ({fs, db}) => {
-    const data = {name: e.name, score: e.score, points: e.points, streak: e.streak, accuracy: e.accuracy, questions: e.questions, key_count: e.keyCount, key_list: e.keyList, created_at: fs.serverTimestamp()};
+    const dev = await devPost(e.name, () => this.fb(), () => this.signIn());
+    const data = {name: dev ? DEV_NAME : e.name, score: e.score, points: e.points, streak: e.streak, accuracy: e.accuracy, questions: e.questions, key_count: e.keyCount, key_list: e.keyList, created_at: fs.serverTimestamp()};
     if(e.classCode) data.class_code = e.classCode;
+    if(dev) data.dev = true;
     return (await fs.addDoc(fs.collection(db, 'scale_scores'), data)).id;
   }); },
   // World Top 10: the 10 best runs (a small read, safe for public traffic).
   worldTop(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(10)))).docs.map(d => this.row(d))); },
   worldRank(score){ return this.run(async ({fs, db}) => (await fs.getCountFromServer(fs.query(fs.collection(db, 'scale_scores'), fs.where('score', '>', score)))).data().count + 1); },
   classAll(code){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code)))).docs.map(d => this.row(d))); },
+  // Class board = the class's runs plus the developer's (shown on every class board).
+  async classBoard(code){ const [own, dev] = await Promise.all([this.classAll(code), this.run(async ({fs, db}) => (await devRows(fs, db, 'scale_scores')).map(d => this.row(d)))]); const seen = new Set(own.map(x => x.id)); return own.concat(dev.filter(x => !seen.has(x.id))); },
   // Class board: each student's best run.
   async classTop(code){
     const best = {};
-    for(const x of await this.classAll(code)){ const b = best[x.name]; if(!b || x.score > b.score) best[x.name] = {...x, streak: Math.max(x.streak, b ? b.streak : 0)}; else b.streak = Math.max(b.streak, x.streak); }
+    for(const x of await this.classBoard(code)){ const b = best[x.name]; if(!b || x.score > b.score) best[x.name] = {...x, streak: Math.max(x.streak, b ? b.streak : 0)}; else b.streak = Math.max(b.streak, x.streak); }
     return Object.values(best).sort((a,b) => b.score - a.score);
   },
   worldAll(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(300)))).docs.map(d => this.row(d))); },
@@ -791,7 +815,7 @@ function localTop(n){
 function boardTable(list){
   if(!list.length) return '<p class="dim">No scores yet. Finish a CHAOS run to claim the top spot!</p>';
   return `<table class="board"><tbody>${list.map((x,i) =>
-    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${esc(x.name)}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 
 /* ---------- student profile (welcome screen) ---------- */
