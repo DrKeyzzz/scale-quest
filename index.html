@@ -72,6 +72,16 @@ button{font:inherit;color:inherit}
 .cart.home.on{background:var(--yel);border-color:var(--yel);box-shadow:0 0 18px rgba(255,228,92,.6),0 4px 0 var(--shadow)}
 .cart.on .cname{color:var(--shadow)}
 .cart.on .ccheck{opacity:1;color:var(--shadow)}
+.cats{display:flex;flex-wrap:nowrap;gap:8px 12px;align-items:center;min-width:0}
+.cats > .seg{flex:none}
+.qpk{display:flex;gap:8px;align-items:center;flex:none}
+.qpk .seg button{font-size:9px;padding:7px 9px}
+@media (max-width:1100px){.cats{flex-wrap:wrap}}
+.cats .seg button{font-size:9px;padding:7px 9px}
+.selsum{flex:1 1 0;justify-content:flex-end;font-size:18px;color:var(--dim);display:flex;gap:8px;align-items:center;min-width:0;max-width:100%}
+.selsum span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.selsum button{font-family:var(--px);font-size:8px;padding:5px 7px;background:var(--panel);color:var(--dim);border:2px solid var(--line);cursor:pointer}
+.cart:disabled{opacity:.28;cursor:not-allowed;filter:none}
 .keyselect.locked .cart{cursor:not-allowed;filter:saturate(.55) brightness(.75)}
 
 .settings{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -173,7 +183,7 @@ button{font:inherit;color:inherit}
 /* ---------- attract ---------- */
 .attract{width:100%;display:grid;grid-template-columns:1.2fr 1fr;gap:18px;align-items:start}
 .attract h2{margin:0 0 12px;font-family:var(--px);font-size:11px;color:var(--cyan);letter-spacing:.1em;font-weight:400}
-.insert{grid-column:1/-1;text-align:center;font-family:var(--px);font-size:15px;color:var(--yel);padding:10px 0;animation:blink 1.1s steps(2) infinite}
+.insert{grid-column:1/-1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-family:var(--px);font-size:15px;color:var(--yel);padding:10px 0;animation:blink 1.1s steps(2) infinite}
 @keyframes blink{50%{opacity:.2}}
 .steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
 .steps li{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start}
@@ -222,7 +232,7 @@ button{font:inherit;color:inherit}
 .bigstats small{font-family:var(--px);font-size:7px;color:var(--dim);letter-spacing:.08em}
 .bigstats strong{font-family:var(--px);font-size:16px;color:var(--yel);font-weight:400}
 .bars{width:100%;display:flex;flex-direction:column;gap:7px}
-.bar{display:grid;grid-template-columns:62px 1fr 54px;gap:10px;align-items:center;font-family:var(--px);font-size:10px}
+.bar{display:grid;grid-template-columns:118px 1fr 54px;gap:10px;align-items:center;font-family:var(--px);font-size:10px}
 .bar .track{height:14px;background:var(--panel);border:2px solid var(--line);position:relative}
 .bar .fill{position:absolute;inset:0 auto 0 0;background:var(--ok)}
 .bar.mid .fill{background:var(--yel)} .bar.low .fill{background:var(--bad)}
@@ -255,7 +265,7 @@ button{font:inherit;color:inherit}
 .stage{min-height:0;padding:12px 16px 14px;gap:10px}
 .qtext{font-size:clamp(28px,5.4vh,44px)}
 .qhelp{font-size:20px}
-.pianowrap{width:min(100%,700px,calc(30vh * 2.95 + 26px));padding:8px 8px 6px}
+.pianowrap{width:min(100%,700px,calc(28vh * 2.95 + 26px));padding:8px 8px 6px}
 .staffwrap{width:min(100%,780px,calc(32vh * 2.95 + 140px));max-width:none;gap:14px}
 .arrow{width:70px;height:52px}
 .feedback{min-height:26px;font-size:24px}
@@ -276,7 +286,7 @@ button{font:inherit;color:inherit}
 .steps li{grid-template-columns:34px 1fr;gap:10px}
 .steps span{font-size:20px}
 .start,.chaos{padding:16px 42px}
-@media (max-height:700px){ .keyhint{display:none} .logo small{display:none} .insert{padding:0;font-size:12px} .steps{gap:6px} .steps span{font-size:18px;line-height:1.05} }
+@media (max-height:700px){ .keyhint{display:none} .logo small{display:none} .insert{padding:0;font-size:12px} .steps{gap:6px} .steps span{display:none} .steps li{align-items:center} .cart{padding:8px 2px 6px;gap:5px} }
 @media (max-height:620px){
   .ladder,.qtag{display:none}
   .app{gap:8px;padding-block:8px}
@@ -334,7 +344,7 @@ button{font:inherit;color:inherit}
 .td-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .td-sec{border:3px solid var(--line);padding:12px}
 .td-sec h3{margin:0 0 10px;font-family:var(--px);font-size:10px;color:var(--cyan);font-weight:400}
-.hbar{display:grid;grid-template-columns:96px 1fr 50px 110px;gap:8px;align-items:center;font-size:20px;margin-bottom:4px}
+.hbar{display:grid;grid-template-columns:150px 1fr 50px 110px;gap:8px;align-items:center;font-size:20px;margin-bottom:4px}
 .hbar .tr{height:12px;background:var(--panel);border:2px solid var(--line);position:relative}
 .hbar .tr i{position:absolute;inset:0 auto 0 0;background:var(--ok)}
 .hbar .tr i.mid{background:var(--yel)} .hbar .tr i.lo{background:var(--bad)}
@@ -356,6 +366,9 @@ button{font:inherit;color:inherit}
 .td-form label{display:flex;flex-direction:column;gap:6px;font-family:var(--px);font-size:8px;color:var(--dim)}
 .td-form .wide{grid-column:1/-1}
 .td-keys{display:flex;flex-wrap:wrap;gap:6px}
+.td-keyrow{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;margin-bottom:8px}
+.td-keyrow > span{font-family:var(--px);font-size:8px;color:var(--dim)}
+@media (max-width:760px){.td-keyrow{grid-template-columns:1fr}}
 .td-keys button{font-family:var(--px);font-size:11px;padding:8px 9px;background:var(--panel);color:var(--dim);border:2px solid var(--line);cursor:pointer}
 .td-keys button[aria-pressed="true"]{background:var(--yel);color:var(--shadow);border-color:var(--yel)}
 .t-row{display:flex;gap:10px;flex-wrap:wrap}
@@ -407,16 +420,18 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
     </div>
   </header>
 
-  <section class="panel keyselect" id="keySelect" aria-label="Choose keys">
+  <section class="panel keyselect" id="keySelect" aria-label="Choose scales">
+    <div class="cats">
+      <div class="seg" id="catSeg" role="group" aria-label="Scale family"><button type="button" data-cat="major">MAJOR</button><button type="button" data-cat="minor">MINOR</button><button type="button" data-cat="modes">MODES</button></div>
+      <div class="seg" id="formSeg" role="group" aria-label="Scale type"></div>
+      <span class="selsum" id="selSum"></span>
+      <span class="qpk"><span class="slabel">QUESTIONS PER SCALE</span><span class="seg" id="qpkSeg" role="group" aria-label="Questions per scale"></span></span>
+      <span class="lockmsg" id="lockMsg" hidden>QUIT TO CHANGE KEYS</span>
+    </div>
     <div class="krow sharp"><button type="button" class="rowlabel" data-row="sharp" aria-pressed="false" title="Select all sharp keys (click again for none)"><span>SHARP<br>KEYS ♯</span></button><div class="kgrid" id="sharpRow"></div></div>
     <div class="krow flat"><button type="button" class="rowlabel" data-row="flat" aria-pressed="false" title="Select all flat keys (click again for none)"><span>FLAT<br>KEYS ♭</span></button><div class="kgrid" id="flatRow"></div></div>
   </section>
 
-  <section class="settings">
-    <span class="slabel">QUESTIONS PER KEY</span>
-    <div class="seg" id="qpkSeg" role="group" aria-label="Questions per key"></div>
-    <span class="lockmsg" id="lockMsg" hidden>QUIT TO CHANGE KEYS</span>
-  </section>
 
   <section class="panel hud" id="hud" hidden>
     <div class="hcell keycell">
@@ -566,7 +581,6 @@ const SCALES = {
 };
 const SHARP_ROW  = ['C','G','D','A','E','B','F#','C#'];
 const FLAT_ROW   = ['C','F','Bb','Eb','Ab','Db','Gb','Cb'];
-const PLAY_ORDER = ['C','G','D','A','E','B','F#','C#','F','Bb','Eb','Ab','Db','Gb','Cb'];
 // Staff positions (0 = C4 ... 12 = A5) for key signatures, in standard order.
 const SHARP_SIG_POS = [10,7,11,8,5,9,6];   // F C G D A E B
 const FLAT_SIG_POS  = [6,9,5,8,4,7,3];     // B E A D G C F
@@ -576,14 +590,58 @@ const NAT = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 const accOf = n => n[1]==='#' ? 1 : n[1]==='b' ? -1 : 0;
 const pcOf  = n => (NAT[n[0]] + accOf(n) + 12) % 12;
 const fmt   = n => n[0] + (n[1]==='#' ? '♯' : n[1]==='b' ? '♭' : '');
-const isFlatKey = k => SCALES[k].some(n => n[1]==='b');
-const sigCount  = k => SCALES[k].filter(n => n.length>1).length;
+const isFlatKey = k => sigNotes(k).some(n => n[1]==='b');
+const sigCount  = k => sigNotes(k).filter(n => n.length>1).length;
 const sigLabel  = k => { const c = sigCount(k); return c ? c + (isFlatKey(k) ? '♭' : '♯') : 'NONE'; };
+
+/* ============================================================
+   MINOR SCALES & MODES
+   Scale IDs: 'C' = C major (the table above), 'A:nat' / 'A:harm' / 'A:mel'
+   = A natural / harmonic / melodic (ascending) minor, 'D:dor' = D Dorian, etc.
+   These are spelled from the tonic, one letter per degree. Scales that would
+   need a double sharp or flat (e.g. G# harmonic minor) are left out.
+   ============================================================ */
+const SCALE_TYPES = {
+  major: {name: 'major',          steps: [0,2,4,5,7,9,11]},
+  nat:   {name: 'natural minor',  steps: [0,2,3,5,7,8,10]},
+  harm:  {name: 'harmonic minor', steps: [0,2,3,5,7,8,11], sig: 'nat'},   // key signature = natural minor's
+  mel:   {name: 'melodic minor',  steps: [0,2,3,5,7,9,11], sig: 'nat'},   // ascending form
+  dor:   {name: 'Dorian',         steps: [0,2,3,5,7,9,10]},
+  phr:   {name: 'Phrygian',       steps: [0,1,3,5,7,8,10]},
+  lyd:   {name: 'Lydian',         steps: [0,2,4,6,7,9,11]},
+  mix:   {name: 'Mixolydian',     steps: [0,2,4,5,7,9,10]},
+  aeo:   {name: 'Aeolian',        steps: [0,2,3,5,7,8,10]},
+  loc:   {name: 'Locrian',        steps: [0,1,3,5,6,8,10]},
+};
+const MINOR_FORMS = ['nat', 'harm', 'mel'], MODE_TYPES = ['dor', 'phr', 'lyd', 'mix', 'aeo', 'loc'];
+const MAJOR_ORDER = ['C','G','D','A','E','B','F#','C#','F','Bb','Eb','Ab','Db','Gb','Cb'];
+const MINOR_SHARP_ROW = ['A','E','B','F#','C#','G#','D#','A#'], MINOR_FLAT_ROW = ['A','D','G','C','F','Bb','Eb','Ab'];
+const MINOR_ORDER = ['A','E','B','F#','C#','G#','D#','A#','D','G','C','F','Bb','Eb','Ab'];
+const typeOf = id => id.includes(':') ? id.split(':')[1] : 'major';
+const tonicOf = id => id.split(':')[0];
+function spell(tonic, steps){
+  const li = LETTERS.indexOf(tonic[0]), root = pcOf(tonic), out = [];
+  for(let i = 0; i < 7; i++){
+    const L = LETTERS[(li + i) % 7], diff = ((root + steps[i] - NAT[L]) % 12 + 18) % 12 - 6;
+    if(Math.abs(diff) > 1) return null;   // would need a double sharp or flat
+    out.push(L + (diff === 1 ? '#' : diff === -1 ? 'b' : ''));
+  }
+  return out;
+}
+for(const f of MINOR_FORMS) for(const t of MINOR_ORDER){ const n = spell(t, SCALE_TYPES[f].steps); if(n) SCALES[t + ':' + f] = n; }
+for(const m of MODE_TYPES) for(const t of MAJOR_ORDER){ const n = spell(t, SCALE_TYPES[m].steps); if(n) SCALES[t + ':' + m] = n; }
+// Every scale, in the order practice mode plays them: majors, then minors, then modes.
+const PLAY_ORDER = [...MAJOR_ORDER, ...MINOR_FORMS.flatMap(f => MINOR_ORDER.map(t => t + ':' + f)), ...MODE_TYPES.flatMap(m => MAJOR_ORDER.map(t => t + ':' + m))].filter(id => SCALES[id]);
+const sigNotes = id => { const t = SCALE_TYPES[typeOf(id)]; return t.sig ? SCALES[tonicOf(id) + ':' + t.sig] : SCALES[id]; };
+const scaleName = id => `${fmt(tonicOf(id))} ${SCALE_TYPES[typeOf(id)].name}`;
+const SHORT = {major: '', nat: 'm', harm: 'm harm', mel: 'm mel'};
+const shortName = id => { const t = typeOf(id); return fmt(tonicOf(id)) + (t in SHORT ? SHORT[t] : ' ' + SCALE_TYPES[t].name.slice(0, 3)); };
+const stepsOf = id => { const r = pcOf(SCALES[id][0]); return SCALES[id].map(n => (pcOf(n) - r + 12) % 12); };
 const ORD = {1:'tonic (1st)',2:'2nd',3:'3rd',4:'4th',5:'5th',6:'6th',7:'7th',8:'octave (8th)'};
 /* Ranked CHAOS: every run is the same length, so scores compare fairly.
    Final score = points × key bonus (+10% for each key beyond the first). */
 const CHAOS_LEN = 20;
-const keyBonus = n => Math.round((1 + 0.1*(n-1)) * 10) / 10;
+const keyBonus = n => Math.round((1 + 0.1*(Math.min(15, n)-1)) * 10) / 10;   // counts up to 15 scales
 const pick = a => a[Math.floor(Math.random()*a.length)];
 const $ = s => document.querySelector(s);
 
@@ -798,34 +856,48 @@ const SFX = {
 };
 
 /* ---------- key select ---------- */
+// The top bar shows one family at a time (MAJOR / MINOR / MODES); checked scales from every family stay selected.
+S.cat = 'major'; S.form = 'nat'; S.modeType = 'dor';
+const rowIds = list => list.map(t => S.cat === 'major' ? t : t + ':' + (S.cat === 'minor' ? S.form : S.modeType));
 function renderKeyRows(){
-  for(const [id, list, cls] of [['#sharpRow', SHARP_ROW, 'sharp'], ['#flatRow', FLAT_ROW, 'flat']]){
-    $(id).innerHTML = list.map(k =>
-      `<button type="button" class="cart ${cls}${k==='C'?' home':''}" data-key="${k}" aria-pressed="false" aria-label="${fmt(k)} major">
-        <span class="cname">${fmt(k)}</span><span class="cbadge">${sigLabel(k)}</span><span class="ccheck" aria-hidden="true">✓</span>
-      </button>`).join('');
-  }
+  const rows = S.cat === 'minor' ? [MINOR_SHARP_ROW, MINOR_FLAT_ROW] : [SHARP_ROW, FLAT_ROW];
+  [['#sharpRow', rows[0], 'sharp'], ['#flatRow', rows[1], 'flat']].forEach(([id, list, cls]) => {
+    $(id).innerHTML = rowIds(list).map(k => { const ok = !!SCALES[k];
+      return `<button type="button" class="cart ${cls}${tonicOf(k) === (S.cat === 'minor' ? 'A' : 'C') ? ' home' : ''}" data-key="${k}" aria-pressed="false" aria-label="${ok ? scaleName(k) : fmt(tonicOf(k)) + ': needs a double sharp or flat'}" ${ok ? '' : 'disabled title="Needs a double sharp or flat"'}>
+        <span class="cname">${fmt(tonicOf(k))}${S.cat === 'minor' ? 'm' : ''}</span><span class="cbadge">${ok ? (S.cat === 'modes' ? SCALE_TYPES[S.modeType].name.toUpperCase() : sigLabel(k)) : '—'}</span><span class="ccheck" aria-hidden="true">✓</span>
+      </button>`; }).join('');
+  });
+  document.querySelectorAll('#catSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.cat === S.cat));
+  const forms = S.cat === 'minor' ? MINOR_FORMS.map(f => [f, SCALE_TYPES[f].name.split(' ')[0].toUpperCase()]) : S.cat === 'modes' ? MODE_TYPES.map(m => [m, SCALE_TYPES[m].name.slice(0, 3).toUpperCase(), SCALE_TYPES[m].name]) : [];
+  $('#formSeg').innerHTML = forms.map(([k, l, full]) => `<button type="button" data-form="${k}" aria-pressed="${k === (S.cat === 'minor' ? S.form : S.modeType)}"${full ? ` title="${full}" aria-label="${full}"` : ''}>${l}</button>`).join('');
+  $('#formSeg').hidden = !forms.length;
+  updateCarts();
 }
+const rowKeys = row => [...row.closest('.krow').querySelectorAll('.cart:not(:disabled)')].map(c => c.dataset.key);
 function updateCarts(){
   document.querySelectorAll('.cart').forEach(b => {
     const on = S.selected.has(b.dataset.key);
     b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
   });
-  document.querySelectorAll('.rowlabel').forEach(b =>
-    b.setAttribute('aria-pressed', (b.dataset.row === 'sharp' ? SHARP_ROW : FLAT_ROW).every(k => S.selected.has(k))));
-  const none = S.selected.size === 0;
+  document.querySelectorAll('.rowlabel').forEach(b => { const ks = rowKeys(b); b.setAttribute('aria-pressed', ks.length > 0 && ks.every(k => S.selected.has(k))); });
+  const none = S.selected.size === 0, sel = PLAY_ORDER.filter(k => S.selected.has(k));
+  $('#selSum').innerHTML = none ? '' : `<button type="button" id="selClear" title="Uncheck every scale">${sel.length} SELECTED · CLEAR</button>`;
   $('#startBtn').disabled = none; $('#chaosBtn').disabled = none;
-  $('#insertMsg').textContent = none ? 'CHECK YOUR KEYS ABOVE' : 'PRESS START OR CHAOS';
+  $('#insertMsg').textContent = none ? 'CHECK YOUR SCALES ABOVE' : `${sel.map(shortName).join(' · ').toUpperCase()} · PRESS START OR CHAOS`;
 }
 $('#keySelect').addEventListener('click', e => {
+  if(S.run) return;
+  const cat = e.target.closest('[data-cat]'), form = e.target.closest('[data-form]');
+  if(cat){ S.cat = cat.dataset.cat; SFX.click(); renderKeyRows(); return; }
+  if(form){ if(S.cat === 'minor') S.form = form.dataset.form; else S.modeType = form.dataset.form; SFX.click(); renderKeyRows(); return; }
+  if(e.target.closest('#selClear')){ S.selected.clear(); SFX.click(); updateCarts(); renderAssignment(); return; }
   const row = e.target.closest('.rowlabel');
   if(row){
-    if(S.run) return;
-    const list = row.dataset.row === 'sharp' ? SHARP_ROW : FLAT_ROW, all = list.every(k => S.selected.has(k));
+    const list = rowKeys(row), all = list.every(k => S.selected.has(k));
     list.forEach(k => all ? S.selected.delete(k) : S.selected.add(k));
     SFX.click(); updateCarts(); return;
   }
-  const b = e.target.closest('.cart'); if(!b || S.run) return;
+  const b = e.target.closest('.cart'); if(!b || b.disabled) return;
   const k = b.dataset.key;
   S.selected.has(k) ? S.selected.delete(k) : S.selected.add(k);
   SFX.click(); updateCarts();
@@ -908,7 +980,7 @@ function effAcc(letter){
   if(S.accSel === '#') return 1;
   if(S.accSel === 'b') return -1;
   if(S.accSel === 'n') return 0;
-  if(S.keySig && S.run && S.run.q) return accOf(SCALES[S.run.q.key].find(n => n[0] === letter));
+  if(S.keySig && S.run && S.run.q) return accOf(sigNotes(S.run.q.key).find(n => n[0] === letter));
   return 0;
 }
 function staffMidi(){
@@ -971,7 +1043,7 @@ function heart(on){
 function updateHUD(){
   const r = S.run; if(!r) return;
   const q = r.q;
-  $('#hudKey').textContent = q ? fmt(q.key) + ' MAJOR' : '—';
+  $('#hudKey').textContent = q ? scaleName(q.key).toUpperCase() : '—';
   const tag = $('#modeTag'); tag.textContent = r.mode === 'chaos' ? 'CHAOS' : 'PRACTICE'; tag.classList.toggle('chaos', r.mode === 'chaos');
   $('#hudQ').textContent = r.mode === 'chaos' ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
   $('#hudScore').textContent = String(r.score).padStart(6, '0');
@@ -979,8 +1051,8 @@ function updateHUD(){
   $('#hudLives').innerHTML = [0,1,2].map(i => heart(i < r.lives)).join('');
   $('#hudLives').setAttribute('aria-label', r.lives + ' of 3 health');
   $('#ladder').innerHTML = r.mode === 'practice'
-    ? r.keys.map((k,i) => `<span class="${i < r.keyIdx ? 'done' : i === r.keyIdx ? 'cur' : ''}">${fmt(k)}</span>`).join('')
-    : r.keys.map(k => `<span>${fmt(k)}</span>`).join('');
+    ? r.keys.map((k,i) => `<span class="${i < r.keyIdx ? 'done' : i === r.keyIdx ? 'cur' : ''}">${shortName(k)}</span>`).join('')
+    : r.keys.map(k => `<span>${shortName(k)}</span>`).join('');
 }
 function say(text, tone){ const f = $('#feedback'); f.textContent = text; f.className = 'feedback ' + (tone || ''); }
 function popup(text, cls=''){
@@ -1066,7 +1138,7 @@ function todayOf(log){ const k = dayKey(); return log[k] || (log[k] = {q: [], ru
 // What the student actually answered, so the teacher sees "often played F" next to a miss.
 function pickOf(q){
   if(q.type === 'build') return '';
-  if(q.type === 'piano'){ const m = [...S.sel][0]; if(m == null) return ''; const i = scaleIdxOfPc(q.key, m % 12); return i >= 0 ? SCALES[q.key][i] : PC_NAMES[m % 12]; }
+  if(q.type === 'piano'){ const m = [...S.sel][0]; if(m == null) return ''; const i = scaleIdxOfPc(q.sk, m % 12); return i >= 0 ? SCALES[q.sk][i] : PC_NAMES[m % 12]; }
   const letter = LETTERS[S.pos % 7], a = effAcc(letter);
   return letter + (a === 1 ? '#' : a === -1 ? 'b' : '');
 }
@@ -1136,7 +1208,7 @@ function renderAssignment(){
   const bits = [a.goal ? `${Math.min(d.questions, a.goal)}/${a.goal} QUESTIONS` : `${d.questions} QUESTIONS`, a.minutes ? `${Math.min(d.minutes, a.minutes)}/${a.minutes} MIN` : `${d.minutes} MIN`];
   const met = (a.goal || a.minutes) && (!a.goal || d.questions >= a.goal) && (!a.minutes || d.minutes >= a.minutes);
   const using = keys.length && keys.length === S.selected.size && keys.every(k => S.selected.has(k));
-  box.innerHTML = `<span class="ab-t">ASSIGNMENT</span><span class="ab-k">${keys.map(fmt).join(' ') || 'ANY KEYS'}</span>
+  box.innerHTML = `<span class="ab-t">ASSIGNMENT</span><span class="ab-k">${keys.map(shortName).join(' · ') || 'ANY SCALES'}</span>
     <span class="ab-p ${met ? 'met' : ''}">${met ? '✓ GOAL MET · ' : 'YOU: '}${bits.join(' · ')}</span>
     ${keys.length ? (using ? '<span class="ab-u">✓ USING THESE KEYS</span>' : '<button class="btn ab-b" type="button" id="useAssign">USE THESE KEYS</button>') : ''}
     ${a.note ? `<span class="ab-n">“${esc(a.note)}”</span>` : ''}`;
@@ -1213,7 +1285,7 @@ function startRun(mode){
   setPlaying(true); updateHUD();
   $('#timer').hidden = mode !== 'chaos';
   if(mode === 'chaos'){
-    $('#chaosMix').textContent = 'MIXING ' + keys.map(fmt).join(' ');
+    $('#chaosMix').textContent = 'MIXING ' + keys.map(shortName).join(' · ');
     $('#chaosIntro').hidden = false; S.overlay = true;
     const app = $('#app'); app.classList.remove('shake'); void app.offsetWidth; app.classList.add('shake');
     SFX.chaos();
@@ -1239,19 +1311,26 @@ function nextQuestion(){
   }
   r.lastKey = key; r.lastInstr = type === 'staff' ? 'staff' : 'piano';
   const degree = type === 'build' ? null : pickDegree(key);
-  r.q = {key, type, degree, answer: degree ? SCALES[key][(degree-1) % 7] : null, tries:0, t0: Date.now()};
+  // Melodic minor goes up raised (♮6 ♮7 → ♯6 ♯7) and comes down as natural minor. Builds say which way;
+  // degree questions only say it for the 6th and 7th, the only notes that change.
+  let dir = null;
+  if(typeOf(key) === 'mel' && (type === 'build' || degree === 6 || degree === 7))
+    dir = type === 'build' && r.mode === 'practice' && r.qInKey === 0 ? 'up' : pick(['up', 'down']);
+  const sk = dir === 'down' ? tonicOf(key) + ':nat' : key;   // the spelling the answer comes from
+  r.q = {key, type, degree, dir, sk, name: scaleName(key) + (dir ? (dir === 'up' ? ' going up' : ' going down') : ''),
+         answer: degree ? SCALES[sk][(degree-1) % 7] : null, tries:0, t0: Date.now()};
   renderQuestion();
 }
 function renderQuestion(){
-  const q = S.run.q, K = `<b>${fmt(q.key)} major</b>`;
+  const q = S.run.q, K = `<b>${q.name}</b>`;
   S.busy = false; S.sel.clear(); say('', ''); setNext(null);
   $('#explain').hidden = true; $('#qHelp').hidden = false;
   updateHUD();
   const tag = $('#qTag');
   if(q.type === 'build'){
     tag.textContent = 'PIANO · BUILD'; tag.className = 'qtag';
-    $('#qText').innerHTML = `Build the ${K} scale`;
-    $('#qHelp').textContent = `Start on ${fmt(q.key)} and click the 7 notes going up, then SUBMIT.`;
+    $('#qText').innerHTML = `Build the <b>${scaleName(q.key)}</b> scale${q.dir ? ` going <em>${q.dir}</em>` : ''}`;
+    $('#qHelp').textContent = q.dir === 'down' ? `Start on the top ${fmt(tonicOf(q.key))} and click the 7 notes going down, then SUBMIT.` : `Start on ${fmt(tonicOf(q.key))} and click the 7 notes going up, then SUBMIT.`;
   } else if(q.type === 'piano'){
     tag.textContent = 'PIANO'; tag.className = 'qtag';
     $('#qText').innerHTML = `Play the <em>${ORD[q.degree]}</em> of ${K}`;
@@ -1277,7 +1356,7 @@ function submit(){
   const q = r.q; let correct;
   if(q.type === 'build'){
     if(!S.sel.size) return say('Click the keys of the scale first.', 'hint');
-    correct = buildCorrect(q.key);
+    correct = buildCorrect(q);
   } else if(q.type === 'piano'){
     if(!S.sel.size) return say('Click a key first.', 'hint');
     correct = [...S.sel][0] % 12 === pcOf(q.answer);
@@ -1288,7 +1367,7 @@ function submit(){
   correct ? onCorrect() : onWrong();
 }
 function stat(key, ok){ const s = S.run.stats[key] || (S.run.stats[key] = {right:0, total:0}); s.total++; if(ok) s.right++; }
-function scaleLine(key){ return `${fmt(key)} major: ${SCALES[key].map(fmt).join(' ')}`; }
+function scaleLine(key){ return `${scaleName(key)}: ${SCALES[key].map(fmt).join(' ')}`; }
 
 function onCorrect(){
   timerPause();
@@ -1304,37 +1383,48 @@ function onCorrect(){
   if(bonus){ SFX.streak(); setTimeout(() => popup(`STREAK x${r.streak}! +${bonus}`, 'streak'), 250); }
   const praise = pick(['NICE!','PERFECT!','GREAT!','YES!','NAILED IT!']);
   if(q.type === 'build'){
-    const byPc = Object.fromEntries(SCALES[q.key].map(n => [pcOf(n), n]));
+    const byPc = Object.fromEntries(SCALES[q.sk].map(n => [pcOf(n), n]));
     S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add('ok'); label(m, byPc[m % 12]); });
-    say(`${praise} ${scaleLine(q.key)}`, 'ok');
+    say(`${praise} ${notesLine(q)}`, 'ok');
   } else if(q.type === 'piano'){
     const m = [...S.sel][0]; PK[m].classList.remove('sel'); PK[m].classList.add('ok'); label(m, q.answer);
-    say(`${praise} ${fmt(q.answer)} is the ${ORD[q.degree]} of ${fmt(q.key)} major.`, 'ok');
+    say(`${praise} ${fmt(q.answer)} is the ${ORD[q.degree]} of ${q.name}.`, 'ok');
   } else {
     $('#noteG').classList.add('good'); playMidi(staffMidi());
-    say(`${praise} ${fmt(q.answer)} is the ${ORD[q.degree]} of ${fmt(q.key)} major.`, 'ok');
+    say(`${praise} ${fmt(q.answer)} is the ${ORD[q.degree]} of ${q.name}.`, 'ok');
   }
   updateHUD();
   later(advance, q.type === 'build' ? 1900 : 1400);
 }
 /* ---------- scale building ----------
-   The only right answer is the scale going UP one octave from the root,
+   The only right answer is the scale going UP one octave from the root (any major, minor or mode),
    e.g. D E F♯ G A B C♯ starting on a D key. Adding the top root is optional. */
-const MAJOR_STEPS = [0,2,4,5,7,9,11];
-function buildRun(key){
-  const root = pcOf(SCALES[key][0]);
-  const start = [...S.sel].sort((a,b) => a-b).find(m => m % 12 === root && m + 11 <= PIANO_HI) ?? (PIANO_LO + root);
-  return MAJOR_STEPS.map(st => start + st);
+// Going up: the root, then up one octave (the top root is optional).
+// Going down (melodic minor): the top root, then down one octave as natural minor (the bottom root is optional).
+function buildSpec(q){
+  const steps = stepsOf(q.sk), root = pcOf(SCALES[q.sk][0]), sel = [...S.sel].sort((a,b) => a-b);
+  if(q.dir === 'down'){
+    const top = sel.filter(m => m % 12 === root && m - 12 >= PIANO_LO).pop() ?? (PIANO_LO + root + 12);
+    return {run: [top, ...steps.slice(1).map(st => top - 12 + st)], opt: top - 12};
+  }
+  const start = sel.find(m => m % 12 === root && m + 11 <= PIANO_HI) ?? (PIANO_LO + root);
+  return {run: steps.map(st => start + st), opt: start + 12};
 }
-function buildCorrect(key){
-  const run = buildRun(key), top = run[0] + 12;
-  return run.every(m => S.sel.has(m)) && [...S.sel].every(m => run.includes(m) || m === top);
+function buildCorrect(q){
+  const {run, opt} = buildSpec(q);
+  return run.every(m => S.sel.has(m)) && [...S.sel].every(m => run.includes(m) || m === opt);
 }
-// Right notes, but not one octave going up from the root?
-function rightNotesWrongOrder(key){
-  const want = new Set(SCALES[key].map(pcOf)), got = new Set([...S.sel].map(m => m % 12));
-  return got.size === want.size && [...got].every(p => want.has(p)) && !buildCorrect(key);
+// Right notes, but not one octave from the root?
+function rightNotesWrongOrder(q){
+  const want = new Set(SCALES[q.sk].map(pcOf)), got = new Set([...S.sel].map(m => m % 12));
+  return got.size === want.size && [...got].every(p => want.has(p)) && !buildCorrect(q);
 }
+// "A melodic minor going down: A G F E D C B"
+function notesLine(q){
+  const n = SCALES[q.sk].map(fmt);
+  return `${q.name}: ${(q.dir === 'down' ? [n[0], ...n.slice(1).reverse()] : n).join(' ')}`;
+}
+const startHint = q => q.dir === 'down' ? `Start on the top ${fmt(tonicOf(q.key))} and go down` : `Start on ${fmt(tonicOf(q.key))} and go up`;
 
 /* ---------- mistake explanations ---------- */
 const PC_NAMES = ['C','C♯/D♭','D','D♯/E♭','E','F','F♯/G♭','G','G♯/A♭','A','A♯/B♭','B'];
@@ -1359,22 +1449,22 @@ function setNext(label, fn){
 }
 function primary(){ if(S.awaitNext){ const fn = S.awaitNext; setNext(null); fn(); } else submit(); }
 function whyWrong(q){
-  const K = `${fmt(q.key)} major`, deg = ORD[q.degree], ans = fmt(q.answer), t = (q.degree - 1) % 7;
+  const K = q.name, deg = ORD[q.degree], ans = fmt(q.answer), t = (q.degree - 1) % 7;
   if(q.type === 'piano'){
-    const pc = [...S.sel][0] % 12, i = scaleIdxOfPc(q.key, pc);
+    const pc = [...S.sel][0] % 12, i = scaleIdxOfPc(q.sk, pc);
     const text = i >= 0
-      ? `${fmt(SCALES[q.key][i])} is the ${ORD[i+1]} of ${K}, not the ${deg}. The ${deg} is ${ans}.`
+      ? `${fmt(SCALES[q.sk][i])} is the ${ORD[i+1]} of ${K}, not the ${deg}. The ${deg} is ${ans}.`
       : `${PC_NAMES[pc]} isn't in ${K}. The ${deg} is ${ans}.`;
-    return [text, scaleChips(q.key, 'COUNT UP', [t], i)];
+    return [text, scaleChips(q.sk, 'COUNT UP', [t], i)];
   }
   const letter = LETTERS[S.pos % 7], a = effAcc(letter);
   const placed = letter + (a === 1 ? '#' : a === -1 ? 'b' : '');
-  const i = SCALES[q.key].findIndex(n => n[0] === letter), inKey = SCALES[q.key][i];
+  const i = SCALES[q.sk].findIndex(n => n[0] === letter), inKey = SCALES[q.sk][i];
   let text;
   if(placed === inKey) text = `${fmt(placed)} is the ${ORD[i+1]} of ${K}, not the ${deg}. The ${deg} is ${ans}.`;
   else if(letter === q.answer[0]) text = `Right note name, wrong accidental. ${K} uses ${fmt(inKey)}, not ${fmt(placed)}. The ${deg} is ${ans}.`;
   else text = `${fmt(placed)} isn't in ${K} (it uses ${fmt(inKey)}). The ${deg} is ${ans}.`;
-  return [text, scaleChips(q.key, 'COUNT UP', [t], placed === inKey ? i : -1)];
+  return [text, scaleChips(q.sk, 'COUNT UP', [t], placed === inKey ? i : -1)];
 }
 
 function onWrong(){
@@ -1382,13 +1472,13 @@ function onWrong(){
   const r = S.run, q = r.q, practice = r.mode === 'practice';
   if(q.type === 'build' && q.tries === 0){
     q.tries = 1; S.busy = true;
-    const run = buildRun(q.key), top = run[0] + 12, order = rightNotesWrongOrder(q.key);
-    S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add(run.includes(m) || m === top ? 'ok' : 'bad'); });
+    const {run, opt} = buildSpec(q), order = rightNotesWrongOrder(q);
+    S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add(run.includes(m) || m === opt ? 'ok' : 'bad'); });
     run.forEach(m => { if(!S.sel.has(m)) PK[m].classList.add('miss'); });
     flash('bad'); SFX.soft();
     say(order
-      ? `Right notes, wrong order! A scale starts on its root. Start on ${fmt(q.key)} and go up. One more try!`
-      : `ALMOST! Start on ${fmt(q.key)}. Green = right, red = wrong, flashing = missing. One more try!`, 'warn');
+      ? `Right notes, wrong order! A scale starts on its root. ${startHint(q)}. One more try!`
+      : `ALMOST! ${startHint(q)}. Green = right, red = wrong, flashing = missing. One more try!`, 'warn');
     const retry = () => { allKeys().forEach(g => g.classList.remove('ok','bad','miss')); paintSel(); say('', ''); S.busy = false; };
     if(practice){ setNext('TRY AGAIN ▶', retry); } else later(retry, 2200);
     return;
@@ -1398,19 +1488,19 @@ function onWrong(){
   r.streak = 0; r.lives--; stat(q.key, false);
   flash('bad'); SFX.buzz();
   if(q.type === 'build'){
-    const want = new Set(SCALES[q.key].map(pcOf)), got = new Set([...S.sel].map(m => m % 12)), byPc = Object.fromEntries(SCALES[q.key].map(n => [pcOf(n), n]));
-    const run = buildRun(q.key), order = rightNotesWrongOrder(q.key);
+    const want = new Set(SCALES[q.sk].map(pcOf)), got = new Set([...S.sel].map(m => m % 12)), byPc = Object.fromEntries(SCALES[q.sk].map(n => [pcOf(n), n]));
+    const {run} = buildSpec(q), order = rightNotesWrongOrder(q);
     allKeys().forEach(g => { const m = +g.dataset.m; g.classList.remove('sel');
       if(run.includes(m)){ g.classList.add('reveal'); label(m, byPc[m % 12]); } else if(S.sel.has(m)) g.classList.add('bad'); });
     const extra = [...got].filter(pc => !want.has(pc)).map(pc => PC_NAMES[pc]);
-    const missIdx = SCALES[q.key].map((n,i) => got.has(pcOf(n)) ? -1 : i).filter(i => i >= 0);
+    const missIdx = SCALES[q.sk].map((n,i) => got.has(pcOf(n)) ? -1 : i).filter(i => i >= 0);
     const parts = [];
-    if(extra.length) parts.push(`Not in ${fmt(q.key)} major: ${extra.join(', ')}.`);
-    if(missIdx.length) parts.push(`Missing: ${missIdx.map(i => fmt(SCALES[q.key][i])).join(', ')}.`);
+    if(extra.length) parts.push(`Not in ${q.name}: ${extra.join(', ')}.`);
+    if(missIdx.length) parts.push(`Missing: ${missIdx.map(i => fmt(SCALES[q.sk][i])).join(', ')}.`);
     parts.push(order
-      ? `You had the right notes, but a scale starts on its root. Start on ${fmt(q.key)} and go up one octave.`
-      : `Start on ${fmt(q.key)} and go up.`);
-    explain(parts.join(' '), scaleChips(q.key, 'SCALE', missIdx));
+      ? `You had the right notes, but a scale starts on its root. ${startHint(q)} one octave.`
+      : `${startHint(q)}.`);
+    explain(parts.join(' '), scaleChips(q.sk, 'SCALE', missIdx));
   } else if(q.type === 'piano'){
     const [text, chips] = whyWrong(q);
     S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add('bad'); });
@@ -1449,9 +1539,9 @@ function keyCleared(){
   SFX.level();
   const p = openOverlay(`
     <h2 class="otitle">KEY CLEARED!</h2>
-    <p class="osub">${fmt(key)} major · ${s.right}/${s.total} correct</p>
+    <p class="osub">${scaleName(key)} · ${s.right}/${s.total} correct</p>
     <div class="chips">${SCALES[key].map(n => `<span>${fmt(n)}</span>`).join('')}</div>
-    <div class="obtns"><button class="btn obtn" id="nextKeyBtn" type="button" data-focus>${next ? `NEXT: ${fmt(next)} MAJOR ▶` : 'SEE RESULTS ▶'}</button></div>`);
+    <div class="obtns"><button class="btn obtn" id="nextKeyBtn" type="button" data-focus>${next ? `NEXT: ${scaleName(next).toUpperCase()} ▶` : 'SEE RESULTS ▶'}</button></div>`);
   p.querySelector('#nextKeyBtn').onclick = () => {
     closeOverlay(); r.keyIdx++; r.qInKey = 0;
     if(r.keyIdx >= r.keys.length) endRun('victory'); else nextQuestion();
@@ -1460,7 +1550,7 @@ function keyCleared(){
 function continuePrompt(){
   const r = S.run; SFX.over();
   const msg = r.mode === 'practice'
-    ? `Continuing restarts ${fmt(r.q.key)} major with full health. Your score stays.`
+    ? `Continuing restarts ${scaleName(r.q.key)} with full health. Your score stays.`
     : 'Continuing refills your health, but this run can no longer post a high score.';
   const p = openOverlay(`
     <h2 class="otitle" style="color:var(--bad)">OUT OF HEALTH</h2>
@@ -1481,11 +1571,11 @@ function endRun(reason){
   const title = reason === 'victory' ? 'ALL KEYS CLEARED!' : reason === 'complete' ? 'CHAOS SURVIVED!' : 'RUN OVER';
   if(reason === 'quit') SFX.over(); else SFX.win();
   const bars = keys.map(k => { const s = r.stats[k], p = Math.round(100*s.right/s.total);
-    return `<div class="bar ${p >= 80 ? '' : p >= 50 ? 'mid' : 'low'}"><span>${fmt(k)}</span><span class="track"><span class="fill" style="width:${p}%"></span></span><span class="pct">${p}%</span></div>`; }).join('');
+    return `<div class="bar ${p >= 80 ? '' : p >= 50 ? 'mid' : 'low'}"><span>${shortName(k)}</span><span class="track"><span class="fill" style="width:${p}%"></span></span><span class="pct">${p}%</span></div>`; }).join('');
   let weak = null;
   keys.forEach(k => { const p = r.stats[k].right / r.stats[k].total; if(p < 1 && (!weak || p < weak.p)) weak = {k, p}; });
   const ranked = r.mode === 'chaos' && reason === 'complete';
-  const mult = keyBonus(r.keys.length), final = ranked ? Math.round(r.score * (9 + r.keys.length) / 10) : r.score;
+  const kc = Math.min(15, r.keys.length), mult = keyBonus(kc), final = ranked ? Math.round(r.score * (9 + kc) / 10) : r.score;
   const eligible = ranked && !r.continued && final > 0;
   const why = eligible ? '' : r.mode === 'practice'
     ? `Practice runs don't go on the board. Finish a ${CHAOS_LEN}-question CHAOS run to post a high score.`
@@ -1503,7 +1593,7 @@ function endRun(reason){
       ${r.times.length ? `<div><small>AVG ANSWER</small><strong>${(r.times.reduce((a,b) => a+b, 0) / r.times.length).toFixed(1)}s</strong></div>` : ''}
     </div>
     ${bars ? `<div class="bars">${bars}</div>` : '<p class="osub dim">No questions answered.</p>'}
-    ${weak ? `<p class="weak">PRACTICE NEXT: ${fmt(weak.k)} MAJOR</p>` : (total ? '<p class="weak" style="color:var(--ok)">FLAWLESS! EVERY KEY AT 100%</p>' : '')}
+    ${weak ? `<p class="weak">PRACTICE NEXT: ${scaleName(weak.k).toUpperCase()}</p>` : (total ? '<p class="weak" style="color:var(--ok)">FLAWLESS! EVERY SCALE AT 100%</p>' : '')}
     ${why ? `<p class="osub dim" style="font-size:20px">${why}</p>` : ''}
     ${eligible ? `<div class="initials" id="postArea">${getProfile()
       ? `<button class="btn obtn mag" type="button" id="postBtn" data-focus>POST MY SCORE AS ${esc(displayName(getProfile()).toUpperCase())}</button>`
@@ -1516,13 +1606,13 @@ function endRun(reason){
   if(post) post.onclick = async () => {
     const me = getProfile(), name = displayName(me), area = p.querySelector('#postArea');
     const list = store.get('ranked', []);
-    list.push({n: name, s: final, b: r.best, k: r.keys.length});
+    list.push({n: name, s: final, b: r.best, k: Math.min(15, r.keys.length)});
     list.sort((a,b) => b.s - a.s); store.set('ranked', list.slice(0, 30));
     SFX.coin();
     if(!Cloud.on){ area.innerHTML = `<p class="weak" style="color:var(--yel)">SAVED FOR ${esc(name.toUpperCase())}!</p>`; return; }
     area.innerHTML = '<p class="weak" style="color:var(--yel)">POSTING...</p>';
     try{
-      await Cloud.submit({name, classCode: me.classCode || '', score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: r.keys.length, keyList: r.keys.join(' ')});
+      await Cloud.submit({name, classCode: me.classCode || '', score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: Math.min(15, r.keys.length), keyList: r.keys.join(' ').slice(0, 60)});
       const [w, cls] = await Promise.all([Cloud.worldRank(final), me.classCode ? Cloud.classTop(me.classCode) : null]);
       const c = cls ? cls.findIndex(x => x.name === name) + 1 : 0;
       const bits = [c ? `#${c} IN ${esc(String(me.className).toUpperCase())}` : '', `#${w} IN THE WORLD`].filter(Boolean);
@@ -1577,10 +1667,10 @@ function chaosPicker(){
   const keys = PLAY_ORDER.filter(k => S.selected.has(k));
   const p = openOverlay(`
     <h2 class="otitle" style="color:var(--mag)">CHAOS MODE</h2>
-    <p class="osub">${CHAOS_LEN} random questions from: ${keys.map(fmt).join(' · ')}</p>
+    <p class="osub">${CHAOS_LEN} random questions from: ${keys.map(shortName).join(' · ')}</p>
     <div class="bigstats">
       <div><small>QUESTIONS</small><strong>${CHAOS_LEN}</strong></div>
-      <div><small>KEYS</small><strong>${keys.length}</strong></div>
+      <div><small>SCALES</small><strong>${keys.length}</strong></div>
       <div><small>KEY BONUS</small><strong>x${keyBonus(keys.length).toFixed(1)}</strong></div>
     </div>
     <p class="osub dim" style="font-size:20px">Finish all ${CHAOS_LEN} without using CONTINUE to post your score. Fast answers earn a speed bonus. More keys = bigger key bonus.</p>
@@ -1612,7 +1702,7 @@ const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return 
 const fmtClock = t => new Date(t).toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'});
 const relTime = t => { const m = Math.round((Date.now() - t) / 60000); return m < 2 ? 'Active now' : m < 60 ? `${m} min ago` : fmtClock(t); };
 const TYPE_NAME = {b: 'Build the scale', p: 'Piano notes', s: 'Staff notes'};
-const missLabel = id => { const [k, d] = id.split('|'); return d === 'b' ? `Build ${fmt(k)} major` : `${ORD[+d]} of ${fmt(k)} major`; };
+const missLabel = id => { const [k, d] = id.split('|'); return d === 'b' ? `Build ${scaleName(k)}` : `${ORD[+d]} of ${scaleName(k)}`; };
 const tdClass = () => TD.classes.find(c => c.code === TD.code);
 
 function teacherLogin(){
@@ -1735,7 +1825,7 @@ async function tdProgress(keep){
     for(const [kk, v] of Object.entries(s.types)){ const x = types[kk] || (types[kk] = {c: 0, n: 0}); x.c += v.c; x.n += v.n; }
     for(const [id, v] of Object.entries(s.missed)){ const x = missed[id] || (missed[id] = {w: 0, n: 0, kids: 0, picks: {}}); x.w += v.w; x.n += v.n; x.kids++; for(const [pk, c] of Object.entries(v.picks)) x.picks[pk] = (x.picks[pk] || 0) + c; }
   }
-  const keyRows = PLAY_ORDER.filter(kk => byKey[kk]).map(kk => [fmt(kk) + ' major', byKey[kk], byKey[kk].kids ? `${byKey[kk].low} of ${byKey[kk].kids} <70%` : '']).sort((x, y) => x[1].c / x[1].n - y[1].c / y[1].n);
+  const keyRows = PLAY_ORDER.filter(kk => byKey[kk]).map(kk => [scaleName(kk), byKey[kk], byKey[kk].kids ? `${byKey[kk].low} of ${byKey[kk].kids} <70%` : '']).sort((x, y) => x[1].c / x[1].n - y[1].c / y[1].n);
   const typeRows = Object.keys(TYPE_NAME).filter(t => types[t]).map(t => [TYPE_NAME[t], types[t]]);
   const topMissed = Object.entries(missed).sort((x, y) => y[1].w - x[1].w).slice(0, 8);
   const goal = a && a.goal;
@@ -1744,7 +1834,7 @@ async function tdProgress(keep){
       <td><span class="dot ${Date.now() - s.last < 2*60000 ? 'on' : ''}"></span><b>${esc(s.student)}</b></td>
       <td>${s.minutes} min</td><td>${s.questions}${goal && TD.range === 'today' ? ` <span class="dim">/ ${goal}</span>` : ''}</td>
       <td><span class="chip ${toneOf(s.acc)}">${pctOf(s.correct, s.questions)}%</span></td><td>${s.best || '<span class="dim">—</span>'}</td>
-      <td>${s.weak.length ? s.weak.map(w => `${esc(fmt(w.k))} <span class="dim">${Math.round(w.acc * 100)}%</span>`).join(', ') : '<span class="dim">—</span>'}</td>
+      <td>${s.weak.length ? s.weak.map(w => `${esc(shortName(w.k))} <span class="dim">${Math.round(w.acc * 100)}%</span>`).join(', ') : '<span class="dim">—</span>'}</td>
       <td class="dim">${TD.range === 'today' ? relTime(s.last) : `${s.days} day${s.days > 1 ? 's' : ''}`}</td></tr>
       ${TD.open === s.sid ? `<tr><td colspan="7">${tdStudentDetail(s)}</td></tr>` : ''}`).join('');
   body.innerHTML = `
@@ -1755,7 +1845,7 @@ async function tdProgress(keep){
       <button class="btn tbtn sm" type="button" id="tdCsv" ${studs.length ? '' : 'disabled'}>EXPORT CSV</button>
       ${TD.range === 'today' ? '<span class="td-live">● LIVE · UPDATES EVERY 30 SECONDS</span>' : ''}
     </div>
-    ${a ? `<p class="dim" style="margin:0">Assignment: <b>${(a.keys || []).map(fmt).join(' ') || 'any keys'}</b>${a.goal ? ` · ${a.goal} questions` : ''}${a.minutes ? ` · ${a.minutes} min` : ''}</p>` : ''}
+    ${a ? `<p class="dim" style="margin:0">Assignment: <b>${(a.keys || []).filter(k => SCALES[k]).map(shortName).join(' · ') || 'any scales'}</b>${a.goal ? ` · ${a.goal} questions` : ''}${a.minutes ? ` · ${a.minutes} min` : ''}</p>` : ''}
     <div class="td-tiles">
       <div><span>STUDENTS</span><b>${studs.length}${TD.range === 'today' ? ` <small class="dim" style="font-size:9px">${active} ACTIVE</small>` : ''}</b></div>
       <div><span>AVG TIME</span><b>${studs.length ? Math.round(mins / studs.length) : 0} MIN</b></div>
@@ -1764,11 +1854,11 @@ async function tdProgress(keep){
     </div>
     ${studs.length ? `
     <div class="td-grid">
-      <div class="td-sec"><h3>ACCURACY BY KEY (WEAKEST FIRST)</h3>${hbars(keyRows)}<h3 style="margin-top:12px">BY QUESTION TYPE</h3>${hbars(typeRows)}</div>
+      <div class="td-sec"><h3>ACCURACY BY SCALE (WEAKEST FIRST)</h3>${hbars(keyRows)}<h3 style="margin-top:12px">BY QUESTION TYPE</h3>${hbars(typeRows)}</div>
       <div class="td-sec"><h3>MOST-MISSED QUESTIONS</h3>${topMissed.length ? missRows(topMissed) : '<p class="dim">No misses yet.</p>'}</div>
     </div>
     <div class="td-sec"><h3>STUDENTS <span class="dim" style="font-family:var(--vt);font-size:18px">(click a name for details)</span></h3>
-      <div style="overflow-x:auto"><table class="td-table"><thead><tr>${th('student', 'STUDENT')}${th('minutes', 'TIME')}${th('questions', 'QUESTIONS')}${th('acc', 'ACCURACY')}${th('best', 'BEST CHAOS')}<th>WEAKEST KEYS</th><th>${TD.range === 'today' ? 'LAST ACTIVE' : 'DAYS'}</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div style="overflow-x:auto"><table class="td-table"><thead><tr>${th('student', 'STUDENT')}${th('minutes', 'TIME')}${th('questions', 'QUESTIONS')}${th('acc', 'ACCURACY')}${th('best', 'BEST CHAOS')}<th>WEAKEST SCALES</th><th>${TD.range === 'today' ? 'LAST ACTIVE' : 'DAYS'}</th></tr></thead><tbody>${rows}</tbody></table></div>
     </div>` : `<p class="dim">No practice yet for ${esc(rangeLabel().toLowerCase())}. Students show up here as soon as they answer a question with class code <b>${esc(TD.code)}</b>.</p>`}`;
   $('#tdRange').value = TD.range;
   $('#tdRange').onchange = () => { TD.range = $('#tdRange').value; TD.open = null; tdProgress(); };
@@ -1789,7 +1879,7 @@ async function tdProgress(keep){
   if(TD.range === 'today') TD.timer = setInterval(() => { if(!document.hidden && TD.tab === 'progress' && !$('#teacherView').hidden && !S.overlay) tdProgress(true); }, 30000);
 }
 function tdStudentDetail(s){
-  const keyRows = PLAY_ORDER.filter(k => s.byKey[k]).map(k => [fmt(k) + ' major', s.byKey[k]]);
+  const keyRows = PLAY_ORDER.filter(k => s.byKey[k]).map(k => [scaleName(k), s.byKey[k]]);
   const typeRows = Object.keys(TYPE_NAME).filter(t => s.types[t]).map(t => [TYPE_NAME[t], s.types[t]]);
   const missed = Object.entries(s.missed).sort((a,b) => b[1].w - a[1].w).slice(0, 8);
   const runs = s.chaos.slice(-5).map(r => `${r.s} (${r.a}% · ${r.k} key${r.k > 1 ? 's' : ''})`).join(', ');
@@ -1808,7 +1898,7 @@ function tdCsv(studs){
   const head = ['Student', 'Range', 'Minutes', 'Questions', 'Accuracy %', 'Build accuracy %', 'Piano accuracy %', 'Staff accuracy %', 'CHAOS runs', 'Best CHAOS', 'Weakest keys', 'Strongest keys'];
   const lines = [head.map(q).join(',')].concat(studs.map(s => [s.student, rangeLabel(), s.minutes, s.questions, pctOf(s.correct, s.questions),
     ...['b', 'p', 's'].map(t => s.types[t] ? pctOf(s.types[t].c, s.types[t].n) : ''), s.chaos.length, s.best || '',
-    s.weak.map(w => `${fmt(w.k)} ${Math.round(w.acc * 100)}%`).join('; '), s.strong.map(w => `${fmt(w.k)} ${Math.round(w.acc * 100)}%`).join('; ')].map(q).join(',')));
+    s.weak.map(w => `${shortName(w.k)} ${Math.round(w.acc * 100)}%`).join('; '), s.strong.map(w => `${shortName(w.k)} ${Math.round(w.acc * 100)}%`).join('; ')].map(q).join(',')));
   const blob = new Blob([lines.join('\n')], {type: 'text/csv'}), link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = `scale-quest-${(cls ? cls.name : 'class').replace(/[^A-Za-z0-9]+/g, '-')}-${TD.range === 'date' ? TD.date : TD.range}.csv`;
@@ -1819,8 +1909,9 @@ function tdCsv(studs){
 function tdAssign(){
   const cls = tdClass(), a = (cls && cls.scale_assignment) || {}, picked = new Set(a.keys || []);
   $('#tdBody').innerHTML = `
-    <p class="dim" style="margin:0">Choose the keys <b>${esc(cls.name)}</b> should practice. Students see a banner with a <b>USE THESE KEYS</b> button and their progress toward the goal. It stays until you change or clear it.</p>
-    <div class="td-sec"><h3>KEYS</h3><div class="td-keys" id="aKeys">${PLAY_ORDER.map(k => `<button type="button" data-k="${k}" aria-pressed="${picked.has(k)}">${fmt(k)}</button>`).join('')}</div></div>
+    <p class="dim" style="margin:0">Choose the scales <b>${esc(cls.name)}</b> should practice. Students see a banner with a <b>USE THESE KEYS</b> button and their progress toward the goal. It stays until you change or clear it.</p>
+    <div class="td-sec" id="aKeys"><h3>SCALES</h3>${[['MAJOR', MAJOR_ORDER], ...MINOR_FORMS.map(f => [SCALE_TYPES[f].name.toUpperCase(), MINOR_ORDER.map(t => t + ':' + f)]), ...MODE_TYPES.map(m => [SCALE_TYPES[m].name.toUpperCase(), MAJOR_ORDER.map(t => t + ':' + m)])]
+      .map(([label, ids]) => `<div class="td-keyrow"><span>${label}</span><div class="td-keys">${ids.filter(k => SCALES[k]).map(k => `<button type="button" data-k="${k}" aria-pressed="${picked.has(k)}" title="${scaleName(k)}">${fmt(tonicOf(k))}${MINOR_FORMS.includes(typeOf(k)) ? 'm' : ''}</button>`).join('')}</div></div>`).join('')}</div>
     <form class="td-form" id="assignForm" onsubmit="return false">
       <label>GOAL: QUESTIONS<input id="aGoal" type="number" min="0" max="500" value="${a.goal ?? DAILY_GOAL}"></label>
       <label>GOAL: MINUTES<input id="aMinutes" type="number" min="0" max="240" value="${a.minutes || ''}" placeholder="optional"></label>
@@ -1842,7 +1933,7 @@ function popupMsg(text){ const e = $('#tdErr'); e.style.color = 'var(--ok)'; e.t
 
 // ----- Classes (shared with the Rhythm Trainer) -----
 function tdClasses(){
-  const rows = TD.classes.map(c => `<tr><td><b>${esc(c.name)}</b></td><td><span class="code-pill">${esc(c.code)}</span></td><td class="dim">${c.scale_assignment ? esc((c.scale_assignment.keys || []).map(fmt).join(' ') || 'any keys') : 'No assignment'}</td>
+  const rows = TD.classes.map(c => `<tr><td><b>${esc(c.name)}</b></td><td><span class="code-pill">${esc(c.code)}</span></td><td class="dim">${c.scale_assignment ? esc((c.scale_assignment.keys || []).filter(k => SCALES[k]).map(shortName).join(' · ') || 'any scales') : 'No assignment'}</td>
     <td style="text-align:right;white-space:nowrap"><button class="btn tbtn sm" type="button" data-rename="${esc(c.code)}">RENAME</button> <button class="btn tbtn sm" type="button" data-recode="${esc(c.code)}">CHANGE CODE</button> <button class="btn tbtn sm" type="button" data-clear="${esc(c.code)}">CLEAR SCALE QUEST DATA</button></td></tr>`).join('');
   $('#tdBody').innerHTML = `
     <p class="dim" style="margin:0">These are the same classes and codes as the Rhythm Trainer. Students type the code on the welcome screen; from then on their practice shows up in <b>PROGRESS</b> and their CHAOS scores go on that class's board. (To delete a class completely, use the Rhythm Trainer's dashboard.)</p>

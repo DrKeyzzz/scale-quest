@@ -1,6 +1,6 @@
 # Scale Quest
 
-An arcade-style major scale trainer for beginner music theory. Students check the keys they want, build each scale on a piano (starting on the root and going up one octave), find scale degrees on piano and treble staff, then mix everything in CHAOS mode.
+An arcade-style scale trainer for music theory: all 15 major scales, natural / harmonic / melodic minor, and the modes (Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian). Students check the scales they want, build each scale on a piano (starting on the root and going up one octave), find scale degrees on piano and treble staff, then mix everything in CHAOS mode.
 
 **Play:** https://drkeyzzz.github.io/scale-quest/
 
@@ -33,6 +33,14 @@ Scale Quest shares the **Rhythm Trainer's Firebase project** (`rhythm-trainer-fc
 
 **Rules:** [`firestore.rules`](firestore.rules) covers **both** games and is identical in both repos. Whenever it changes, paste it into Firebase → Firestore Database → Rules → **Publish**.
 
+## Minor scales and modes
+
+- The top bar has **MAJOR / MINOR / MODES** tabs; scales checked in any tab stay selected and can be mixed.
+- **Melodic minor** goes up with a raised 6th and 7th and comes down as natural minor. Building it asks "going up" or "going down"; questions about its 6th or 7th say which direction. (The first build of a melodic minor in practice is always going up.)
+- With **Show key signature** on, minor scales and modes use their parent major's key signature, so harmonic and melodic minor's raised notes still need a sharp or natural.
+- Scales that would need a double sharp or flat (for example G♯ harmonic minor or C♯ Lydian) are greyed out.
+- The CHAOS key bonus counts up to 15 scales.
+
 ## Changing the scale data
 
-All scale spellings live in the `SCALES` object in `index.html`.
+Major scale spellings live in the `SCALES` object in `index.html`; minor scales and modes are spelled from them by `spell()` using the step patterns in `SCALE_TYPES`.
