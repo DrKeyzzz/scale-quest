@@ -6,15 +6,16 @@
 <title>Scale Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Noto+Music&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Music&text=%F0%9D%84%9E%F0%9D%84%AA%F0%9D%84%AB&display=swap">
 <style>
 :root{
   color-scheme:dark;
   --bg:#120b2e; --bg2:#1a1142; --panel:#221760; --line:#3d2f8f;
   --ink:#f3eeff; --dim:#a79de0; --cyan:#3ff0ff; --mag:#ff4fd8; --yel:#ffe45c;
   --ok:#5dff8f; --bad:#ff4d6a; --paper:#fbf8ef; --paperink:#1b1436; --shadow:#07031a;
-  --px:'Press Start 2P',ui-monospace,'Courier New',monospace;
-  --vt:'VT323',ui-monospace,'Courier New',monospace;
+  --px:'Press Start 2P','Noto Music',ui-monospace,'Courier New',monospace;   /* Noto Music here only supplies 𝄪 and 𝄫 */
+  --vt:'VT323','Noto Music',ui-monospace,'Courier New',monospace;
   --music:'Noto Music','Apple Symbols','Segoe UI Symbol',serif;
 }
 html,body{background:var(--bg)}
@@ -157,7 +158,7 @@ button{font:inherit;color:inherit}
 .arrow{width:78px;height:62px;background:var(--cyan);display:grid;place-items:center}
 .arrow svg{width:28px;height:22px;fill:var(--shadow)}
 .accs{display:flex;gap:6px}
-.accs button{width:48px;height:48px;display:grid;place-items:center;padding:0;background:var(--panel);color:var(--ink);border:3px solid var(--line);cursor:pointer;box-shadow:3px 3px 0 var(--shadow)}
+.accs button{width:44px;height:48px;display:grid;place-items:center;padding:0;background:var(--panel);color:var(--ink);border:3px solid var(--line);cursor:pointer;box-shadow:3px 3px 0 var(--shadow)}
 .accs button svg{width:26px;height:36px;stroke:currentColor;fill:none;overflow:visible}
 .accs button[aria-pressed="true"]{background:var(--mag);border-color:var(--mag);color:var(--shadow)}
 .acclab{font-family:var(--px);font-size:7px;color:var(--dim);letter-spacing:.08em}
@@ -481,9 +482,11 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
             <div class="accs" id="accs" role="group" aria-label="Accidental">
+              <button type="button" data-acc="bb" aria-pressed="false" aria-label="Double flat"><svg viewBox="-19 -18 32 36" aria-hidden="true"></svg></button>
               <button type="button" data-acc="b" aria-pressed="false" aria-label="Flat"><svg viewBox="-13 -18 26 36" aria-hidden="true"></svg></button>
               <button type="button" data-acc="n" aria-pressed="false" aria-label="Natural"><svg viewBox="-13 -18 26 36" aria-hidden="true"></svg></button>
               <button type="button" data-acc="#" aria-pressed="false" aria-label="Sharp"><svg viewBox="-13 -18 26 36" aria-hidden="true"></svg></button>
+              <button type="button" data-acc="##" aria-pressed="false" aria-label="Double sharp"><svg viewBox="-13 -18 26 36" aria-hidden="true"></svg></button>
             </div>
             <span class="acclab">ACCIDENTAL</span>
           </div>
@@ -588,19 +591,20 @@ const FLAT_SIG_POS  = [6,9,5,8,4,7,3];     // B E A D G C F
 
 const LETTERS = ['C','D','E','F','G','A','B'];
 const NAT = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
-const accOf = n => n[1]==='#' ? 1 : n[1]==='b' ? -1 : 0;
+const ACC_VAL = {'##': 2, '#': 1, 'b': -1, 'bb': -2}, ACC_TXT = {'##': '𝄪', '#': '♯', 'b': '♭', 'bb': '𝄫'};
+const accOf = n => ACC_VAL[n.slice(1)] || 0;   // 'F##' = F double sharp, 'Bbb' = B double flat
 const pcOf  = n => (NAT[n[0]] + accOf(n) + 12) % 12;
-const fmt   = n => n[0] + (n[1]==='#' ? '♯' : n[1]==='b' ? '♭' : '');
+const fmt   = n => n[0] + (ACC_TXT[n.slice(1)] || '');
 const isFlatKey = k => sigNotes(k).some(n => n[1]==='b');
-const sigCount  = k => sigNotes(k).filter(n => n.length>1).length;
+const sigCount  = k => sigNotes(k).reduce((t, n) => t + Math.abs(accOf(n)), 0);   // F♭ major = 8 flats
 const sigLabel  = k => { const c = sigCount(k); return c ? c + (isFlatKey(k) ? '♭' : '♯') : 'NONE'; };
 
 /* ============================================================
    MINOR SCALES & MODES
    Scale IDs: 'C' = C major (the table above), 'A:nat' / 'A:harm' / 'A:mel'
    = A natural / harmonic / melodic (ascending) minor, 'D:dor' = D Dorian, etc.
-   These are spelled from the tonic, one letter per degree. Scales that would
-   need a double sharp or flat (e.g. G# harmonic minor) are left out.
+   These are spelled from the tonic, one letter per degree, using double sharps
+   and flats where the theory needs them (G# harmonic minor has F##, Gb Dorian has Bbb).
    ============================================================ */
 const SCALE_TYPES = {
   major: {name: 'major',          steps: [0,2,4,5,7,9,11]},
@@ -624,8 +628,8 @@ function spell(tonic, steps){
   const li = LETTERS.indexOf(tonic[0]), root = pcOf(tonic), out = [];
   for(let i = 0; i < 7; i++){
     const L = LETTERS[(li + i) % 7], diff = ((root + steps[i] - NAT[L]) % 12 + 18) % 12 - 6;
-    if(Math.abs(diff) > 1) return null;   // would need a double sharp or flat
-    out.push(L + (diff === 1 ? '#' : diff === -1 ? 'b' : ''));
+    if(Math.abs(diff) > 2) return null;
+    out.push(L + ({2: '##', 1: '#', '-1': 'b', '-2': 'bb'}[diff] || ''));
   }
   return out;
 }
@@ -637,6 +641,9 @@ const sigNotes = id => { const t = SCALE_TYPES[typeOf(id)]; return t.sig ? SCALE
 const scaleName = id => `${fmt(tonicOf(id))} ${SCALE_TYPES[typeOf(id)].name}`;
 const SHORT = {major: '', nat: 'm', harm: 'm harm', mel: 'm mel'};
 const shortName = id => { const t = typeOf(id); return fmt(tonicOf(id)) + (t in SHORT ? SHORT[t] : ' ' + SCALE_TYPES[t].name.slice(0, 3)); };
+// A real key signature (at most 7 sharps or flats, no doubles). Scales from theoretical keys like F♭ major
+// show no signature even when the option is on, so every accidental is written out.
+const stdSig = id => { const n = sigNotes(id); return n.every(x => Math.abs(accOf(x)) < 2) && sigCount(id) <= 7; };
 const stepsOf = id => { const r = pcOf(SCALES[id][0]); return SCALES[id].map(n => (pcOf(n) - r + 12) % 12); };
 const ORD = {1:'tonic (1st)',2:'2nd',3:'3rd',4:'4th',5:'5th',6:'6th',7:'7th',8:'octave (8th)'};
 /* Ranked CHAOS: every run is the same length, so scores compare fairly.
@@ -980,8 +987,13 @@ const ACC_SHAPE = {
   '#': '<path d="M-4 -17V15M4 -15V17" stroke-width="2.2"/><path d="M-9 -3 9 -8M-9 8 9 3" stroke-width="4.5"/>',
   b:   '<path d="M-5 -24V8" stroke-width="2.4"/><path d="M-5 8C4 3 10 -2 7 -6 4 -9-2 -6-5 -2" stroke-width="3.2"/>',
   n:   '<path d="M-5 -18V7M5 -7V18" stroke-width="2.2"/><path d="M-5 -2 5 -5M-5 7 5 4" stroke-width="4.5"/>',
+  '##': '<path d="M-6 -6 6 6M6 -6-6 6" stroke-width="3"/><path d="M-8 -8h5v5h-5zM3 -8h5v5h-5zM-8 3h5v5h-5zM3 3h5v5h-5z" stroke-width="1.6" fill="currentColor"/>',
+  bb:  '<g transform="translate(-6 0)"><path d="M-5 -24V8" stroke-width="2.4"/><path d="M-5 8C4 3 10 -2 7 -6 4 -9-2 -6-5 -2" stroke-width="3.2"/></g><g transform="translate(5 0)"><path d="M-5 -24V8" stroke-width="2.4"/><path d="M-5 8C4 3 10 -2 7 -6 4 -9-2 -6-5 -2" stroke-width="3.2"/></g>',
 };
-function accSvg(acc, x, y=0, scale=1){ return acc ? `<g class="accg" transform="translate(${x} ${y}) scale(${scale})">${ACC_SHAPE[acc]}</g>` : ''; }
+const ACC_KEY = {2: '##', 1: '#', 0: 'n', '-1': 'b', '-2': 'bb'};
+const sigOn = () => !!(S.keySig && S.run && S.run.q && stdSig(S.run.q.key));
+const sigAccOf = (key, letter) => accOf(sigNotes(key).find(n => n[0] === letter));
+function accSvg(acc, x, y=0, scale=1){ return acc ? `<g class="accg" transform="translate(${x - (acc === 'bb' ? 6 : 0)} ${y}) scale(${scale})">${ACC_SHAPE[acc]}</g>` : ''; }
 function ledgerLines(pos, x){
   const out = [];
   if(pos <= 0) for(let i = 0; i >= pos; i -= 2) out.push(i);
@@ -989,10 +1001,8 @@ function ledgerLines(pos, x){
   return out.map(i => `<line class="ledger" x1="${x-20}" x2="${x+20}" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('');
 }
 function effAcc(letter){
-  if(S.accSel === '#') return 1;
-  if(S.accSel === 'b') return -1;
-  if(S.accSel === 'n') return 0;
-  if(S.keySig && S.run && S.run.q) return accOf(sigNotes(S.run.q.key).find(n => n[0] === letter));
+  if(S.accSel) return {'##': 2, '#': 1, n: 0, b: -1, bb: -2}[S.accSel];
+  if(sigOn()) return sigAccOf(S.run.q.key, letter);
   return 0;
 }
 function staffMidi(){
@@ -1008,7 +1018,7 @@ function drawNote(){
 }
 function drawKeySig(key){
   let out = '';
-  if(S.keySig && key){
+  if(S.keySig && key && stdSig(key)){
     const n = sigCount(key), flat = isFlatKey(key), P = flat ? FLAT_SIG_POS : SHARP_SIG_POS;
     for(let i = 0; i < n; i++){
       out += accSvg(flat ? 'b' : '#', 80+i*17, yOf(P[i]), .9);
@@ -1020,8 +1030,9 @@ function drawGhost(answer){
   if(!answer){ $('#ghost').innerHTML = ''; return; }
   const cands = []; for(let i = 0; i <= 12; i++) if(LETTERS[i%7] === answer[0]) cands.push(i);
   const pos = cands.reduce((a,b) => Math.abs(b-S.pos) < Math.abs(a-S.pos) ? b : a);
-  const x = NOTE_X + 88, a = accOf(answer), acc = a===1 ? '#' : a===-1 ? 'b' : null;
-  const showAcc = acc && !S.keySig;
+  // write the accidental unless the key signature already gives it (a natural shows when it cancels the signature)
+  const x = NOTE_X + 88, a = accOf(answer), sigA = sigOn() ? sigAccOf(S.run.q.key, answer[0]) : 0;
+  const acc = a !== sigA ? ACC_KEY[a] : null, showAcc = !!acc;
   $('#ghost').innerHTML = `${ledgerLines(pos, x)}
     <g transform="translate(${x-NOTE_X} ${yOf(pos)})">
       ${showAcc ? accSvg(acc, NOTE_X-30) : ''}
@@ -1152,7 +1163,7 @@ function pickOf(q){
   if(q.type === 'build') return '';
   if(q.type === 'piano'){ const m = [...S.sel][0]; if(m == null) return ''; const i = scaleIdxOfPc(q.sk, m % 12); return i >= 0 ? SCALES[q.sk][i] : PC_NAMES[m % 12]; }
   const letter = LETTERS[S.pos % 7], a = effAcc(letter);
-  return letter + (a === 1 ? '#' : a === -1 ? 'b' : '');
+  return letter + ({2: '##', 1: '#', '-1': 'b', '-2': 'bb'}[a] || '');
 }
 function logAnswer(q, ok){
   MTG_HIST.note('scale', [scaleName(q.key), TYPE_NAME[q.type[0]]], ok);
@@ -1352,7 +1363,9 @@ function renderQuestion(){
   } else {
     tag.textContent = 'STAFF'; tag.className = 'qtag staff';
     $('#qText').innerHTML = `Place the <em>${ORD[q.degree]}</em> of ${K}`;
-    $('#qHelp').textContent = S.keySig ? 'Use ▲ ▼ to move the note. The key signature is shown.' : 'Use ▲ ▼ to move the note. Add ♯ or ♭ if it needs one.';
+    $('#qHelp').textContent = S.keySig && stdSig(q.key) ? 'Use ▲ ▼ to move the note. The key signature is shown.'
+      : S.keySig ? 'Use ▲ ▼ to move the note. This scale has no standard key signature, so add every accidental.'
+      : 'Use ▲ ▼ to move the note. Add ♯, ♭, 𝄪 or 𝄫 if it needs one.';
   }
   const staff = q.type === 'staff';
   $('#pianoWrap').hidden = staff; $('#staffWrap').hidden = !staff;
@@ -1472,7 +1485,7 @@ function whyWrong(q){
     return [text, scaleChips(q.sk, 'COUNT UP', [t], i)];
   }
   const letter = LETTERS[S.pos % 7], a = effAcc(letter);
-  const placed = letter + (a === 1 ? '#' : a === -1 ? 'b' : '');
+  const placed = letter + ({2: '##', 1: '#', '-1': 'b', '-2': 'bb'}[a] || '');
   const i = SCALES[q.sk].findIndex(n => n[0] === letter), inKey = SCALES[q.sk][i];
   let text;
   if(placed === inKey) text = `${fmt(placed)} is the ${ORD[i+1]} of ${K}, not the ${deg}. The ${deg} is ${ans}.`;

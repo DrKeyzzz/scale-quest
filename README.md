@@ -1,6 +1,6 @@
 # Scale Quest
 
-An arcade-style scale trainer for music theory: all 15 major scales, natural / harmonic / melodic minor, and the modes (Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian). Students check the scales they want, build each scale on a piano (starting on the root and going up one octave), find scale degrees on piano and treble staff, then mix everything in CHAOS mode.
+An arcade-style scale trainer for music theory: all 15 major scales, natural / harmonic / melodic minor and the modes on every tonic (with double sharps and flats where needed) (Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian). Students check the scales they want, build each scale on a piano (starting on the root and going up one octave), find scale degrees on piano and treble staff, then mix everything in CHAOS mode.
 
 **Play:** https://drkeyzzz.github.io/scale-quest/
 
@@ -38,7 +38,8 @@ Scale Quest shares the **Rhythm Trainer's Firebase project** (`rhythm-trainer-fc
 - The top bar has **MAJOR / MINOR / MODES** tabs; scales checked in any tab stay selected and can be mixed.
 - **Melodic minor** goes up with a raised 6th and 7th and comes down as natural minor. Building it asks "going up" or "going down"; questions about its 6th or 7th say which direction. (The first build of a melodic minor in practice is always going up.)
 - With **Show key signature** on, minor scales and modes use their parent major's key signature, so harmonic and melodic minor's raised notes still need a sharp or natural.
-- Scales that would need a double sharp or flat (for example G♯ harmonic minor or C♯ Lydian) are greyed out.
+- Every scale is spelled correctly, with **double sharps (𝄪) and double flats (𝄫)** where the theory needs them (G♯ harmonic minor has F𝄪, G♭ Dorian has B𝄫). The staff has 𝄫 ♭ ♮ ♯ 𝄪 buttons. 150 scales in all.
+- Scales from theoretical keys (like G♭ Dorian, whose parent is F♭ major) show no key signature even when the option is on, so students write every accidental.
 - The CHAOS key bonus counts up to 15 scales.
 
 ## Changing the scale data
