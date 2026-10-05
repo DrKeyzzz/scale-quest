@@ -426,7 +426,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
     <h1 class="logo"><span class="a">SCALE</span> <span class="b">QUEST</span><small>MAJOR SCALE TRAINER</small></h1>
     <div class="tools">
       <button class="btn tbtn who" id="whoBtn" type="button">👤 SIGN IN</button>
-      <button class="btn tbtn" id="boardBtn" type="button">BEST SCORES</button>
+      <button class="btn tbtn" id="boardBtn" type="button">LEADERBOARD</button>
       <button class="btn tbtn" id="muteBtn" type="button">SOUND: ON</button>
       <button class="btn tbtn" id="gearBtn" type="button">SETUP</button>
       <button class="btn tbtn quit" id="quitBtn" type="button" hidden>QUIT</button>
@@ -476,7 +476,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
         </ol>
       </div>
       <div>
-        <h2 id="boardTitle">HIGH SCORES</h2>
+        <h2 id="boardTitle">LEADERBOARD</h2>
         <div id="boardWrap"></div>
       </div>
     </div>
@@ -1755,7 +1755,7 @@ function toMenu(){
 function markMe(list){ const p = getProfile(), n = p ? displayName(p) : null; return list.map(x => ({...x, me: x.name === n})); }
 function renderBoard(){
   const wrap = $('#boardWrap'), p = getProfile();
-  if(!Cloud.on){ $('#boardTitle').textContent = 'HIGH SCORES'; wrap.innerHTML = boardTable(markMe(localTop(5))); return; }
+  if(!Cloud.on){ $('#boardTitle').textContent = 'LEADERBOARD'; wrap.innerHTML = boardTable(markMe(localTop(5))); return; }
   const cls = p && p.classCode;
   $('#boardTitle').textContent = cls ? `${String(p.className).toUpperCase()} TOP 5` : 'WORLD TOP 5';
   wrap.innerHTML = '<p class="dim">LOADING...</p>';
@@ -1767,7 +1767,7 @@ function boardPanel(){
   const pr = getProfile();
   const tabs = Cloud.on ? [...(pr && pr.classCode ? [['class', String(pr.className).toUpperCase()]] : []), ['world', 'WORLD TOP 10'], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
   const p = openOverlay(`
-    <h2 class="otitle">BEST SCORES</h2>
+    <h2 class="otitle">LEADERBOARD</h2>
     ${tabs.length > 1 ? `<div class="otabs" role="group" aria-label="Which scores">${tabs.map(([k,l]) => `<button type="button" data-tab="${k}" aria-pressed="false">${esc(l)}</button>`).join('')}</div>` : ''}
     <p class="boardnote" id="bpNote"></p>
     <div id="bpList" style="width:100%"></div>
