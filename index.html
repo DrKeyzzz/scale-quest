@@ -753,6 +753,10 @@ async function devPost(name, getAuth, signIn) {
 async function devRows(fs, db, col, extra = []) {
   try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra))).docs; } catch (e) { return []; }
 }
+// Leaderboard read limits (keeps a busy school inside Firebase's free daily reads):
+const LB_N = 60;          // a class board reads at most its top 60 runs
+const LB_CACHE = {};      // board results kept 60 s per query shape
+const LB_NOINDEX = {};    // query shapes whose composite index is missing (fall back to the simple query)
 const Cloud = {
   on: !!(FIREBASE.apiKey && FIREBASE.projectId),
   _p: null,
