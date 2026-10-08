@@ -5,6 +5,7 @@ rules_version = '2';
 //   Scale Quest               https://drkeyzzz.github.io/scale-quest/
 //   Tidal Tones               https://drkeyzzz.github.io/tidal-tones/
 //   Rooftop Runner            https://drkeyzzz.github.io/rooftop-runner/
+//   Earshot Saloon            https://drkeyzzz.github.io/earshot-saloon/
 // All the games share this project, its classes and teacher sign-in.
 // The SAME file lives in every game's GitHub repo; keep them identical.
 // Paste this into Firebase → Firestore Database → Rules, then click Publish.
@@ -315,6 +316,32 @@ service cloud.firestore {
         && d.style in ['midi', 'keys', 'rhythm', 'live']
         && d.clef in ['treble', 'bass', 'alto', 'treble8', 'none']
         && d.get('instrument', '') is string && d.get('instrument', '').size() <= 24
+        && d.created_at == request.time;
+    }
+
+    // ================= Earshot Saloon =================
+    // Leaderboard runs: anyone can see them and add one in the right shape; nobody can edit them.
+    match /earshot_scores/{scoreId} {
+      allow read: if true;
+      allow create: if earshotScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data);
+      allow update: if false;
+      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+    }
+
+    // A finished trail run: score = the chips cashed out (or half the best bankroll after going bust).
+    function earshotScore(d) {
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'hands', 'acc', 'town', 'outlaws', 'busted', 'diff', 'clef', 'created_at', 'dev', 'icon'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
+        && d.get('class_code', '') is string
+        && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
+        && d.score is int && d.score >= 0 && d.score <= 100000000
+        && d.hands is int && d.hands >= 1 && d.hands <= 10000
+        && d.acc is int && d.acc >= 0 && d.acc <= 100
+        && d.town is int && d.town >= 1 && d.town <= 1000
+        && d.outlaws is int && d.outlaws >= 0 && d.outlaws <= 1000
+        && d.busted is bool
+        && d.diff in ['newbie', 'easy', 'medium', 'hard', 'expert']
+        && d.clef in ['treble', 'bass', 'mixed']
         && d.created_at == request.time;
     }
   }
