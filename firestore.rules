@@ -38,6 +38,21 @@ service cloud.firestore {
     function iconOk(d) {
       return !('icon' in d) || d.icon in ['🎹', '🎸', '🎺', '🪊', '🎷', '🥁', '🎻', '🪕', '🎤', '🎧', '🎼', '𝄢', '🎵', '🪘', '🪗', '⭐', '🔥', '🚀'];
     }
+    // STUDENTS IN 2–3 CLASSES: a score may also list all their classes (main class first), so it shows on
+    // each class's board. Every listed class must exist.
+    function classCodesOk(d) {
+      return !('class_codes' in d) || (d.class_codes is list
+        && d.class_codes.size() >= 2 && d.class_codes.size() <= 3
+        && d.class_codes[0] == d.get('class_code', '')
+        && d.class_codes[1] is string && exists(/databases/$(database)/documents/classes/$(d.class_codes[1]))
+        && (d.class_codes.size() < 3 || (d.class_codes[2] is string && exists(/databases/$(database)/documents/classes/$(d.class_codes[2])))));
+    }
+    // a teacher may delete a score from any of the classes it's tagged with
+    function ownsAnyClass(r) {
+      return ownsClass(r.get('class_code', ''))
+        || ('class_codes' in r && r.class_codes is list && r.class_codes.size() >= 2
+            && (ownsClass(r.class_codes[1]) || (r.class_codes.size() > 2 && ownsClass(r.class_codes[2]))));
+    }
     function isAdmin() {
       return signedIn() && request.auth.token.email in ['milnesda@eht.k12.nj.us'];
     }
@@ -117,8 +132,8 @@ service cloud.firestore {
     match /rhythm_scores/{scoreId} {
       allow read: if true;
 
-      allow create: if request.resource.data.keys().hasOnly(['name', 'level', 'class_code', 'score', 'correct', 'total', 'extra_listens', 'time_sec', 'created_at', 'dev', 'icon'])
-        && devOk(request.resource.data) && iconOk(request.resource.data)
+      allow create: if request.resource.data.keys().hasOnly(['name', 'level', 'class_code', 'score', 'correct', 'total', 'extra_listens', 'time_sec', 'created_at', 'dev', 'icon', 'class_codes'])
+        && devOk(request.resource.data) && iconOk(request.resource.data) && classCodesOk(request.resource.data)
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 24
         && request.resource.data.level in ['beginner', 'beginner16', 'easy', 'hard', 'extreme']
@@ -139,7 +154,7 @@ service cloud.firestore {
       allow update: if false;
 
       // The admin can delete any score; a teacher can delete scores in their own classes.
-      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+      allow delete: if isAdmin() || ownsAnyClass(resource.data);
     }
   
 
@@ -147,17 +162,17 @@ service cloud.firestore {
     // CHAOS scores: anyone can see them and add a finished 20-question run; nobody can edit them.
     match /scale_scores/{scoreId} {
       allow read: if true;
-      allow create: if scaleScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data);
+      allow create: if scaleScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data) && classCodesOk(request.resource.data);
       allow update: if false;
-      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+      allow delete: if isAdmin() || ownsAnyClass(resource.data);
     }
 
     // Scale Quest SCALE DEGREES CHAOS runs: same shape as scale_scores, on their own board.
     match /degree_scores/{scoreId} {
       allow read: if true;
-      allow create: if scaleScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data);
+      allow create: if scaleScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data) && classCodesOk(request.resource.data);
       allow update: if false;
-      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+      allow delete: if isAdmin() || ownsAnyClass(resource.data);
     }
 
     // Practice progress: one summary per student per day. Only the class's teacher (or the admin) can read it.
@@ -183,7 +198,7 @@ service cloud.firestore {
 
     // A finished 20-question CHAOS run: score = points × key bonus (1.0 + 0.1 per extra key).
     function scaleScore(d) {
-      return d.keys().hasOnly(['name', 'class_code', 'score', 'points', 'streak', 'accuracy', 'questions', 'key_count', 'key_list', 'created_at', 'dev', 'icon'])
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'points', 'streak', 'accuracy', 'questions', 'key_count', 'key_list', 'created_at', 'dev', 'icon', 'class_codes'])
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
         && d.get('class_code', '') is string
         && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
@@ -203,14 +218,14 @@ service cloud.firestore {
     // SUPERNOVA runs (all 150 scales, 20 questions, 2 hearts). Anyone can see them; a run is added once, never edited.
     match /nova_scores/{scoreId} {
       allow read: if true;
-      allow create: if novaScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data);
+      allow create: if novaScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data) && classCodesOk(request.resource.data);
       allow update: if false;
-      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+      allow delete: if isAdmin() || ownsAnyClass(resource.data);
     }
 
     // reached = questions answered; finished = all 20 with a heart left. score = points x 2.4 (the 15-scale bonus).
     function novaScore(d) {
-      return d.keys().hasOnly(['name', 'class_code', 'score', 'points', 'streak', 'accuracy', 'reached', 'finished', 'created_at', 'dev', 'icon'])
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'points', 'streak', 'accuracy', 'reached', 'finished', 'created_at', 'dev', 'icon', 'class_codes'])
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
         && d.get('class_code', '') is string
         && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
@@ -229,9 +244,9 @@ service cloud.firestore {
     // Leaderboard runs: anyone can see them and add one in the right shape; nobody can edit them.
     match /tidal_scores/{scoreId} {
       allow read: if true;
-      allow create: if tidalScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data);
+      allow create: if tidalScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data) && classCodesOk(request.resource.data);
       allow update: if false;
-      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+      allow delete: if isAdmin() || ownsAnyClass(resource.data);
     }
 
     // Practice progress: one summary per student per day. Only the class's teacher (or the admin) can read it.
@@ -256,7 +271,7 @@ service cloud.firestore {
     }
 
     function tidalScore(d) {
-      return d.keys().hasOnly(['name', 'class_code', 'score', 'hits', 'acc', 'level', 'mode', 'diff', 'clef', 'answer', 'names', 'created_at', 'dev', 'icon'])
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'hits', 'acc', 'level', 'mode', 'diff', 'clef', 'answer', 'names', 'created_at', 'dev', 'icon', 'class_codes'])
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
         && d.get('class_code', '') is string
         && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
@@ -276,9 +291,9 @@ service cloud.firestore {
     // Leaderboard runs: anyone can see them and add one in the right shape; nobody can edit them.
     match /sight_scores/{scoreId} {
       allow read: if true;
-      allow create: if sightScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data);
+      allow create: if sightScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data) && classCodesOk(request.resource.data);
       allow update: if false;
-      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+      allow delete: if isAdmin() || ownsAnyClass(resource.data);
     }
 
     // Practice progress: one summary per student per day. Only the class's teacher (or the admin) can read it.
@@ -303,7 +318,7 @@ service cloud.firestore {
     }
 
     function sightScore(d) {
-      return d.keys().hasOnly(['name', 'class_code', 'score', 'hits', 'acc', 'level', 'bpm', 'diff', 'style', 'clef', 'instrument', 'created_at', 'dev', 'icon'])
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'hits', 'acc', 'level', 'bpm', 'diff', 'style', 'clef', 'instrument', 'created_at', 'dev', 'icon', 'class_codes'])
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
         && d.get('class_code', '') is string
         && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
@@ -323,14 +338,14 @@ service cloud.firestore {
     // Leaderboard runs: anyone can see them and add one in the right shape; nobody can edit them.
     match /earshot_scores/{scoreId} {
       allow read: if true;
-      allow create: if earshotScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data);
+      allow create: if earshotScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data) && classCodesOk(request.resource.data);
       allow update: if false;
-      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+      allow delete: if isAdmin() || ownsAnyClass(resource.data);
     }
 
     // A finished trail run: score = the chips cashed out (or half the best bankroll after going bust).
     function earshotScore(d) {
-      return d.keys().hasOnly(['name', 'class_code', 'score', 'hands', 'acc', 'town', 'outlaws', 'busted', 'diff', 'clef', 'created_at', 'dev', 'icon'])
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'hands', 'acc', 'town', 'outlaws', 'busted', 'diff', 'clef', 'created_at', 'dev', 'icon', 'class_codes'])
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
         && d.get('class_code', '') is string
         && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))

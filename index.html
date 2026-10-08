@@ -390,6 +390,10 @@ button{font:inherit;color:inherit}
 .wbox label{display:flex;flex-direction:column;gap:6px;text-align:left;font-family:var(--px);font-size:9px;color:var(--dim);letter-spacing:.06em}
 .wbox input:not([type]),.wbox input[id="wFirst"],.wbox input[id="wInit"],.wbox input[id="wCode"]{font-family:var(--px);font-size:16px;padding:12px 10px;background:var(--shadow);color:var(--yel);border:3px solid var(--line);text-transform:uppercase;width:100%}
 .wbox input:focus{border-color:var(--yel);outline:none}
+.wmrow{display:flex;gap:8px}
+.wx{flex:0 0 auto;padding:0 12px;background:var(--panel);color:var(--ink);border:3px solid var(--line);font-family:var(--px);font-size:12px;cursor:pointer}
+.wadd{align-self:flex-start;padding:0;background:none;border:0;color:var(--cyan);font-family:var(--vt);font-size:20px;cursor:pointer;text-decoration:underline}
+.wadd:disabled{opacity:.35;cursor:default}
 .wbox input:disabled{opacity:.35}
 .wsolo{flex-direction:row!important;align-items:center;gap:10px!important;font-family:var(--vt)!important;font-size:22px!important;color:var(--ink)!important;cursor:pointer}
 .wsolo input{width:22px;height:22px;accent-color:var(--mag)}
@@ -404,6 +408,7 @@ button{font:inherit;color:inherit}
 .assign .ab-u{font-family:var(--px);font-size:8px;color:var(--ok)}
 .assign .ab-b{font-size:9px;padding:8px 10px;background:var(--yel);color:var(--shadow)}
 .assign .ab-n{color:var(--dim);font-size:20px}
+.assign .ab-sep{flex-basis:100%;height:0;border-top:2px dashed var(--line)}
 .attract.has-assign .steps span{display:none}
 .attract.has-assign .steps{gap:6px}
 .board tr.me td{color:var(--cyan)}
@@ -619,6 +624,8 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
       <label for="wInit" class="wi">LAST INITIAL<input id="wInit" maxlength="1" autocapitalize="characters"></label>
     </div>
     <label for="wCode">CLASS CODE<input id="wCode" maxlength="7" placeholder="FROM YOUR TEACHER" autocapitalize="characters" spellcheck="false"></label>
+    <div id="wMore" style="display:contents"></div>
+    <button class="wadd" id="wAdd" type="button">+ Add another class</button>
     <label class="wsolo" for="wSolo"><input type="checkbox" id="wSolo"> I'm not in a class</label>
     <p class="werr" id="wError" role="alert"></p>
     <button class="btn start" id="wGo" type="submit">PRESS START</button>
@@ -783,6 +790,10 @@ async function devPost(name, getAuth, signIn) {
 async function devRows(fs, db, col, extra = []) {
   try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra))).docs; } catch (e) { return []; }
 }
+// Scores that also count for a class through class_codes (students in 2+ classes). No orderBy, so no new index.
+async function multiRows(fs, db, col, code) {
+  try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('class_codes', 'array-contains', code)))).docs; } catch (e) { return []; }
+}
 // Leaderboard read limits (keeps a busy school inside Firebase's free daily reads):
 const LB_N = 60;          // a class board reads at most its top 60 runs
 const LB_CACHE = {};      // board results kept 60 s per query shape
@@ -885,11 +896,12 @@ const Cloud = {
     const dev = await devPost(e.name, () => this.fb(), () => this.signIn());
     const data = {name: dev ? DEV_NAME : e.name, score: e.score, points: e.points, streak: e.streak, accuracy: e.accuracy, questions: e.questions, key_count: e.keyCount, key_list: e.keyList, created_at: fs.serverTimestamp()};
     if(e.classCode) data.class_code = e.classCode;
+    if(e.classCodes && e.classCodes.length > 1) data.class_codes = e.classCodes;
     if(iconOf(getProfile())) data.icon = iconOf(getProfile());
     if(dev) data.dev = true;
     const id = (await fs.addDoc(fs.collection(db, e.col || 'scale_scores'), data)).id;
     if(e.col){ Object.keys(LB_CACHE).filter(k => k.startsWith('deg')).forEach(k => delete LB_CACHE[k]); return id; }
-    this.addToBoards({id, dev: !!data.dev, icon: data.icon || '', name: data.name, classCode: e.classCode || '', score: e.score, keys: e.keyCount, streak: e.streak || 0, accuracy: e.accuracy, date: new Date()});
+    this.addToBoards({id, dev: !!data.dev, icon: data.icon || '', name: data.name, classCode: e.classCode || '', score: e.score, keys: e.keyCount, streak: e.streak || 0, accuracy: e.accuracy, date: new Date()}, data.class_codes);
     return id;
   }); },
   // Board results are kept 60 s per query shape, so reopening a board costs no reads.
@@ -899,10 +911,13 @@ const Cloud = {
     return load().then(v => { LB_CACHE[key] = {t: Date.now(), v}; return v; });
   },
   // A just-posted run goes straight into any cached board it belongs on.
-  addToBoards(x){
-    const w = LB_CACHE['scale_scores|world'], c = x.classCode && LB_CACHE['scale_scores|class|' + x.classCode];
+  addToBoards(x, codes){
+    const w = LB_CACHE['scale_scores|world'];
     if(w){ const l = w.v; if(l.length < 10 || x.score > l[l.length - 1].score) w.v = [...l, x].sort((a,b) => b.score - a.score).slice(0, 10); }
-    if(c){ const b = c.v, l = b.rows; if(b.full || x.score > l[l.length - 1].score) c.v = {full: b.full, rows: [...l, x].sort((a,b) => b.score - a.score).slice(0, b.full ? undefined : LB_N)}; }
+    for(const code of codes || [x.classCode]){
+      const c = code && LB_CACHE['scale_scores|class|' + code];
+      if(c){ const b = c.v, l = b.rows; if(b.full || x.score > l[l.length - 1].score) c.v = {full: b.full, rows: [...l, x].sort((a,b) => b.score - a.score).slice(0, b.full ? undefined : LB_N)}; }
+    }
   },
   // Equality + orderBy needs a composite index. If it's missing, warn once (the message has the create link) and use the old query this session.
   async indexed(shape, fast, slow){
@@ -919,17 +934,20 @@ const Cloud = {
   degBoard(code){ return this.cached('deg|' + (code || 'world'), () => this.run(async ({fs, db}) => {
     const col = fs.collection(db, 'degree_scores');
     let rows = (await fs.getDocs(code ? fs.query(col, fs.where('class_code', '==', code)) : fs.query(col, fs.orderBy('score', 'desc'), fs.limit(30)))).docs.map(d => this.row(d));
-    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat((await devRows(fs, db, 'degree_scores')).map(d => this.row(d)).filter(x => !seen.has(x.id))); }
+    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat([...await multiRows(fs, db, 'degree_scores', code), ...await devRows(fs, db, 'degree_scores')].map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
     return this.bestOf(rows);
   })); },
-  // Teacher dashboard: every score in the class.
-  classAll(code){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code)))).docs.map(d => this.row(d))); },
+  // Teacher dashboard: every score in the class (plus runs from students in 2+ classes that list this one in class_codes).
+  classAll(code){ return this.run(async ({fs, db}) => {
+    const rows = (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code)))).docs.map(d => this.row(d)), seen = new Set(rows.map(x => x.id));
+    return rows.concat((await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_codes', 'array-contains', code)))).docs.map(d => this.row(d)).filter(x => !seen.has(x.id)));
+  }); },
   // Student class board: the class's top LB_N runs ({full: true} when that's every run in the class).
-  // The developer's runs are added to every class board.
+  // The developer's runs, and runs that list the class in class_codes, are added to every class board.
   classBoard(code){ return this.cached('scale_scores|class|' + code, () => this.run(({fs, db}) => this.indexed('scale_scores|class',
     async () => { const rows = (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code), fs.orderBy('score', 'desc'), fs.limit(LB_N)))).docs.map(d => this.row(d)); return {rows, full: rows.length < LB_N}; },
     async () => ({rows: (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code)))).docs.map(d => this.row(d)), full: true}))
-    .then(async b => { const seen = new Set(b.rows.map(x => x.id)); return {...b, rows: b.rows.concat((await devRows(fs, db, 'scale_scores')).map(d => this.row(d)).filter(x => !seen.has(x.id)))}; }))); },
+    .then(async b => { const seen = new Set(b.rows.map(x => x.id)); return {...b, rows: b.rows.concat([...await multiRows(fs, db, 'scale_scores', code), ...await devRows(fs, db, 'scale_scores')].map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id)))}; }))); },
   bestOf(rows){
     const best = {};
     for(const x of rows){ const b = best[x.name]; if(!b || x.score > b.score) best[x.name] = {...x, streak: Math.max(x.streak, b ? b.streak : 0)}; else b.streak = Math.max(b.streak, x.streak); }
@@ -942,7 +960,8 @@ const Cloud = {
     const b = await this.classBoard(code), i = this.bestOf(b.rows).findIndex(x => x.name === name);
     if(i >= 0 || b.full) return i + 1;
     return this.run(async ({fs, db}) => {
-      const rows = (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code), fs.where('score', '>', score), fs.orderBy('score', 'desc')))).docs.map(d => this.row(d));
+      const rows = (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code), fs.where('score', '>', score), fs.orderBy('score', 'desc')))).docs.map(d => this.row(d)), seen = new Set(rows.map(x => x.id));
+      rows.push(...b.rows.filter(x => x.score > score && !seen.has(x.id)));   // runs that count here through class_codes
       const mine = Math.max(score, ...rows.filter(x => x.name === name).map(x => x.score));
       return new Set(rows.filter(x => x.name !== name && x.score > mine).map(x => x.name)).size + 1;
     });
@@ -952,6 +971,7 @@ const Cloud = {
     const dev = await devPost(e.name, () => this.fb(), () => this.signIn());
     const data = {name: dev ? DEV_NAME : e.name, score: e.score, points: e.points, streak: e.streak, accuracy: e.accuracy, reached: e.reached, finished: !!e.finished, created_at: fs.serverTimestamp()};
     if(e.classCode) data.class_code = e.classCode;
+    if(e.classCodes && e.classCodes.length > 1) data.class_codes = e.classCodes;
     if(iconOf(getProfile())) data.icon = iconOf(getProfile());
     if(dev) data.dev = true;
     await fs.addDoc(fs.collection(db, 'nova_scores'), data);
@@ -962,7 +982,7 @@ const Cloud = {
   novaBoard(code){ return this.cached('nova|' + (code || 'world'), () => this.run(async ({fs, db}) => {
     const col = fs.collection(db, 'nova_scores');
     let rows = (await fs.getDocs(code ? fs.query(col, fs.where('class_code', '==', code)) : fs.query(col, fs.orderBy('score', 'desc'), fs.limit(60)))).docs.map(d => this.novaRow(d));
-    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat((await devRows(fs, db, 'nova_scores')).map(d => this.novaRow(d)).filter(x => !seen.has(x.id))); }
+    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat([...await multiRows(fs, db, 'nova_scores', code), ...await devRows(fs, db, 'nova_scores')].map(d => this.novaRow(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
     const best = {};
     for(const x of rows){ const b = best[x.name + '|' + x.classCode]; if(!b || (x.finished > b.finished) || (x.finished === b.finished && x.score > b.score)) best[x.name + '|' + x.classCode] = x; }
     return Object.values(best).sort((a,b) => (b.finished - a.finished) || (b.score - a.score));
@@ -1007,7 +1027,7 @@ function setProfile(p){ try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)
 function isGuest(){ try{ return sessionStorage.getItem(GUEST_KEY) === '1'; } catch(e){ return false; } }
 function playAsGuest(){
   try{ sessionStorage.setItem(GUEST_KEY, '1'); } catch(e){}
-  S.assignment = null; $('#welcome').hidden = true; S.overlay = false;
+  S.assignment = null; S.moreAssign = []; $('#welcome').hidden = true; S.overlay = false;
   SFX.click(); updateWho(); renderAssignment(); renderBoard();
 }
 // Older Scale Quest sign-ins move to the shared key once.
@@ -1015,6 +1035,14 @@ try{ const old = store.get('profile', null); if(old && old.first && !localStorag
 const displayName = p => `${p.first.charAt(0).toUpperCase()}${p.first.slice(1)} ${p.init}.`;
 const sidOf = p => (p.first + p.init).toLowerCase().replace(/[^a-z]/g, '');
 const studentKey = p => `${sidOf(p)}:${p.classCode || ''}`;
+// Every class this student is in, main class first (max 3); [] when not in a class.
+function classesOf(p) {
+  if (!p) return [];
+  const list = Array.isArray(p.classes) && p.classes.length ? p.classes
+    : (p.classCode ? [{ code: p.classCode, name: p.className || p.classCode, owner: p.classOwner || '' }] : []);
+  return list.filter(c => c && c.code).slice(0, 3);
+}
+const classNames = p => classesOf(p).map(c => c.name).join(' · ');
 
 /* ---------- state ---------- */
 const S = {
@@ -1456,52 +1484,66 @@ let lastSync = 0;
 function scheduleSync(){ clearTimeout(syncTimer); syncTimer = setTimeout(() => { lastSync = Date.now(); syncProgress(); }, Math.max(1500, lastSync + 60000 - Date.now())); }
 async function syncProgress(){
   const p = getProfile();
-  if(!Cloud.on || !p || !p.classCode || !p.classOwner) return;
+  const list = classesOf(p).filter(c => c.owner);
+  if(!Cloud.on || !list.length) return;
   const d = buildDay();
   if(!d.questions && !d.runs.length && !d.nova[0]) return;
-  const data = {class_code: p.classCode, owner: p.classOwner, date: d.date, sid: sidOf(p), student: displayName(p),
-    questions: d.questions, correct: d.correct, minutes: d.minutes, first_at: d.first || Date.now(), last_at: d.last || Date.now(),
-    goal: goalFor(), by_key: d.byKey, types: d.types, missed: d.missed,
-    chaos: d.runs.slice(-20).map(r => ({s: r.s, a: r.a, k: r.k, t: r.t})), best_chaos: d.best};
-  if(d.nova[0]) data.nova = d.nova;   // [attempts, finished, furthest question]
-  try{ await Cloud.saveProgress(`${p.classCode}_${d.date}_${data.sid}`, data); } catch(e){ console.warn('Progress sync failed:', e); }
+  // the same day summary goes to one document per class, each with that class's code, teacher and goal
+  for(const c of list){
+    const a = c.code === p.classCode ? S.assignment : (S.moreAssign.find(x => x.code === c.code) || {}).a;
+    const data = {class_code: c.code, owner: c.owner, date: d.date, sid: sidOf(p), student: displayName(p),
+      questions: d.questions, correct: d.correct, minutes: d.minutes, first_at: d.first || Date.now(), last_at: d.last || Date.now(),
+      goal: (a && a.goal) || DAILY_GOAL, by_key: d.byKey, types: d.types, missed: d.missed,
+      chaos: d.runs.slice(-20).map(r => ({s: r.s, a: r.a, k: r.k, t: r.t})), best_chaos: d.best};
+    if(d.nova[0]) data.nova = d.nova;   // [attempts, finished, furthest question]
+    try{ await Cloud.saveProgress(`${c.code}_${d.date}_${data.sid}`, data); } catch(e){ console.warn('Progress sync failed:', e); }
+  }
 }
 document.addEventListener('visibilitychange', () => { if(document.hidden){ clearTimeout(syncTimer); syncProgress(); } });
 
 /* ---------- assignment (set by the teacher, shown to the class) ---------- */
 S.assignment = null;
+S.moreAssign = [];   // assignments from the student's other classes: [{code, name, a}]
 const goalFor = () => (S.assignment && S.assignment.goal) || DAILY_GOAL;
 async function refreshClassInfo(){
-  const p = getProfile();
-  if(!Cloud.on || !p || !p.classCode){ S.assignment = null; renderAssignment(); return; }
+  const p = getProfile(), list = classesOf(p);
+  if(!Cloud.on || !list.length){ S.assignment = null; S.moreAssign = []; renderAssignment(); return; }
   try{
-    const c = await Cloud.getClass(p.classCode);
-    if(!c){ setProfile({...p, classCode: '', className: '', classOwner: ''}); S.assignment = null; updateWho(); renderAssignment(); renderBoard(); return; }
-    setProfile({...p, className: c.name, classOwner: c.ownerEmail || ''});
-    S.assignment = c.scale_assignment || null;
-    updateWho(); renderAssignment(); scheduleSync();
+    // re-read every class: keep the ones that still exist (fresh name/teacher), drop deleted ones
+    const found = (await Promise.all(list.map(c => Cloud.getClass(c.code)))).filter(Boolean), main = found[0];
+    setProfile({...p, classCode: main ? main.code : '', className: main ? main.name : '', classOwner: main ? main.ownerEmail || '' : '',
+      classes: found.map(c => ({code: c.code, name: c.name, owner: c.ownerEmail || ''}))});
+    S.assignment = (main && main.scale_assignment) || null;
+    S.moreAssign = found.slice(1).filter(c => c.scale_assignment).map(c => ({code: c.code, name: c.name, a: c.scale_assignment}));
+    updateWho(); renderAssignment();
+    if(found.length < list.length) renderBoard();
+    if(main) scheduleSync();
   } catch(e){ /* offline: keep playing */ }
 }
 function renderAssignment(){
-  const a = S.assignment, box = $('#assignBanner');
-  $('#attract').classList.toggle('has-assign', !!(a && !S.run));
-  if(!a || S.run){ box.hidden = true; $('#insertMsg').hidden = false; return; }
-  const d = buildDay(), keys = (a.keys || []).filter(k => SCALES[k]);
-  const bits = [a.goal ? `${Math.min(d.questions, a.goal)}/${a.goal} QUESTIONS` : `${d.questions} QUESTIONS`, a.minutes ? `${Math.min(d.minutes, a.minutes)}/${a.minutes} MIN` : `${d.minutes} MIN`];
-  const met = (a.goal || a.minutes) && (!a.goal || d.questions >= a.goal) && (!a.minutes || d.minutes >= a.minutes);
-  const using = keys.length && keys.length === S.selected.size && keys.every(k => S.selected.has(k));
-  box.innerHTML = `<span class="ab-t">ASSIGNMENT</span><span class="ab-k">${keys.map(shortName).join(' · ') || 'ANY SCALES'}</span>
+  const box = $('#assignBanner'), p = getProfile();
+  const list = [...(S.assignment ? [{name: p && p.className, a: S.assignment}] : []), ...S.moreAssign];
+  $('#attract').classList.toggle('has-assign', !!(list.length && !S.run));
+  if(!list.length || S.run){ box.hidden = true; $('#insertMsg').hidden = false; return; }
+  const d = buildDay(), many = list.length > 1 || !S.assignment;   // label each banner with its class when there's more than the main one
+  box.innerHTML = list.map(({name, a}, i) => {
+    const keys = (a.keys || []).filter(k => SCALES[k]);
+    const bits = [a.goal ? `${Math.min(d.questions, a.goal)}/${a.goal} QUESTIONS` : `${d.questions} QUESTIONS`, a.minutes ? `${Math.min(d.minutes, a.minutes)}/${a.minutes} MIN` : `${d.minutes} MIN`];
+    const met = (a.goal || a.minutes) && (!a.goal || d.questions >= a.goal) && (!a.minutes || d.minutes >= a.minutes);
+    const using = keys.length && keys.length === S.selected.size && keys.every(k => S.selected.has(k));
+    return `${i ? '<span class="ab-sep"></span>' : ''}<span class="ab-t">ASSIGNMENT${many ? ' · ' + esc(String(name || '').toUpperCase()) : ''}</span><span class="ab-k">${keys.map(shortName).join(' · ') || 'ANY SCALES'}</span>
     <span class="ab-p ${met ? 'met' : ''}">${met ? '✓ GOAL MET · ' : 'YOU: '}${bits.join(' · ')}</span>
-    ${keys.length ? (using ? '<span class="ab-u">✓ USING THESE KEYS</span>' : '<button class="btn ab-b" type="button" id="useAssign">USE THESE KEYS</button>') : ''}
+    ${keys.length ? (using ? '<span class="ab-u">✓ USING THESE KEYS</span>' : `<button class="btn ab-b" type="button" data-use="${i}">USE THESE KEYS</button>`) : ''}
     ${a.note ? `<span class="ab-n">“${esc(a.note)}”</span>` : ''}`;
+  }).join('');
   box.hidden = false; $('#insertMsg').hidden = true;
-  const b = $('#useAssign'); if(b) b.onclick = () => { S.selected = new Set(keys); SFX.click(); updateCarts(); renderAssignment(); };
+  box.querySelectorAll('[data-use]').forEach(b => b.onclick = () => { S.selected = new Set((list[+b.dataset.use].a.keys || []).filter(k => SCALES[k])); SFX.click(); updateCarts(); renderAssignment(); });
 }
 
 /* ---------- welcome screen + who's playing ---------- */
 function updateWho(){
   const p = getProfile(), b = $('#whoBtn');
-  b.innerHTML = p ? `${iconHTML(iconOf(p)) || '👤'} ${esc(displayName(p).toUpperCase())}${p.classCode ? ' · ' + esc(String(p.className).toUpperCase()) : ''}` : isGuest() ? '👤 GUEST' : '👤 SIGN IN';
+  b.innerHTML = p ? `${iconHTML(iconOf(p)) || '👤'} ${esc(displayName(p).toUpperCase())}${p.classCode ? ' · ' + esc(classNames(p).toUpperCase()) : ''}` : isGuest() ? '👤 GUEST' : '👤 SIGN IN';
 }
 // ---------- player icons (shared by every game: saved with the sign-in, shown next to names on leaderboards) ----------
 const ICONS = ['🎹','🎸','🎺','🪊','🎷','🥁','🎻','🪕','🎤','🎧','🎼','𝄢','🎵','🪘','🪗','⭐','🔥','🚀'];   // must match iconOk() in firestore.rules
@@ -1566,8 +1608,10 @@ function showWelcome(keep){
   closeOverlay();
   const p = keep ? getProfile() : null;
   setPickedIcon(p && p.icon);
-  $('#wFirst').value = p ? p.first : ''; $('#wInit').value = p ? p.init : ''; $('#wCode').value = p ? p.classCode || '' : '';
-  $('#wSolo').checked = !!(p && !p.classCode); $('#wCode').disabled = $('#wSolo').checked; $('#wError').textContent = '';
+  const cls = classesOf(p);
+  $('#wFirst').value = p ? p.first : ''; $('#wInit').value = p ? p.init : ''; $('#wCode').value = cls.length ? cls[0].code : '';
+  $('#wSolo').checked = !!(p && !p.classCode); $('#wError').textContent = '';
+  $('#wMore').innerHTML = ''; syncCodeBoxes(); cls.slice(1).forEach(c => addCodeBox(c.code));
   $('#welcome').hidden = false; S.overlay = true;
   setTimeout(() => (keep ? $('#wCode') : $('#wFirst')).focus(), 50);
 }
@@ -1578,27 +1622,50 @@ async function submitWelcome(e){
   if(!/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ' -]{0,14}$/.test(first)){ err.textContent = 'Enter your first name (letters only).'; $('#wFirst').focus(); return; }
   if(!/^[A-Z]$/.test(init)){ err.textContent = 'Enter the first letter of your last name.'; $('#wInit').focus(); return; }
   if(isDevName(first + ' ' + init)){ try{ await devPost(first + ' ' + init, () => Cloud.fb(), () => Cloud.signIn()); } catch(ex){ err.textContent = 'That name is reserved. Use your own first name and last initial.'; return; } }
-  let className = '', classOwner = '', assignment = null;
+  let found = [];
   if(!solo){
     if(!code){ err.textContent = 'Enter the class code from your teacher, or check "I\'m not in a class."'; $('#wCode').focus(); return; }
+    // the main code plus any extra boxes (blank boxes and repeats are skipped)
+    const boxes = [$('#wCode'), ...$('#wMore').querySelectorAll('input')], codes = [...new Set(boxes.map(b => cleanCode(b.value)).filter(Boolean))].slice(0, 3);
     $('#wGo').disabled = true; $('#wGo').textContent = 'CHECKING...';
     try{
-      const c = await Cloud.getClass(code);
-      if(!c){ err.textContent = "We couldn't find that class code. Check it with your teacher."; $('#wCode').focus(); return; }
-      className = c.name; classOwner = c.ownerEmail || ''; assignment = c.scale_assignment || null;
+      found = await Promise.all(codes.map(c => Cloud.getClass(c)));
+      const bad = codes.find((c, i) => !found[i]);
+      if(bad){ err.textContent = `We couldn't find the class code ${bad}. Check it with your teacher.`; boxes.find(b => cleanCode(b.value) === bad).focus(); return; }
     } catch(ex){ err.textContent = `Couldn't check the code: ${errMsg(ex)}`; return; }
     finally{ $('#wGo').disabled = false; $('#wGo').textContent = 'PRESS START'; }
   }
-  setProfile({first, init, classCode: solo ? '' : code, className, classOwner, icon: pickedIcon()});
-  S.assignment = assignment;
+  const main = found[0];
+  setProfile({first, init, classCode: main ? main.code : '', className: main ? main.name : '', classOwner: main ? main.ownerEmail || '' : '',
+    classes: found.map(c => ({code: c.code, name: c.name, owner: c.ownerEmail || ''})), icon: pickedIcon()});
+  S.assignment = (main && main.scale_assignment) || null;
+  S.moreAssign = found.slice(1).filter(c => c.scale_assignment).map(c => ({code: c.code, name: c.name, a: c.scale_assignment}));
   $('#welcome').hidden = true; S.overlay = false;
   SFX.level(); updateWho(); renderAssignment(); renderBoard();
+}
+// "+ Add another class": extra class code boxes under the main one, up to 3 classes in all.
+function addCodeBox(v){
+  const more = $('#wMore'); if(more.children.length >= 2) return;
+  const l = document.createElement('label');
+  l.innerHTML = 'ANOTHER CLASS CODE<span class="wmrow"><input maxlength="7" placeholder="FROM YOUR TEACHER" autocapitalize="characters" spellcheck="false"><button class="wx" type="button" aria-label="Remove this class">✕</button></span>';
+  l.querySelector('input').value = v || '';
+  l.querySelector('.wx').onclick = e => { e.preventDefault(); l.remove(); syncCodeBoxes(); };
+  more.appendChild(l); syncCodeBoxes();
+  return l.querySelector('input');
+}
+// "I'm not in a class" disables the code boxes and clears the extra ones.
+function syncCodeBoxes(){
+  const solo = $('#wSolo').checked;
+  $('#wCode').disabled = solo;
+  if(solo) $('#wMore').innerHTML = '';
+  $('#wAdd').disabled = solo || $('#wMore').children.length >= 2;
 }
 function whoMenu(){
   if(S.overlay) return;
   const p = getProfile(); if(!p){ showWelcome(false); return; }
+  const cls = classesOf(p);
   const o = openOverlay(`<h2 class="otitle">${esc(displayName(p).toUpperCase())}</h2>
-    <p class="osub">${p.classCode ? `Class: <b>${esc(p.className)}</b> (code ${esc(p.classCode)})` : 'Not in a class: your scores go on the World board only.'}</p>
+    <p class="osub">${cls.length ? `Class${cls.length > 1 ? 'es' : ''}: ${cls.map(c => `<b>${esc(c.name)}</b> (code ${esc(c.code)})`).join(' · ')}` : 'Not in a class: your scores go on the World board only.'}</p>
     <div class="obtns"><button class="btn obtn alt" type="button" id="whoClose">CLOSE</button><button class="btn obtn" type="button" id="whoClass">CHANGE CLASS</button><button class="btn obtn mag" type="button" id="whoSwitch">SWITCH STUDENT</button></div>`);
   o.querySelector('#whoClose').onclick = closeOverlay;
   o.querySelector('#whoClass').onclick = () => showWelcome(true);
@@ -2027,7 +2094,7 @@ function endRun(reason){
     if(!Cloud.on){ area.innerHTML = `<p class="weak" style="color:var(--yel)">SAVED FOR ${esc(name.toUpperCase())}!</p>`; return; }
     area.innerHTML = '<p class="weak" style="color:var(--yel)">POSTING...</p>';
     try{
-      await Cloud.submit({name, classCode: me.classCode || '', score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: Math.min(15, r.keys.length), keyList: r.keys.join(' ').slice(0, 60), col: r.deg ? 'degree_scores' : null});
+      await Cloud.submit({name, classCode: me.classCode || '', classCodes: classesOf(me).map(c => c.code), score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: Math.min(15, r.keys.length), keyList: r.keys.join(' ').slice(0, 60), col: r.deg ? 'degree_scores' : null});
       const [w, c] = r.deg
         ? await Promise.all([Cloud.worldRank(final, 'degree_scores'), me.classCode ? Cloud.degBoard(me.classCode).then(l => l.findIndex(x => x.name === name) + 1) : 0])
         : await Promise.all([Cloud.worldRank(final), me.classCode ? Cloud.classRank(me.classCode, name, final) : 0]);
@@ -2059,7 +2126,7 @@ function novaEnd(reason){
       <span class="dim">THIS CERTIFIES THAT</span>
       <span class="who">${esc(me ? displayName(me).toUpperCase() : 'A GUEST')}</span>
       <span class="line">survived all 150 scales: 20 questions with ${r.lives} heart${r.lives > 1 ? 's' : ''} to spare</span>
-      <span class="line">Score <b style="color:#ffcf4a">${String(final).padStart(6, '0')}</b> · ${acc}% · best streak x${r.best}${me && me.classCode ? ` · ${esc(me.className)}` : ''}</span>
+      <span class="line">Score <b style="color:#ffcf4a">${String(final).padStart(6, '0')}</b> · ${acc}% · best streak x${r.best}${me && me.classCode ? ` · ${esc(classNames(me))}` : ''}</span>
       <span class="dim">${when}</span>
     </div>` : `
     <div>${starSVG('t3')}</div>
@@ -2076,7 +2143,7 @@ function novaEnd(reason){
     const area = p.querySelector('#postArea'); SFX.coin();
     area.innerHTML = '<p class="weak" style="color:#ffcf4a">POSTING...</p>';
     try{
-      await Cloud.novaSubmit({name: displayName(me), classCode: me.classCode || '', score: final, points: r.score, streak: r.best, accuracy: acc, reached, finished});
+      await Cloud.novaSubmit({name: displayName(me), classCode: me.classCode || '', classCodes: classesOf(me).map(c => c.code), score: final, points: r.score, streak: r.best, accuracy: acc, reached, finished});
       area.innerHTML = `<p class="weak" style="color:#ffcf4a">POSTED! ${finished ? 'YOUR SUPERNOVA STAR NOW SHINES NEXT TO YOUR NAME.' : 'SURVIVOR MARK SAVED.'}</p>`;
     } catch(err){ area.innerHTML = `<p class="weak" style="color:var(--bad)">${esc(errMsg(err)).toUpperCase()}</p>`; }
   };
@@ -2118,8 +2185,8 @@ function renderBoard(){
     .catch(() => { wrap.innerHTML = boardTable(markMe(localTop(5))) + '<p class="boardnote">Leaderboard is offline. Showing this device.</p>'; });
 }
 function boardPanel(){
-  const pr = getProfile();
-  const tabs = Cloud.on ? [...(pr && pr.classCode ? [['class', String(pr.className).toUpperCase()]] : []), ['world', 'WORLD TOP 10'], ['deg', 'DEGREES'], ['nova', '★ SUPERNOVA'], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
+  const pr = getProfile(), cls = classesOf(pr);   // one class tab per class, main class first
+  const tabs = Cloud.on ? [...cls.map(c => ['class:' + c.code, String(c.name).toUpperCase()]), ['world', 'WORLD TOP 10'], ['deg', 'DEGREES'], ['nova', '★ SUPERNOVA'], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
   const p = openOverlay(`
     <h2 class="otitle">LEADERBOARD</h2>
     ${tabs.length > 1 ? `<div class="otabs" role="group" aria-label="Which scores">${tabs.map(([k,l]) => `<button type="button" data-tab="${k}" aria-pressed="false">${esc(l)}</button>`).join('')}</div>` : ''}
@@ -2127,26 +2194,29 @@ function boardPanel(){
     <div id="bpList" style="width:100%"></div>
     <div class="obtns"><button class="btn obtn alt" id="bpRefresh" type="button">REFRESH</button><button class="btn obtn" id="bpClose" type="button" data-focus>CLOSE</button></div>`);
   let tab = tabs[0][0];
-  const NOTES = {class: `Each student's best CHAOS run in ${pr && pr.className}.`, world: 'The 10 best CHAOS runs from everyone who plays.', nova: 'Finished runs (star) first, then SURVIVORS who reached question 10.', deg: 'Best SCALE DEGREES CHAOS runs.', device: 'Scores saved on this computer.'};
+  const tabClass = () => cls.find(c => 'class:' + c.code === tab);
+  const NOTES = {world: 'The 10 best CHAOS runs from everyone who plays.', nova: 'Finished runs (star) first, then SURVIVORS who reached question 10.', deg: 'Best SCALE DEGREES CHAOS runs.', device: 'Scores saved on this computer.'};
+  // DEGREES and SUPERNOVA show a top 5 for each of the student's classes, then the World.
+  const head = c => `<h3 class="slabel" style="margin:6px 0">${esc(String(c.name).toUpperCase())}</h3>`, worldHead = '<h3 class="slabel" style="margin:12px 0 6px">WORLD</h3>';
   const show = () => {
-    const el = p.querySelector('#bpList'), want = tab;
+    const el = p.querySelector('#bpList'), want = tab, tc = tabClass();
     p.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tab === tab));
-    p.querySelector('#bpNote').textContent = NOTES[tab];
+    p.querySelector('#bpNote').textContent = tc ? `Each student's best CHAOS run in ${tc.name}.` : NOTES[tab];
     if(tab === 'device'){ el.innerHTML = boardTable(markMe(localTop(10))); return; }
     el.innerHTML = '<p class="dim">LOADING...</p>';
     if(tab === 'deg'){
-      Promise.all([pr && pr.classCode ? Cloud.degBoard(pr.classCode) : null, Cloud.degBoard(null)])
-        .then(([cls, world]) => { if(tab === want) el.innerHTML = (cls ? `<h3 class="slabel" style="margin:6px 0">${esc(String(pr.className).toUpperCase())}</h3>${cls.length ? boardTable(markMe(cls.slice(0, 5))) : '<p class="dim">No runs yet.</p>'}<h3 class="slabel" style="margin:12px 0 6px">WORLD</h3>` : '') + (world.length ? boardTable(markMe(world.slice(0, 10))) : '<p class="dim">No runs yet. Be the first!</p>'); })
+      Promise.all([Promise.all(cls.map(c => Cloud.degBoard(c.code))), Cloud.degBoard(null)])
+        .then(([mine, world]) => { if(tab === want) el.innerHTML = mine.map((l, i) => head(cls[i]) + (l.length ? boardTable(markMe(l.slice(0, 5))) : '<p class="dim">No runs yet.</p>')).join('') + (mine.length ? worldHead : '') + (world.length ? boardTable(markMe(world.slice(0, 10))) : '<p class="dim">No runs yet. Be the first!</p>'); })
         .catch(() => { if(tab === want) el.innerHTML = '<p class="dim">Couldn\'t reach the leaderboard. Check your internet and press REFRESH.</p>'; });
       return;
     }
     if(tab === 'nova'){
-      Promise.all([pr && pr.classCode ? Cloud.novaBoard(pr.classCode) : null, Cloud.novaBoard(null)])
-        .then(([cls, world]) => { if(tab === want) el.innerHTML = (cls ? `<h3 class="slabel" style="margin:6px 0">${esc(String(pr.className).toUpperCase())}</h3>${novaTable(markMe(cls.slice(0, 5)))}<h3 class="slabel" style="margin:12px 0 6px">WORLD</h3>` : '') + novaTable(markMe(world.slice(0, 10))); })
+      Promise.all([Promise.all(cls.map(c => Cloud.novaBoard(c.code))), Cloud.novaBoard(null)])
+        .then(([mine, world]) => { if(tab === want) el.innerHTML = mine.map((l, i) => head(cls[i]) + novaTable(markMe(l.slice(0, 5)))).join('') + (mine.length ? worldHead : '') + novaTable(markMe(world.slice(0, 10))); })
         .catch(() => { if(tab === want) el.innerHTML = '<p class="dim">Couldn\'t reach the leaderboard. Check your internet and press REFRESH.</p>'; });
       return;
     }
-    (tab === 'class' ? Cloud.classTop(pr.classCode).then(l => l.slice(0, 10)) : Cloud.worldTop())
+    (tc ? Cloud.classTop(tc.code).then(l => l.slice(0, 10)) : Cloud.worldTop())
       .then(async list => { const f = await Cloud.novaFinishers().catch(() => new Set()); if(tab === want) el.innerHTML = boardTable(markNova(markMe(list), f)); })
       .catch(() => { if(tab === want) el.innerHTML = '<p class="dim">Couldn\'t reach the leaderboard. Check your internet and press REFRESH.</p>'; });
   };
@@ -2601,7 +2671,8 @@ if(navigator.requestMIDIAccess){
 /* ---------- boot ---------- */
 document.querySelectorAll('#accs button').forEach(b => b.querySelector('svg').innerHTML = ACC_SHAPE[b.dataset.acc]);
 $('#wForm').onsubmit = submitWelcome;
-$('#wSolo').onchange = () => { $('#wCode').disabled = $('#wSolo').checked; };
+$('#wSolo').onchange = syncCodeBoxes;
+$('#wAdd').onclick = () => { const i = addCodeBox(''); if(i) i.focus(); };
 $('#whoBtn').onclick = whoMenu;
 $('#wGuest').onclick = playAsGuest;
 $('#qpkSeg').addEventListener('click', e => { const b = e.target.closest('button'); if(!b || S.run) return; S.qpk = +b.dataset.n; store.set('qpk', S.qpk); SFX.click(); renderQpk(); });
