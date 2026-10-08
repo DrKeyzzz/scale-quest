@@ -10,10 +10,15 @@ Practice mode has no timer, so students can work at their own pace. After a mist
 
 Only a finished **CHAOS** run can go on the board. Every CHAOS run is 20 questions, so scores compare fairly.
 
-- 100 points per correct answer (50 on a second try at building a scale), plus streak bonuses at 3, 5, 10 and 20 in a row.
+- 100 points per correct answer, plus streak bonuses at 3, 5, 10 and 20 in a row.
+- In CHAOS, a wrong scale build costs a heart right away (no second try) and shows the correct scale. Practice mode still gives one more try.
 - **Speed bonus (CHAOS only):** up to +100 per correct answer, shrinking to 0 over 10 seconds (piano), 12 seconds (staff) or 25 seconds (building a scale). The clock pauses during feedback.
 - **Key bonus:** +10% for each key beyond the first (4 keys = x1.3, all 15 = x2.4).
 - Runs that use CONTINUE, practice runs and quit runs can't be posted.
+
+## MIDI keyboards
+
+Click **🎹 CONNECT MIDI KEYBOARD** under SUBMIT (Chrome, Edge and Chromebooks). Keys work like clicking the on-screen piano, and the student still presses SUBMIT. On staff questions, a white key moves the note to that letter; sharps and flats are still added with the buttons. The game remembers the keyboard next time.
 
 ## Students, classes and the Teacher Dashboard
 
