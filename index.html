@@ -1269,7 +1269,7 @@ function sigMarkup(key){
 // Just the clef and key signature, shown above the piano on "name this key" questions.
 function miniSig(key){
   const lines = [2,4,6,8,10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('');
-  return `<svg viewBox="0 50 230 130" role="img" aria-label="${esc(scaleName(key))} key signature">${lines}<text class="clef" x="12" y="${yOf(2)+17}" font-size="104">𝄞</text>${sigMarkup(key)}</svg>`;
+  return `<svg viewBox="0 22 230 176" role="img" aria-label="${esc(scaleName(key))} key signature">${lines}<text class="clef" x="12" y="${yOf(2)+17}" font-size="104">𝄞</text>${sigMarkup(key)}</svg>`;
 }
 function drawGhost(answer){
   if(!answer){ $('#ghost').innerHTML = ''; return; }
