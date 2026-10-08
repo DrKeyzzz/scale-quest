@@ -1184,7 +1184,7 @@ function buildPiano(){
 }
 const allKeys = () => Object.values(PK);
 function clearPiano(){
-  allKeys().forEach(g => { g.classList.remove('sel','ok','bad','miss','reveal'); g.querySelector('text').textContent = ''; });
+  allKeys().forEach(g => { g.classList.remove('sel','ok','bad','miss','reveal','shown'); g.querySelector('text').textContent = ''; });
 }
 function paintSel(){ allKeys().forEach(g => g.classList.toggle('sel', S.sel.has(+g.dataset.m))); }
 function label(m, name){ PK[m].querySelector('text').textContent = fmt(name); }
