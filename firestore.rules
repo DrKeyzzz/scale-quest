@@ -344,5 +344,41 @@ service cloud.firestore {
         && d.clef in ['treble', 'bass', 'mixed']
         && d.created_at == request.time;
     }
+
+    // Wanted posters: each signed-in student's lassoed outlaws, saved online so the poster wall
+    // follows them to any computer. Document ID = class code (or 'none') + '_' + first name and initial.
+    match /earshot_posters/{docId} {
+      allow read: if true;
+      allow create, update: if earshotPosters(docId, request.resource.data)
+        && (isAdmin() || !request.resource.data.name.lower().matches('milnes *d[.]? *'));   // only the developer can be Milnes D.
+      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+    }
+
+    function earshotPosters(id, d) {
+      return d.keys().hasOnly(['name', 'class_code', 'sid', 'caught', 'seen', 'updated_at'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
+        && d.class_code is string
+        && (d.class_code == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
+        && d.sid is string && d.sid.matches('^[a-z]{2,16}$')
+        && (id == d.class_code + '_' + d.sid || (d.class_code == '' && id == 'none_' + d.sid))
+        && d.caught is map && d.caught.keys().hasOnly(['m2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8']) && outlawCounts(d.caught)
+        && d.seen is map && d.seen.keys().hasOnly(['m2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'])
+        && d.updated_at == request.time;
+    }
+    // how many times each Interval Outlaw has been lassoed (whole numbers, 0 or more)
+    function outlawCounts(m) {
+      return m.get('m2', 0) is int && m.get('m2', 0) >= 0 && m.get('m2', 0) <= 100000
+        && m.get('M2', 0) is int && m.get('M2', 0) >= 0 && m.get('M2', 0) <= 100000
+        && m.get('m3', 0) is int && m.get('m3', 0) >= 0 && m.get('m3', 0) <= 100000
+        && m.get('M3', 0) is int && m.get('M3', 0) >= 0 && m.get('M3', 0) <= 100000
+        && m.get('P4', 0) is int && m.get('P4', 0) >= 0 && m.get('P4', 0) <= 100000
+        && m.get('TT', 0) is int && m.get('TT', 0) >= 0 && m.get('TT', 0) <= 100000
+        && m.get('P5', 0) is int && m.get('P5', 0) >= 0 && m.get('P5', 0) <= 100000
+        && m.get('m6', 0) is int && m.get('m6', 0) >= 0 && m.get('m6', 0) <= 100000
+        && m.get('M6', 0) is int && m.get('M6', 0) >= 0 && m.get('M6', 0) <= 100000
+        && m.get('m7', 0) is int && m.get('m7', 0) >= 0 && m.get('m7', 0) <= 100000
+        && m.get('M7', 0) is int && m.get('M7', 0) >= 0 && m.get('M7', 0) <= 100000
+        && m.get('P8', 0) is int && m.get('P8', 0) >= 0 && m.get('P8', 0) <= 100000;
+    }
   }
 }
