@@ -151,6 +151,14 @@ service cloud.firestore {
       allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
     }
 
+    // Scale Quest SCALE DEGREES CHAOS runs: same shape as scale_scores, on their own board.
+    match /degree_scores/{scoreId} {
+      allow read: if true;
+      allow create: if scaleScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data);
+      allow update: if false;
+      allow delete: if isAdmin() || ownsClass(resource.data.get('class_code', ''));
+    }
+
     // Practice progress: one summary per student per day. Only the class's teacher (or the admin) can read it.
     match /scale_progress/{docId} {
       allow read: if isAdmin() || (isTeacher() && resource.data.owner == request.auth.token.email);

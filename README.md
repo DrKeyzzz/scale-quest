@@ -16,6 +16,16 @@ Only a finished **CHAOS** run can go on the board. Every CHAOS run is 20 questio
 - **Key bonus:** +10% for each key beyond the first (4 keys = x1.3, all 15 = x2.4).
 - Runs that use CONTINUE, practice runs and quit runs can't be posted.
 
+## SCALE DEGREES
+
+Click **SCALE DEGREES** in the top bar (major keys only; MINOR, MODES and SUPERNOVA are switched off while it's on). Check the keys, then press START or CHAOS. Questions rotate between:
+
+- **Name → play:** "What is the SUPERTONIC of G major?" Play it on the piano, or place it on the staff (no key signature, so students add the sharps and flats).
+- **Staff → name:** a key signature and a note on the staff. Students pick the degree name (1–7 keys work too).
+- **Piano → name:** a key signature beside the piano and one highlighted key. Students pick the degree name.
+
+Practice shows a reference card with all seven names (Tonic, Supertonic, Mediant, Subdominant, Dominant, Submediant, Leading Tone); CHAOS hides it. CHAOS runs post to their own **DEGREES** leaderboard tab (`degree_scores`). My Report's "Practice this" links for a degree name open Scale Degrees with extra questions on that degree.
+
 ## MIDI keyboards
 
 Click **🎹 CONNECT MIDI KEYBOARD** under SUBMIT (Chrome, Edge and Chromebooks). Keys work like clicking the on-screen piano, and the student still presses SUBMIT. On staff questions, a white key moves the note to that letter; sharps and flats are still added with the buttons. The game remembers the keyboard next time.
