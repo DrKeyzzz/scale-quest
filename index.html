@@ -121,7 +121,6 @@ button{font:inherit;color:inherit}
 .misses{width:100%;text-align:left}
 .misses summary{font-family:var(--px);font-size:9px;color:var(--dim);cursor:pointer}
 .misses li{font-size:19px;margin:4px 0}
-@media (min-width:1000px){ .controls{flex-wrap:nowrap;gap:12px} .controls .start,.controls .chaos{padding:15px 26px;font-size:18px} .controls .nova{padding:13px 22px 13px 16px;font-size:18px} }
 .famtabs{display:flex;gap:2px;flex:none;border-right:3px solid var(--line);padding-right:12px}
 .famtabs button{font-family:var(--px);font-size:11px;padding:8px 10px 6px;background:none;color:var(--dim);border:0;border-bottom:3px solid transparent;cursor:pointer}
 .famtabs button:hover{color:var(--ink)}
@@ -265,9 +264,8 @@ button{font:inherit;color:inherit}
 @keyframes rise{0%{opacity:0;transform:translate(-50%,16px) scale(.6)}20%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-50px)}}
 
 /* ---------- attract ---------- */
-.attract{width:100%;display:grid;grid-template-columns:1.2fr 1fr;gap:18px;align-items:start}
-.attract h2{margin:0 0 12px;font-family:var(--px);font-size:11px;color:var(--cyan);letter-spacing:.1em;font-weight:400}
-.insert{grid-column:1/-1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-family:var(--px);font-size:15px;color:var(--yel);padding:10px 0;animation:blink 1.1s steps(2) infinite}
+.attract{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px}
+.tops h2{margin:0 0 8px;font-family:var(--px);font-size:11px;color:var(--cyan);letter-spacing:.1em;font-weight:400}
 @keyframes blink{50%{opacity:.2}}
 .steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
 .steps li{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start}
@@ -286,8 +284,7 @@ button{font:inherit;color:inherit}
 .otabs button[aria-pressed="true"]{background:var(--cyan);color:var(--shadow);border-color:var(--cyan)}
 .opanel .board{font-size:11px;text-align:left}
 
-/* ---------- footer ---------- */
-.controls{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;align-items:center}
+/* ---------- big buttons ---------- */
 .start{font-size:20px;padding:20px 46px;background:var(--cyan);color:var(--shadow)}
 .chaos{font-size:22px;padding:20px 46px;color:#fff;letter-spacing:.08em;
   background:linear-gradient(90deg,#ff4fd8,#8b3dff,#ff2e63,#ff4fd8);background-size:300% 100%;animation:chaosbg 2.4s linear infinite;
@@ -342,7 +339,7 @@ button{font:inherit;color:inherit}
 .keyselect{padding:10px;gap:8px}
 .cart{padding:9px 2px 7px;gap:6px}
 .cart .cname{font-size:14px}
-.app.playing .keyselect,.app.playing .settings,.app.playing .controls{display:none}
+.app.playing .setup{display:none}
 .quit{color:var(--bad)}
 .hcell{padding:8px 12px;gap:6px}
 .hval{font-size:14px}
@@ -362,24 +359,85 @@ button{font:inherit;color:inherit}
 .explain .hit sup{color:var(--shadow)}
 .explain .miss{border-color:var(--bad);color:var(--bad)}
 .explain .clab{border:0;background:none;font-size:8px;color:var(--dim);padding-inline:2px}
-.attract{gap:14px}
-.attract h2{margin-bottom:8px}
-.insert{padding:4px 0;font-size:13px}
 .steps{gap:8px}
 .steps .n{width:34px;height:34px;font-size:11px}
 .steps li{grid-template-columns:34px 1fr;gap:10px}
 .steps span{font-size:20px}
 .start,.chaos{padding:16px 42px}
-@media (max-height:700px){ .keyhint{display:none} .logo small{display:none} .insert{padding:0;font-size:12px} .steps{gap:6px} .steps span{display:none} .steps li{align-items:center} .cart{padding:8px 2px 6px;gap:5px} }
+@media (max-height:700px){ .keyhint{display:none} .logo small{display:none} .cart{padding:8px 2px 6px;gap:5px} }
 @media (max-height:620px){
   .ladder,.qtag{display:none}
   .app{gap:8px;padding-block:8px}
   .stage{gap:8px;padding-block:10px}
   .cart{padding:7px 2px 5px;gap:4px}
-  .steps span{display:none}
-  .steps b{margin:0}
-  .steps li{align-items:center}
   .start,.chaos{padding:12px 36px}
+}
+
+/* ---------- start screen (2026-10): START on the stage, three dropdowns, everything else in More options ---------- */
+.cta{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding-top:6px}
+.cta-title{margin:0;font-family:var(--px);font-weight:400;font-size:clamp(16px,2.6vw,24px);color:var(--cyan);letter-spacing:.06em;text-shadow:4px 4px 0 var(--shadow)}
+.cta-title span{color:var(--mag)}
+.playbig{font-size:clamp(18px,2.6vw,24px);padding:20px 54px;letter-spacing:.06em;display:inline-flex;align-items:center;gap:14px;animation:playglow 1.8s ease-in-out infinite}
+.playbig.chaos{color:#fff;animation:chaosbg 2.4s linear infinite}
+.playbig.nova{padding:20px 46px;color:#2a1600;animation:novaglow 1.6s ease-in-out infinite}
+.playbig.start{background:var(--cyan);color:var(--shadow)}
+.playbig:disabled{animation:none}
+@keyframes playglow{50%{box-shadow:4px 4px 0 var(--shadow),0 0 26px rgba(63,240,255,.55)}}
+.cta-sum{margin:0;font-size:24px;color:var(--ink);letter-spacing:.03em}
+.cta-sum b{color:var(--yel);font-weight:400}
+.cta-hint{margin:0;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;color:var(--dim);font-size:20px}
+.cta-hint kbd{font-family:var(--px);font-size:8px;padding:3px 5px;border:2px solid var(--line);color:var(--ink)}
+.gl{font-family:system-ui,'Segoe UI Symbol',sans-serif;font-size:1.15em;line-height:0}
+.linkish{font:inherit;color:var(--cyan);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.cta-piano{width:min(100%,420px);opacity:.85}
+.cta-piano svg{display:block;width:100%;height:auto}
+.cta-piano .w{fill:#fff;stroke:var(--paperink);stroke-width:1.5} .cta-piano .b{fill:#17112e}
+.cta-piano .w.lit{fill:#ffe45c} .cta-piano .b.lit{fill:#c9a200}
+.cta-piano text{font-family:var(--vt);font-size:15px;fill:var(--paperink);text-anchor:middle}
+.setup{display:flex;flex-direction:column;gap:10px}
+.quick{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:end}
+.dd{position:relative;display:flex;flex-direction:column;gap:6px;min-width:0}
+.dd > span{font-family:var(--px);font-size:8px;color:var(--dim);letter-spacing:.1em}
+.dd .sel{width:100%;text-align:left;font-family:var(--vt);font-size:23px;line-height:1;color:var(--ink);background:var(--panel);border:3px solid var(--line);box-shadow:3px 3px 0 var(--shadow);
+  padding:9px 34px 8px 12px;cursor:pointer;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd .sel::after{content:'▾';position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--yel);font-size:20px}
+.dd .sel:hover,.dd .sel[aria-expanded="true"]{border-color:var(--cyan)}
+.dd-menu{position:absolute;z-index:40;top:calc(100% + 6px);left:0;min-width:100%;width:max-content;max-width:min(380px,calc(100vw - 32px));overflow:auto;
+  display:flex;flex-direction:column;gap:2px;padding:6px;background:var(--bg2);border:3px solid var(--cyan);box-shadow:0 0 0 3px var(--shadow),0 10px 30px rgba(0,0,0,.5)}
+.dd-menu.up{top:auto;bottom:calc(100% + 6px)}
+.dd[data-name="qpk"] .dd-menu{left:auto;right:0}
+.dd.off .sel{opacity:.55}
+.dd-menu button{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;font-family:var(--vt);font-size:22px;line-height:1.05;padding:7px 10px;background:none;color:var(--ink);border:0;cursor:pointer}
+.dd-menu button:hover,.dd-menu button:focus-visible{background:var(--panel);outline:none}
+.dd-menu button small{font-size:17px;color:var(--dim)}
+.dd-menu button[aria-selected="true"]{color:var(--yel)}
+.dd-menu button[aria-selected="true"] b::before{content:'✓ ';color:var(--ok)}
+.dd-menu.wide{max-width:min(600px,calc(100vw - 32px))}
+.dd-menu.wide button{flex-direction:row;align-items:baseline;justify-content:space-between;gap:18px;padding:5px 10px}
+.dd-menu.wide button small{text-align:right}
+.dd-menu.wide button b{white-space:nowrap}
+@media (max-width:520px){ .dd-menu.wide button{flex-direction:column;align-items:flex-start;gap:0} .dd-menu.wide button small{text-align:left;font-size:16px} }
+.dd-menu button b{font-weight:400}
+.dd-menu button.locked{opacity:.55}
+.dd-menu hr{border:0;border-top:2px dashed var(--line);margin:3px 0;width:100%}
+.morebtn{font-family:var(--px);font-size:9px;letter-spacing:.06em;padding:13px 14px;background:none;color:var(--ink);border:3px solid var(--line);cursor:pointer;white-space:nowrap}
+.morebtn:hover,.morebtn[aria-expanded="true"]{border-color:var(--cyan);color:var(--cyan)}
+.morebtn .gl{font-size:18px;vertical-align:-3px;margin-right:2px}
+.mtabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:3px solid var(--line);padding:6px 8px 0}
+.mtabs button{font-family:var(--px);font-size:9px;letter-spacing:.06em;padding:9px 12px 7px;background:none;color:var(--dim);border:0;border-bottom:3px solid transparent;margin-bottom:-3px;cursor:pointer}
+.mtabs button[aria-selected="true"]{color:var(--yel);border-bottom-color:var(--yel)}
+.mpanel{padding:10px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.mpanel .keyselect{border:0;box-shadow:none;background:none;padding:0;width:100%}
+.mnote{margin:0;color:var(--dim);font-size:20px;max-width:70ch}
+.midibtn.big{font-size:9px;padding:10px 12px;border-width:3px;border-radius:0}
+.tops{padding:12px 14px}
+.howsteps{text-align:left;width:100%}
+@media (pointer:coarse){ .cta-hint .kb{display:none} }   /* phones and tablets: no Enter key to press */
+@media (max-width:700px){
+  .quick{grid-template-columns:1fr 1fr}
+  .quick .dd[data-name="scales"],.quick .morebtn{grid-column:1/-1}
+  .playbig{padding:18px 40px}
+  .cta-sum{font-size:21px}
 }
 
 /* ---------- welcome ---------- */
@@ -410,8 +468,6 @@ button{font:inherit;color:inherit}
 .assign .ab-b{font-size:9px;padding:8px 10px;background:var(--yel);color:var(--shadow)}
 .assign .ab-n{color:var(--dim);font-size:20px}
 .assign .ab-sep{flex-basis:100%;height:0;border-top:2px dashed var(--line)}
-.attract.has-assign .steps span{display:none}
-.attract.has-assign .steps{gap:6px}
 .board tr.me td{color:var(--cyan)}
 .board td.nm{white-space:nowrap}
 .devtag{font-family:var(--px);font-size:7px;padding:2px 4px;margin-left:4px;background:var(--mag);color:var(--shadow);vertical-align:middle}
@@ -472,7 +528,6 @@ button{font:inherit;color:inherit}
   .hud{grid-template-columns:1fr 1fr}
   .hcell{border-right:0;border-bottom:3px solid var(--line)}
   .hcell.keycell{grid-column:1/-1}
-  .attract{grid-template-columns:1fr}
   .staffwrap{flex-direction:column}
   .staffctl{flex-direction:row;flex-wrap:wrap;justify-content:center}
   .arrows{flex-direction:row}
@@ -509,22 +564,6 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
     </div>
   </header>
 
-  <section class="panel keyselect" id="keySelect" aria-label="Choose scales">
-    <div class="cats">
-      <div class="famtabs" id="catSeg" role="tablist" aria-label="Scale family"><button type="button" data-cat="major">MAJOR</button><button type="button" data-cat="minor">MINOR</button><button type="button" data-cat="modes">MODES</button></div>
-      <div class="seg" id="formSeg" role="group" aria-label="Scale type"></div>
-      <button type="button" class="degbtn" id="degBtn" aria-pressed="false" title="Name the scale degrees (tonic, supertonic, mediant...) in major keys">SCALE DEGREES</button>
-      <span class="selwrap">
-        <button type="button" class="selbtn" id="selBtn" aria-haspopup="true" aria-expanded="false" title="Check or uncheck whole groups of scales">SELECT ▾</button>
-        <span class="selmenu" id="selMenu" role="menu" hidden></span>
-      </span>
-      <span class="lockmsg" id="lockMsg" hidden>QUIT TO CHANGE KEYS</span>
-    </div>
-    <div class="krow sharp"><button type="button" class="rowlabel" data-row="sharp" aria-pressed="false" title="Select all sharp keys (click again for none)"><span>SHARP<br>KEYS ♯</span></button><div class="kgrid" id="sharpRow"></div></div>
-    <div class="krow flat"><button type="button" class="rowlabel" data-row="flat" aria-pressed="false" title="Select all flat keys (click again for none)"><span>FLAT<br>KEYS ♭</span></button><div class="kgrid" id="flatRow"></div></div>
-  </section>
-
-
   <section class="panel hud" id="hud" hidden>
     <div class="hcell keycell">
       <div class="hlab">KEY <span class="modetag" id="modeTag">PRACTICE</span></div>
@@ -539,20 +578,14 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
 
   <section class="panel stage" id="stage">
     <div class="attract" id="attract">
-      <p class="insert" id="insertMsg">CHECK YOUR KEYS ABOVE</p>
       <div class="assign" id="assignBanner" hidden></div>
-      <div>
-        <h2>HOW TO PLAY</h2>
-        <ol class="steps">
-          <li><span class="n">1</span><div><b>CHECK YOUR SCALES</b><span>Pick major, minor or modes in the top bar, then check the scales you want (SELECT ▾ checks whole groups).</span></div></li>
-          <li><span class="n">2</span><div><b>PRESS START</b><span>Clear one key at a time on piano and staff. No clock, so take your time.</span></div></li>
-          <li><span class="n">3</span><div><b>HIT CHAOS</b><span>20 timed questions from every checked key. Answer fast for bonus points and post a high score.</span></div></li>
-        </ol>
+      <div class="cta">
+        <h2 class="cta-title">READY TO <span>QUEST?</span></h2>
+        <button class="btn start playbig" id="playBtn" type="button"><span class="gl" aria-hidden="true">▶</span> <span id="playLabel">START</span></button>
+        <p class="cta-sum" id="playSum"></p>
+        <p class="cta-hint"><span class="kb">or press <kbd>ENTER</kbd></span><span class="kb" aria-hidden="true">·</span><button type="button" class="linkish" id="howBtn">HOW TO PLAY</button></p>
       </div>
-      <div>
-        <h2 id="boardTitle">LEADERBOARD</h2>
-        <div id="boardWrap"></div>
-      </div>
+      <div class="cta-piano" id="ctaPiano" aria-hidden="true"></div>
     </div>
 
     <div id="question" hidden style="display:contents">
@@ -608,12 +641,46 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
     <div id="tdBody"></div>
   </section>
 
-  <footer class="controls">
-    <button class="btn start" id="startBtn" type="button" disabled>START</button>
-    <button class="btn chaos" id="chaosBtn" type="button" disabled>CHAOS</button>
-    <button class="btn nova" id="novaBtn" type="button" title="All 150 scales. 20 questions. 2 hearts."><span id="novaBtnStar"></span>SUPERNOVA</button>
-    <span class="qpk" title="How many questions each scale gets in practice before moving to the next one"><span class="slabel">QUESTIONS<br>PER SCALE</span><span class="seg" id="qpkSeg" role="group" aria-label="Practice questions per scale"></span></span>
-  </footer>
+  <!-- start screen: three dropdowns + More options (the full key grid lives on its "Pick scales" tab) -->
+  <section class="setup" id="setup" aria-label="Game settings">
+    <div class="quick" id="quick">
+      <div class="dd" data-name="scales"><span id="ddl-scales">SCALES</span></div>
+      <div class="dd" data-name="mode"><span id="ddl-mode">MODE</span></div>
+      <div class="dd" data-name="qpk"><span id="ddl-qpk">PER SCALE</span></div>
+      <button type="button" class="morebtn" id="moreBtn" aria-expanded="false" aria-controls="more"><span class="gl" aria-hidden="true">⚙</span> MORE OPTIONS</button>
+    </div>
+    <div class="panel more" id="more" hidden>
+      <div class="mtabs" role="tablist" aria-label="More options">
+        <button type="button" role="tab" data-tab="scales" aria-selected="true">PICK SCALES</button>
+        <button type="button" role="tab" data-tab="midi" aria-selected="false">MIDI KEYBOARD</button>
+      </div>
+      <div class="mpanel" data-panel="scales" role="tabpanel">
+        <section class="panel keyselect" id="keySelect" aria-label="Choose scales">
+          <div class="cats">
+            <div class="famtabs" id="catSeg" role="tablist" aria-label="Scale family"><button type="button" data-cat="major">MAJOR</button><button type="button" data-cat="minor">MINOR</button><button type="button" data-cat="modes">MODES</button></div>
+            <div class="seg" id="formSeg" role="group" aria-label="Scale type"></div>
+            <button type="button" class="degbtn" id="degBtn" aria-pressed="false" title="Name the scale degrees (tonic, supertonic, mediant...) in major keys">SCALE DEGREES</button>
+            <span class="selwrap">
+              <button type="button" class="selbtn" id="selBtn" aria-haspopup="true" aria-expanded="false" title="Check or uncheck whole groups of scales">SELECT ▾</button>
+              <span class="selmenu" id="selMenu" role="menu" hidden></span>
+            </span>
+            <span class="lockmsg" id="lockMsg" hidden>QUIT TO CHANGE KEYS</span>
+          </div>
+          <div class="krow sharp"><button type="button" class="rowlabel" data-row="sharp" aria-pressed="false" title="Select all sharp keys (click again for none)"><span>SHARP<br>KEYS ♯</span></button><div class="kgrid" id="sharpRow"></div></div>
+          <div class="krow flat"><button type="button" class="rowlabel" data-row="flat" aria-pressed="false" title="Select all flat keys (click again for none)"><span>FLAT<br>KEYS ♭</span></button><div class="kgrid" id="flatRow"></div></div>
+        </section>
+      </div>
+      <div class="mpanel" data-panel="midi" role="tabpanel" hidden>
+        <p class="mnote">Have a MIDI keyboard? Plug it in with a USB cable and connect it here. Its keys pick the piano keys (or move the staff note); you still press SUBMIT.</p>
+        <button class="midibtn big" id="midiBtn2" type="button">🎹 CONNECT MIDI KEYBOARD</button>
+        <p class="mnote" id="midiNo" hidden>This browser can't use MIDI keyboards (Chrome and Edge can). The mouse, touch screen and keyboard all work.</p>
+      </div>
+    </div>
+    <div class="panel tops">
+      <h2 id="boardTitle">LEADERBOARD</h2>
+      <div id="boardWrap"></div>
+    </div>
+  </section>
 </main>
 
 <div class="welcome" id="welcome" hidden>
@@ -1046,11 +1113,12 @@ function classesOf(p) {
 const classNames = p => classesOf(p).map(c => c.name).join(' · ');
 
 /* ---------- state ---------- */
+const savedKeys = (store.get('keys', null) || []).filter(k => SCALES[k]);
 const S = {
-  selected: new Set(['C']),   // C major is checked on a first visit, so START works right away
+  selected: new Set(savedKeys.length ? savedKeys : ['C']),   // remembered on this device; C major on a first visit, so START works right away
   qpk: store.get('qpk', 5),
   keySig: false,   // no key signatures: students write every accidental themselves (Scale Degrees shows them on its name-it questions)
-  deg: false, degSel: 0, degFocus: 0,
+  deg: store.get('deg', false) === true, degSel: 0, degFocus: 0,
   muted: store.get('muted', false),
   run: null, busy: false, overlay: false,
   sel: new Set(), lock: new Set(), pos: 6, accSel: null,
@@ -1110,8 +1178,6 @@ function renderKeyRows(){
   });
   document.querySelectorAll('#catSeg button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.cat === S.cat); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', b.dataset.cat === S.cat); b.disabled = S.deg && b.dataset.cat !== 'major'; });
   $('#degBtn').setAttribute('aria-pressed', S.deg);
-  $('#novaBtn').disabled = S.deg; $('#novaBtn').classList.toggle('locked', !novaUnlocked());
-  $('#novaBtn').title = S.deg ? 'SUPERNOVA uses scale building, so it\'s off in Scale Degrees' : novaUnlocked() ? 'All 150 scales. 20 questions. 2 hearts.' : '🔒 Finish one CHAOS run to unlock SUPERNOVA';
   const forms = S.cat === 'minor' ? MINOR_FORMS.map(f => [f, SCALE_TYPES[f].name.split(' ')[0].toUpperCase()]) : S.cat === 'modes' ? MODE_TYPES.map(m => [m, SCALE_TYPES[m].name.toUpperCase()]) : [];
   $('#formSeg').innerHTML = forms.map(([k, l, full]) => `<button type="button" data-form="${k}" aria-pressed="${k === (S.cat === 'minor' ? S.form : S.modeType)}"${full ? ` title="${full}" aria-label="${full}"` : ''}>${l}</button>`).join('');
   $('#formSeg').hidden = !forms.length;
@@ -1159,9 +1225,8 @@ function updateCarts(){
   document.querySelectorAll('.rowlabel').forEach(b => { const ks = rowKeys(b); b.setAttribute('aria-pressed', ks.length > 0 && ks.every(k => S.selected.has(k))); });
   $('#selBtn').innerHTML = S.selected.size ? `SELECT · <b>${S.selected.size}</b> ▾` : 'SELECT ▾';
   renderSelMenu();
-  const none = S.selected.size === 0, sel = PLAY_ORDER.filter(k => S.selected.has(k));
-  $('#startBtn').disabled = none; $('#chaosBtn').disabled = none;
-  $('#insertMsg').textContent = none ? (S.deg ? 'SCALE DEGREES: CHECK YOUR MAJOR KEYS ABOVE' : 'CHECK YOUR SCALES ABOVE') : `${S.deg ? 'SCALE DEGREES · ' : ''}${selSummary(sel)} · PRESS START OR CHAOS`;
+  store.set('keys', PLAY_ORDER.filter(k => S.selected.has(k)));
+  syncQuick();
 }
 $('#keySelect').addEventListener('click', e => {
   if(S.run) return;
@@ -1188,11 +1253,165 @@ $('#keySelect').addEventListener('click', e => {
   S.selected.has(k) ? S.selected.delete(k) : S.selected.add(k);
   SFX.click(); updateCarts();
 });
-// Questions per scale (practice mode), next to START.
-function renderQpk(){
-  const el = $('#qpkSeg'); if(!el) return;
-  el.innerHTML = [3,5,8,10].map(n => `<button type="button" data-n="${n}" aria-pressed="${n===S.qpk}"${S.run ? ' disabled' : ''}>${n}</button>`).join('');
+/* ---------- start screen: START on the stage, three dropdowns, everything else in More options ----------
+   SCALES = ready-made sets (or "Pick my own…", which opens the key grid), MODE = Practice / CHAOS / SUPERNOVA,
+   PER SCALE = practice questions per scale. All of it is remembered on this device. */
+S.mode = ['practice', 'chaos', 'nova'].includes(store.get('mode')) ? store.get('mode') : 'practice';
+const SET = (tonics, types) => types.flatMap(t => tonics.map(n => t === 'major' ? n : n + ':' + t)).filter(k => SCALES[k]);
+const PRESETS = [
+  {v: 'c',      t: 'C major',    keys: ['C'],                          d: 'No sharps or flats. Start here!'},
+  {v: 'easy',   t: 'Easy keys',  keys: ['C', 'G', 'F'],                d: 'C, G and F major'},
+  {v: 'sharp',  t: 'Sharp keys', keys: SHARP_ROW.slice(1),             d: 'G, D, A, E, B, F♯ and C♯ major'},
+  {v: 'flat',   t: 'Flat keys',  keys: FLAT_ROW.slice(1),              d: 'F, B♭, E♭, A♭, D♭, G♭ and C♭ major'},
+  {v: 'major',  t: 'All major',  keys: MAJOR_ORDER.slice(),            d: 'All 15 major scales'},
+  {v: 'eminor', t: 'Easy minor', keys: SET(['A', 'E', 'D'], MINOR_FORMS), d: 'A, E and D minor: natural, harmonic, melodic'},
+  {v: 'minor',  t: 'All minor',  keys: SET(MINOR_ORDER, MINOR_FORMS),  d: 'Every natural, harmonic and melodic minor'},
+  {v: 'cmodes', t: 'Modes on C', keys: SET(['C'], MODE_TYPES),         d: 'C Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian'},
+  {v: 'modes',  t: 'All modes',  keys: SET(MAJOR_ORDER, MODE_TYPES),   d: 'All six modes on every key'},
+];
+const selKeys = () => PLAY_ORDER.filter(k => S.selected.has(k));
+function scalesValue(){
+  if(S.deg) return 'deg';
+  const p = PRESETS.find(p => p.keys.length === S.selected.size && p.keys.every(k => S.selected.has(k)));
+  return p ? p.v : 'pick';
 }
+function scalesTitle(){
+  const v = scalesValue(), sel = selKeys();
+  if(v === 'deg') return 'Scale degrees';
+  if(v !== 'pick') return PRESETS.find(p => p.v === v).t;
+  return sel.length === 1 ? scaleName(sel[0]) : sel.length ? `My pick (${sel.length} scales)` : 'None picked';
+}
+const curValue = name => name === 'scales' ? scalesValue() : name === 'mode' ? S.mode : String(S.qpk);
+function ddOptions(name){
+  if(name === 'scales') return [...PRESETS,
+    {v: 'deg', t: 'Scale degrees', d: 'Name the tonic, dominant… in major keys'},
+    {v: 'pick', t: 'Pick my own…', d: 'Check any scales in More options', sep: true}];
+  if(name === 'mode') return [
+    {v: 'practice', t: 'Practice', d: 'One scale at a time. No clock.'},
+    {v: 'chaos', t: 'CHAOS', d: `${CHAOS_LEN} timed questions from your scales. Post a high score!`},
+    S.deg ? {v: 'nova', t: 'SUPERNOVA', d: 'Off in Scale degrees (it builds scales)', locked: true}
+      : novaUnlocked() ? {v: 'nova', t: 'SUPERNOVA', d: `All 150 scales, ${CHAOS_LEN} questions, ${NOVA_HEARTS} hearts.`}
+      : {v: 'nova', t: '🔒 SUPERNOVA', d: 'Finish one CHAOS run to unlock', locked: true}];
+  return [3, 5, 8, 10].map(n => ({v: String(n), t: `${n} per scale`}));
+}
+function setChoice(name, v){
+  if(S.run) return;
+  if(name === 'scales'){
+    if(v === 'pick'){ openMore('scales'); return; }
+    if(v === 'deg'){   // keep the major keys already picked (or C), the way the SCALE DEGREES button does
+      const maj = selKeys().filter(k => typeOf(k) === 'major');
+      S.selected = new Set(maj.length ? maj : ['C']);
+      if(S.mode === 'nova'){ S.mode = 'practice'; store.set('mode', S.mode); }
+      setDeg(true); return;
+    }
+    const p = PRESETS.find(p => p.v === v); if(!p) return;
+    S.selected = new Set(p.keys);
+    const t = typeOf(p.keys[0]);   // show that family in the key grid
+    S.cat = t === 'major' ? 'major' : MINOR_FORMS.includes(t) ? 'minor' : 'modes';
+    if(S.cat === 'minor') S.form = t; if(S.cat === 'modes') S.modeType = t;
+    if(S.deg) setDeg(false); else { renderKeyRows(); renderAssignment(); }
+    return;
+  }
+  if(name === 'mode'){
+    if(v === 'nova' && S.deg) return focusToast('<b>SUPERNOVA</b> builds scales, so it\'s off in <b>Scale degrees</b>. Pick other scales first.');
+    if(v === 'nova' && !novaUnlocked()) return focusToast('🔒 <b>SUPERNOVA</b> unlocks after you finish one <b>CHAOS</b> run. Try CHAOS first!');
+    S.mode = v; store.set('mode', v);
+  } else { S.qpk = +v; store.set('qpk', S.qpk); }
+  syncQuick();
+}
+// Dropdown buttons, the summary under START, and START itself
+function syncQuick(){
+  if(S.mode === 'nova' && (S.deg || !novaUnlocked())) S.mode = 'practice';
+  const sel = selKeys(), nova = S.mode === 'nova';
+  document.querySelectorAll('#quick .dd').forEach(dd => {
+    const name = dd.dataset.name, o = ddOptions(name).find(o => o.v === curValue(name)), t = name === 'scales' ? scalesTitle() : o ? o.t : '';
+    const b = dd.querySelector('.sel'); b.textContent = t; b.setAttribute('aria-label', `${dd.firstElementChild.textContent}: ${t}`);
+    if(name === 'qpk') dd.classList.toggle('off', S.mode !== 'practice');   // only practice uses it
+  });
+  const b = $('#playBtn');
+  b.className = 'btn playbig ' + (S.mode === 'practice' ? 'start' : S.mode);
+  b.disabled = !nova && !sel.length;
+  $('#playLabel').textContent = {practice: 'START', chaos: 'START CHAOS', nova: 'START SUPERNOVA'}[S.mode];
+  const what = nova ? 'ALL 150 SCALES' : !sel.length ? 'NO SCALES PICKED' : S.deg ? 'SCALE DEGREES' + (S.degFocus ? ` (+${DEG_NAME[S.degFocus].toUpperCase()})` : '') + ' · ' + (sel.length === 1 ? scaleName(sel[0]).toUpperCase() : selSummary(sel))
+    : scalesValue() !== 'pick' || sel.length === 1 ? scalesTitle().toUpperCase() : selSummary(sel);
+  const how = nova ? `SUPERNOVA · ${NOVA_HEARTS} HEARTS` : S.mode === 'chaos' ? `CHAOS · ${CHAOS_LEN} TIMED QUESTIONS` : `PRACTICE · ${S.qpk} PER SCALE`;
+  $('#playSum').innerHTML = `<b>${esc(what)}</b> · ${how}`;
+  ctaPiano(nova ? null : sel[0]);
+}
+// The little piano on the stage lights up the first scale you'll play.
+function ctaPiano(id){
+  const W = 30, H = 92, BW = 18, BH = 56, names = {};
+  if(id){ const r = 60 + pcOf(SCALES[id][0]); [...stepsOf(id), 12].forEach((st, i) => names[r + st] = fmt(SCALES[id][i % 7])); }
+  let whites = '', blacks = '';
+  for(let o = 0; o < 2; o++) LETTERS.forEach((L, i) => {
+    const m = 60 + 12 * o + NAT[L], x = (7 * o + i) * W, n = names[m];
+    whites += `<rect class="w${n ? ' lit' : ''}" x="${x}" y="0" width="${W}" height="${H}"/>${n ? `<text x="${x + W / 2}" y="${H - 9}">${n}</text>` : ''}`;
+    if(L !== 'E' && L !== 'B'){ const nb = names[m + 1];
+      blacks += `<rect class="b${nb ? ' lit' : ''}" x="${x + W - BW / 2}" y="0" width="${BW}" height="${BH}"/>${nb ? `<text x="${x + W}" y="${BH + 15}" style="font-size:13px">${nb}</text>` : ''}`; }
+  });
+  $('#ctaPiano').innerHTML = `<svg viewBox="-1 -1 ${14 * W + 2} ${H + 2}">${whites}${blacks}</svg>`;
+}
+document.querySelectorAll('#quick .dd').forEach(dd => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'sel'; b.setAttribute('aria-haspopup', 'listbox'); b.setAttribute('aria-expanded', 'false'); dd.append(b);
+});
+function closeDD(){ document.querySelectorAll('.dd-menu').forEach(m => m.remove()); document.querySelectorAll('.dd .sel').forEach(b => b.setAttribute('aria-expanded', 'false')); }
+$('#quick').addEventListener('click', e => {
+  const opt = e.target.closest('.dd-menu button'), sel = e.target.closest('.dd .sel');
+  if(opt){ const dd = opt.closest('.dd'); closeDD(); SFX.click(); setChoice(dd.dataset.name, opt.dataset.v); if(opt.dataset.v !== 'pick') dd.querySelector('.sel').focus(); return; }
+  if(!sel || S.run) return;
+  const open = sel.getAttribute('aria-expanded') === 'true'; closeDD(); if(open) return;
+  const dd = sel.closest('.dd'), name = dd.dataset.name, cur = curValue(name), m = document.createElement('div');
+  m.className = 'dd-menu' + (name === 'scales' ? ' wide' : ''); m.setAttribute('role', 'listbox'); m.setAttribute('aria-label', dd.firstElementChild.textContent);
+  m.innerHTML = ddOptions(name).map(o => `${o.sep ? '<hr>' : ''}<button type="button" role="option" data-v="${o.v}" aria-selected="${o.v === cur}"${o.locked ? ' class="locked"' : ''}><b>${esc(o.t)}</b>${o.d ? `<small>${esc(o.d)}</small>` : ''}</button>`).join('');
+  sel.after(m); sel.setAttribute('aria-expanded', 'true'); SFX.click();
+  // open upward when there's more room above (the row sits under the stage)
+  const r = sel.getBoundingClientRect(), below = innerHeight - r.bottom - 14, above = r.top - 14;
+  if(m.offsetHeight > below && above > below){ m.classList.add('up'); m.style.maxHeight = above + 'px'; } else m.style.maxHeight = Math.max(below, 220) + 'px';
+  (m.querySelector('[aria-selected="true"]') || m.querySelector('button')).focus();
+});
+$('#quick').addEventListener('keydown', e => {
+  const m = e.target.closest('.dd-menu'); if(!m) return;
+  const items = [...m.querySelectorAll('button')], i = items.indexOf(document.activeElement);
+  if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus(); }
+  if(e.key === 'Home' || e.key === 'End'){ e.preventDefault(); items[e.key === 'Home' ? 0 : items.length - 1].focus(); }
+  if(e.key === 'Escape' || e.key === 'Tab'){ const s = m.parentNode.querySelector('.sel'); closeDD(); if(e.key === 'Escape'){ e.preventDefault(); s.focus(); } }
+});
+document.addEventListener('click', e => { if(!e.target.closest('.dd')) closeDD(); });
+// More options: closed by default; "Pick my own…" opens it on the key grid.
+function showMoreTab(t){
+  document.querySelectorAll('#more .mtabs [data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  document.querySelectorAll('#more .mpanel').forEach(p => p.hidden = p.dataset.panel !== t);
+}
+function openMore(tab){
+  $('#more').hidden = false; $('#moreBtn').setAttribute('aria-expanded', 'true');
+  if(tab){ showMoreTab(tab); const f = $(`#more .mtabs [data-tab="${tab}"]`); f.focus({preventScroll: true}); }
+  $('#more').scrollIntoView({block: 'nearest', behavior: 'smooth'});
+}
+$('#moreBtn').onclick = () => { SFX.click(); if($('#more').hidden) openMore(); else { $('#more').hidden = true; $('#moreBtn').setAttribute('aria-expanded', 'false'); } };
+$('#more .mtabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if(b){ SFX.click(); showMoreTab(b.dataset.tab); } });
+// START: How to play comes up once before a player's very first run.
+function playPressed(){
+  if(S.run || S.overlay || $('#playBtn').disabled) return;
+  if(!store.get('howto', false)) return howTo(true);
+  audio(); closeDD();
+  if(S.mode === 'chaos') chaosPicker(); else if(S.mode === 'nova') novaWarning(); else startRun('practice');
+}
+function howTo(then){
+  const p = openOverlay(`<h2 class="otitle">HOW TO PLAY</h2>
+    <ol class="steps howsteps">
+      <li><span class="n">1</span><div><b>PICK YOUR SCALES</b><span>C major is ready to go. The SCALES menu has more sets, or choose Pick my own… to check any scale.</span></div></li>
+      <li><span class="n">2</span><div><b>PRESS START</b><span>Build each scale on the piano or the staff (tap, click or use the arrow keys), then press SUBMIT or Enter. Practice has no clock, so take your time.</span></div></li>
+      <li><span class="n">3</span><div><b>TRY CHAOS</b><span>Set MODE to CHAOS: ${CHAOS_LEN} timed questions from your scales. Answer fast for bonus points and post a high score. Finish one to unlock SUPERNOVA.</span></div></li>
+    </ol>
+    <div class="obtns"><button class="btn obtn" type="button" id="howGo" data-focus>${then ? 'GOT IT · START!' : 'GOT IT'}</button></div>`);
+  p.querySelector('#howGo').onclick = () => { store.set('howto', true); closeOverlay(); if(then) playPressed(); };
+}
+// Enter starts from the start screen (buttons and menus handle their own Enter).
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Enter' || e.repeat || S.run || S.overlay || $('#app').classList.contains('teacher')) return;
+  const t = e.target; if(t && t !== document.body && t.closest('button, a, input, select, textarea, [role="listbox"]')) return;
+  e.preventDefault(); playPressed();
+});
 
 /* ---------- piano (C4–B5) ---------- */
 const PIANO_LO = 60, PIANO_HI = 83, PK = {};
@@ -1530,7 +1749,7 @@ function renderAssignment(){
   const box = $('#assignBanner'), p = getProfile();
   const list = [...(S.assignment ? [{name: p && p.className, a: S.assignment}] : []), ...S.moreAssign];
   $('#attract').classList.toggle('has-assign', !!(list.length && !S.run));
-  if(!list.length || S.run){ box.hidden = true; $('#insertMsg').hidden = false; return; }
+  if(!list.length || S.run){ box.hidden = true; return; }
   const d = buildDay(), many = list.length > 1 || !S.assignment;   // label each banner with its class when there's more than the main one
   box.innerHTML = list.map(({name, a}, i) => {
     const keys = (a.keys || []).filter(k => SCALES[k]);
@@ -1542,8 +1761,13 @@ function renderAssignment(){
     ${keys.length ? (using ? '<span class="ab-u">✓ USING THESE KEYS</span>' : `<button class="btn ab-b" type="button" data-use="${i}">USE THESE KEYS</button>`) : ''}
     ${a.note ? `<span class="ab-n">“${esc(a.note)}”</span>` : ''}`;
   }).join('');
-  box.hidden = false; $('#insertMsg').hidden = true;
-  box.querySelectorAll('[data-use]').forEach(b => b.onclick = () => { S.selected = new Set((list[+b.dataset.use].a.keys || []).filter(k => SCALES[k])); SFX.click(); updateCarts(); renderAssignment(); });
+  box.hidden = false;
+  box.querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
+    const keys = (list[+b.dataset.use].a.keys || []).filter(k => SCALES[k]);
+    S.selected = new Set(keys); if(S.mode === 'nova') setChoice('mode', 'practice');
+    if(S.deg && keys.some(k => typeOf(k) !== 'major')){ S.deg = false; store.set('deg', false); renderKeyRows(); }   // the assignment has minors or modes: build them
+    SFX.click(); updateCarts(); renderAssignment();
+  });
 }
 
 /* ---------- welcome screen + who's playing ---------- */
@@ -1589,15 +1813,16 @@ function applyFocusFromUrl() {
   try { applyFocus(f); } catch (e) { console.warn('focus link:', e); }
 }
 function setDeg(on){
-  S.deg = on;
+  S.deg = on; store.set('deg', on);
   if(on){ S.cat = 'major'; S.selected = new Set([...S.selected].filter(k => typeOf(k) === 'major')); }
   else S.degFocus = 0;
   toggleSelMenu(false); renderKeyRows(); renderAssignment();
 }
 function applyFocus(label){
+  if(S.mode === 'nova') setChoice('mode', 'practice');   // a focus link sets up practice, never SUPERNOVA
   const dn = +Object.keys(DEG_NAME).find(n => DEG_NAME[n].toLowerCase() === String(label).toLowerCase());
   if(dn){
-    S.selected = new Set(['C','G','D','A','F','Bb','Eb']); setDeg(true); S.degFocus = dn;
+    S.selected = new Set(['C','G','D','A','F','Bb','Eb']); setDeg(true); S.degFocus = dn; syncQuick();
     focusToast(`🎯 Practice set up: <b>Scale Degrees</b> with extra <b>${esc(DEG_NAME[dn])}</b> questions. Press <b>START</b> when you're ready!`);
     return;
   }
@@ -1684,7 +1909,7 @@ function setPlaying(on){
   $('#app').classList.toggle('playing', on);
   $('#keySelect').classList.toggle('locked', on);
   $('#lockMsg').hidden = !on;
-  document.querySelectorAll('#qpkSeg button').forEach(b => b.disabled = on);
+  if(on) closeDD();
   $('#hud').hidden = !on;
   $('#attract').hidden = on;
   $('#question').hidden = !on;
@@ -2591,9 +2816,8 @@ $('#tdBack').onclick = closeTeacherView;
 $('#tdSignOut').onclick = async () => { try{ await Cloud.signOut(); } catch(e){} TD.email = null; closeTeacherView(); };
 
 /* ---------- controls ---------- */
-$('#startBtn').onclick = () => { audio(); startRun('practice'); };
-$('#chaosBtn').onclick = () => { audio(); chaosPicker(); };
-$('#novaBtn').onclick = () => { audio(); if(S.overlay) return; if(!novaUnlocked()) return focusToast('🔒 <b>SUPERNOVA</b> unlocks after you finish one <b>CHAOS</b> run. Try CHAOS first!'); novaWarning(); };
+$('#playBtn').onclick = playPressed;
+$('#howBtn').onclick = () => { if(!S.overlay) howTo(false); };
 $('#submitBtn').onclick = primary;
 $('#quitBtn').onclick = () => {
   const r = S.run; if(!r) return;
@@ -2648,9 +2872,10 @@ function midiNote(m){
   paintSel(); say('', '');
 }
 function midiStatus(){
-  const b = $('#midiBtn'); if(!b) return;
-  b.classList.toggle('on', MIDI.inputs > 0);
-  b.textContent = MIDI.access ? (MIDI.inputs ? `🎹 MIDI KEYBOARD CONNECTED${MIDI.inputs > 1 ? ' (' + MIDI.inputs + ')' : ''}` : '🎹 PLUG IN A MIDI KEYBOARD') : '🎹 CONNECT MIDI KEYBOARD';
+  document.querySelectorAll('#midiBtn, #midiBtn2').forEach(b => {   // the one under each question and the one in More options
+    b.classList.toggle('on', MIDI.inputs > 0);
+    b.textContent = MIDI.access ? (MIDI.inputs ? `🎹 MIDI KEYBOARD CONNECTED${MIDI.inputs > 1 ? ' (' + MIDI.inputs + ')' : ''}` : '🎹 PLUG IN A MIDI KEYBOARD') : '🎹 CONNECT MIDI KEYBOARD';
+  });
 }
 function midiHook(){
   MIDI.inputs = 0;
@@ -2674,10 +2899,11 @@ async function midiConnect(quiet){
 if(navigator.requestMIDIAccess){
   $('#midiBtn').hidden = false; midiStatus();
   $('#midiBtn').onclick = () => midiConnect(false);
+  $('#midiBtn2').onclick = () => midiConnect(true).then(() => { if(!MIDI.access) focusToast('MIDI was blocked. Allow MIDI for this site in the browser, then try again.'); });
   // Reconnect without a prompt when the browser already allows MIDI.
   if(store.get('midi', false) && navigator.permissions)
     navigator.permissions.query({name: 'midi'}).then(p => { if(p.state === 'granted') midiConnect(true); }).catch(() => {});
-}
+} else { $('#midiBtn2').hidden = true; $('#midiNo').hidden = false; }
 
 /* ---------- boot ---------- */
 document.querySelectorAll('#accs button').forEach(b => b.querySelector('svg').innerHTML = ACC_SHAPE[b.dataset.acc]);
@@ -2686,10 +2912,7 @@ $('#wSolo').onchange = syncCodeBoxes;
 $('#wAdd').onclick = () => { const i = addCodeBox(''); if(i) i.focus(); };
 $('#whoBtn').onclick = whoMenu;
 $('#wGuest').onclick = playAsGuest;
-$('#qpkSeg').addEventListener('click', e => { const b = e.target.closest('button'); if(!b || S.run) return; S.qpk = +b.dataset.n; store.set('qpk', S.qpk); SFX.click(); renderQpk(); });
-$('#novaBtnStar').innerHTML = starSVG('t3');
-$('#startBtn').insertAdjacentHTML('afterbegin', starSVG('t1')); $('#chaosBtn').insertAdjacentHTML('afterbegin', starSVG('t2'));
-renderKeyRows(); renderQpk(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); updateWho(); renderBoard(); updateCarts(); setPlaying(false);
+renderKeyRows(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); updateWho(); renderBoard(); updateCarts(); setPlaying(false);
 if(!getProfile() && !isGuest()) showWelcome(false); else refreshClassInfo();
 applyFocusFromUrl();
 </script>
