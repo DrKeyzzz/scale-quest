@@ -219,6 +219,11 @@ button{font:inherit;color:inherit}
 .pk text{font-family:var(--vt);font-size:24px;pointer-events:none;text-anchor:middle}
 .pk.white text{fill:var(--paperink)}
 .pk.black text{fill:#fff;font-size:18px}
+.pk text.mk{display:none;font-family:system-ui,sans-serif;font-weight:900;font-size:22px} .pk.black text.mk{font-size:16px}
+.pk.ok text.mk.y, .pk.bad text.mk.n{display:inline}
+.pk.white.ok text.mk{fill:#0b6b30} .pk.white.bad text.mk{fill:#a3122e}
+.degbtns button.ok b::after{content:' ✓'} .degbtns button.bad b::after{content:' ✗'} .degbtns button b::after{font-family:system-ui,sans-serif;font-weight:900}
+.degbtns button.ok b, .degbtns button.bad b{color:#fff}
 
 .staffwrap{width:100%;max-width:780px;display:flex;gap:16px;align-items:center}
 .paper{flex:1;min-width:0;background:var(--paper);border:3px solid var(--shadow);box-shadow:0 0 0 3px var(--line),6px 6px 0 var(--shadow)}
@@ -359,6 +364,11 @@ button{font:inherit;color:inherit}
 .explain .hit sup{color:var(--shadow)}
 .explain .miss{border-color:var(--bad);color:var(--bad)}
 .explain .clab{border:0;background:none;font-size:8px;color:var(--dim);padding-inline:2px}
+.explain .steprow{display:inline-flex;align-items:center;gap:0;border:0;background:none;padding:0}
+.explain .steprow i{font-style:normal;font-family:var(--px);font-size:10px;color:var(--yel);padding:0 4px;min-width:22px;text-align:center}
+.explain .steprow i.aug{color:var(--mag);font-size:8px}
+.explain .steprow .oct{color:var(--dim)}
+@media (max-width:600px){.explain .steprow span{font-size:9px;padding:4px 3px} .explain .steprow i{padding:0 1px;min-width:14px;font-size:7px} .explain .steprow i.aug{font-size:6px}}
 .steps{gap:8px}
 .steps .n{width:34px;height:34px;font-size:11px}
 .steps li{grid-template-columns:34px 1fr;gap:10px}
@@ -554,7 +564,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
 <main class="app" id="app">
   <header class="topbar">
     <div class="mtg-home"><a href="https://drkeyzzz.github.io/" title="All the Music Theory Games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg>Music Theory Games</a><a href="https://drkeyzzz.github.io/report/" title="See your report: what you're doing well and what to practice next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>My Report</a></div>
-    <h1 class="logo"><span class="a">SCALE</span> <span class="b">QUEST</span><small>MAJOR SCALE TRAINER</small></h1>
+    <h1 class="logo"><span class="a">SCALE</span> <span class="b">QUEST</span><small>SCALES · MODES · DEGREES</small></h1>
     <div class="tools">
       <button class="btn tbtn who" id="whoBtn" type="button">👤 SIGN IN</button>
       <button class="btn tbtn" id="boardBtn" type="button">LEADERBOARD</button>
@@ -698,7 +708,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
     <p class="werr" id="wError" role="alert"></p>
     <button class="btn start" id="wGo" type="submit">PRESS START</button>
     <button class="btn wguest" id="wGuest" type="button">PLAY AS GUEST</button>
-    <p class="wnote">Guests' practice and scores aren't saved. Only first names and last initials are stored. One sign-in works for the Rhythm Trainer, Scale Quest and Tidal Tones.</p>
+    <p class="wnote">Guests' practice and scores aren't saved. Only first names and last initials are stored. One sign-in works for every game on Music Theory Games.</p>
   </form>
 </div>
 <div class="overlay" id="overlay" hidden><div class="opanel" id="opanel" role="dialog" aria-modal="true"></div></div>
@@ -1415,17 +1425,19 @@ document.addEventListener('keydown', e => {
 
 /* ---------- piano (C4–B5) ---------- */
 const PIANO_LO = 60, PIANO_HI = 83, PK = {};
+// ✓ / ✗ above the note name, so right and wrong don't rely on green and red alone
+const marks = (x, y) => `<text class="mk y" x="${x}" y="${y}" aria-hidden="true">✓</text><text class="mk n" x="${x}" y="${y}" aria-hidden="true">✗</text>`;
 function buildPiano(){
   const W = 40, H = 190, BW = 24, BH = 118; let wi = 0, whites = '', blacks = '';
   for(let m = PIANO_LO; m <= PIANO_HI; m++){
     const black = [1,3,6,8,10].includes(m % 12);
     if(!black){
       const x = wi*W;
-      whites += `<g class="pk white" data-m="${m}"><rect x="${x+1}" y="1" width="${W-2}" height="${H-2}" rx="4"/><text x="${x+W/2}" y="${H-16}"></text></g>`;
+      whites += `<g class="pk white" data-m="${m}"><rect x="${x+1}" y="1" width="${W-2}" height="${H-2}" rx="4"/><text x="${x+W/2}" y="${H-16}"></text>${marks(x+W/2, H-50)}</g>`;
       wi++;
     } else {
       const x = wi*W - BW/2;
-      blacks += `<g class="pk black" data-m="${m}"><rect x="${x}" y="1" width="${BW}" height="${BH}" rx="3"/><text x="${x+BW/2}" y="${BH-12}"></text></g>`;
+      blacks += `<g class="pk black" data-m="${m}"><rect x="${x}" y="1" width="${BW}" height="${BH}" rx="3"/><text x="${x+BW/2}" y="${BH-12}"></text>${marks(x+BW/2, BH-40)}</g>`;
     }
   }
   $('#pianoWrap').innerHTML = `<div class="sigmini paper" id="sigMini" hidden></div><svg viewBox="0 0 ${wi*W} ${H}" role="img" aria-label="Piano keyboard, C4 to B5">${whites}${blacks}</svg>`;
@@ -1818,6 +1830,15 @@ function setDeg(on){
   else S.degFocus = 0;
   toggleSelMenu(false); renderKeyRows(); renderAssignment();
 }
+// Practice set up on one scale (also the end screen's PRACTICE NEXT button). deg keeps Scale Degrees on.
+function focusScale(id, deg=false){
+  if(S.mode !== 'practice') setChoice('mode', 'practice');
+  if(S.deg && !deg) setDeg(false);
+  S.selected = new Set([id]);
+  const t = typeOf(id); S.cat = t === 'major' ? 'major' : MINOR_FORMS.includes(t) ? 'minor' : 'modes';
+  if(S.cat === 'minor') S.form = t; if(S.cat === 'modes') S.modeType = t;
+  renderKeyRows(); renderAssignment(); syncQuick();
+}
 function applyFocus(label){
   if(S.mode === 'nova') setChoice('mode', 'practice');   // a focus link sets up practice, never SUPERNOVA
   const dn = +Object.keys(DEG_NAME).find(n => DEG_NAME[n].toLowerCase() === String(label).toLowerCase());
@@ -1826,13 +1847,9 @@ function applyFocus(label){
     focusToast(`🎯 Practice set up: <b>Scale Degrees</b> with extra <b>${esc(DEG_NAME[dn])}</b> questions. Press <b>START</b> when you're ready!`);
     return;
   }
-  if(S.deg) setDeg(false);
   const id = PLAY_ORDER.find(k => scaleName(k).toLowerCase() === String(label).toLowerCase());
-  if(!id){ focusToast('Pick the scales you want to practice, then press <b>START</b>.'); return; }
-  S.selected = new Set([id]);
-  const t = typeOf(id); S.cat = t === 'major' ? 'major' : MINOR_FORMS.includes(t) ? 'minor' : 'modes';
-  if(S.cat === 'minor') S.form = t; if(S.cat === 'modes') S.modeType = t;
-  renderKeyRows();
+  if(!id){ if(S.deg) setDeg(false); focusToast('Pick the scales you want to practice, then press <b>START</b>.'); return; }
+  focusScale(id);
   focusToast(`🎯 Practice set up: <b>${esc(scaleName(id))}</b>. Press <b>START</b> when you're ready!`);
 }
 function showWelcome(keep){
@@ -2088,6 +2105,7 @@ function onCorrect(){
     const byPc = Object.fromEntries(SCALES[q.sk].map(n => [pcOf(n), n]));
     S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add('ok'); label(m, byPc[m % 12]); });
     say(`${praise} ${notesLine(q)}`, 'ok');
+    playScale(q);
   } else if(q.type === 'piano'){
     const m = [...S.sel][0]; PK[m].classList.remove('sel'); PK[m].classList.add('ok'); label(m, q.answer);
     say(`${praise} ${fmt(q.answer)} is the ${dw(q, q.degree)} of ${q.name}.`, 'ok');
@@ -2112,6 +2130,13 @@ function buildSpec(q){
   const start = sel.find(m => m % 12 === root && m + 11 <= PIANO_HI) ?? (PIANO_LO + root);
   return {run: steps.map(st => start + st), opt: start + 12};
 }
+// A quick run through the finished scale (with the octave), up or down the way it was built. Muted = silent (tone() checks).
+function playScale(q){
+  if(S.muted) return;
+  const {run, opt} = buildSpec(q), down = q.dir === 'down';
+  const notes = [...new Set([...run, opt])].filter(m => m >= PIANO_LO && m <= PIANO_HI).sort((a, b) => down ? b - a : a - b);
+  notes.forEach((m, i) => setTimeout(() => playMidi(m, i === notes.length - 1 ? .7 : .3), 300 + i * 110));
+}
 function buildCorrect(q){
   const {run, opt} = buildSpec(q);
   return run.every(m => S.sel.has(m)) && [...S.sel].every(m => run.includes(m) || m === opt);
@@ -2135,6 +2160,18 @@ function scaleIdxOfPc(key, pc){ return SCALES[key].findIndex(n => pcOf(n) === pc
 function scaleChips(key, label, hits, miss=-1){
   return `<span class="clab">${label}</span>` + SCALES[key].map((n,i) =>
     `<span class="${hits.includes(i) ? 'hit' : ''}${i === miss ? ' miss' : ''}">${fmt(n)}<sup>${i+1}</sup></span>`).join('');
+}
+// The whole/half-step pattern between the notes: W W H W W W H for major. 3 half steps (harmonic minor's 6 to 7) = W+H.
+const STEP_TAG = {1: 'H', 2: 'W', 3: 'W+H'};
+function stepChips(q, missIdx=[], names=true){
+  const n = SCALES[q.sk], down = q.dir === 'down';
+  const order = down ? [0, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 0];
+  const gap = (a, b) => { const d = (pcOf(n[b]) - pcOf(n[a]) + 12) % 12; return STEP_TAG[down ? 12 - d : d] || '?'; };
+  const pat = order.slice(1).map((b, i) => gap(order[i], b));
+  return `<span class="clab">${names ? 'SCALE' : 'STEPS'}</span><span class="steprow">` + order.map((i, k) =>
+    `<span class="${!names ? '' : missIdx.includes(i) && k < 7 ? 'hit' : ''}${k === 7 ? ' oct' : ''}">${names ? fmt(n[i]) : k === 7 ? '8' : i + 1}${names ? `<sup>${k === 7 ? 8 : i + 1}</sup>` : ''}</span>` +
+    (k < 7 ? `<i class="st${pat[k].length > 1 ? ' aug' : ''}" title="${pat[k] === 'H' ? 'half step' : pat[k] === 'W' ? 'whole step' : 'whole + half step'}">${pat[k]}</i>` : '')).join('') +
+    `</span><span class="clab">${pat.join('-')}</span>`;
 }
 function explain(text, chips){
   say(text, 'bad');
@@ -2180,12 +2217,13 @@ function onWrong(){
     flash('bad'); SFX.soft();
     say(order
       ? `Right notes, wrong order! A scale starts on its root. ${startHint(q)}. One more try!`
-      : `ALMOST! ${startHint(q)}. Green = right, red = wrong, flashing = missing. One more try!`, 'warn');
+      : `ALMOST! ${startHint(q)}. ✓ = right, ✗ = wrong, flashing = missing. One more try!`, 'warn');
+    $('#qHelp').hidden = true; $('#explain').innerHTML = stepChips(q, [], false); $('#explain').hidden = false;   // the step pattern, without giving away the notes
     // Try Again keeps the right notes (locked in green) and clears the wrong ones.
     setNext('TRY AGAIN ▶', () => {
       [...S.sel].forEach(m => { if(run.includes(m) || m === opt) S.lock.add(m); else S.sel.delete(m); });
       allKeys().forEach(g => { g.classList.remove('bad','miss'); g.classList.toggle('ok', S.lock.has(+g.dataset.m)); });
-      paintSel(); say(S.lock.size ? 'Green notes stay. Add the missing ones, then SUBMIT.' : '', 'hint'); S.busy = false;
+      paintSel(); say(S.lock.size ? 'Green ✓ notes stay. Add the missing ones, then SUBMIT.' : '', 'hint'); S.busy = false;
     });
     return;
   }
@@ -2215,7 +2253,7 @@ function onWrong(){
     parts.push(order
       ? `You had the right notes, but a scale starts on its root. ${startHint(q)} one octave.`
       : `${startHint(q)}.`);
-    explain(parts.join(' '), scaleChips(q.sk, 'SCALE', missIdx));
+    explain(parts.join(' '), stepChips(q, missIdx));
   } else if(q.type === 'piano'){
     const [text, chips] = whyWrong(q);
     S.sel.forEach(m => { PK[m].classList.remove('sel'); PK[m].classList.add('bad'); });
@@ -2310,7 +2348,7 @@ function endRun(reason){
       ${r.times.length ? `<div><small>AVG ANSWER</small><strong>${(r.times.reduce((a,b) => a+b, 0) / r.times.length).toFixed(1)}s</strong></div>` : ''}
     </div>
     ${bars ? `<div class="bars">${bars}</div>` : '<p class="osub dim">No questions answered.</p>'}
-    ${weak ? `<p class="weak">PRACTICE NEXT: ${scaleName(weak.k).toUpperCase()}</p>` : (total ? '<p class="weak" style="color:var(--ok)">FLAWLESS! EVERY SCALE AT 100%</p>' : '')}
+    ${weak ? `<button class="btn obtn mag" type="button" id="weakBtn">PRACTICE NEXT: ${scaleName(weak.k).toUpperCase()} ▶</button>` : (total ? '<p class="weak" style="color:var(--ok)">FLAWLESS! EVERY SCALE AT 100%</p>' : '')}
     ${why ? `<p class="osub dim" style="font-size:20px">${why}</p>` : ''}
     ${eligible ? `<div class="initials" id="postArea">${getProfile()
       ? `<button class="btn obtn mag" type="button" id="postBtn" data-focus>POST MY SCORE AS ${esc(displayName(getProfile()).toUpperCase())}</button>`
@@ -2339,6 +2377,8 @@ function endRun(reason){
   };
   p.querySelector('#againBtn').onclick = () => startRun(r.mode);
   p.querySelector('#menuBtn').onclick = toMenu;
+  const wb = p.querySelector('#weakBtn');   // straight into practice on the weakest scale (Scale Degrees stays on for a degrees run)
+  if(wb) wb.onclick = () => { toMenu(); focusScale(weak.k, r.deg); syncQuick(); startRun('practice'); };
 }
 
 /* ---------- SUPERNOVA: the end screen, the celebration and the board ---------- */
@@ -2493,7 +2533,7 @@ const tdClass = () => TD.classes.find(c => c.code === TD.code);
 
 function teacherLogin(){
   const o = openOverlay(`<h2 class="otitle">TEACHER</h2>
-    <p class="osub">Sign in with Google to see your classes' progress, set assignments and manage scores. Use the same account as the Rhythm Trainer.</p>
+    <p class="osub">Sign in with Google to see your classes' progress, set assignments and manage scores. Use the same account as The Big Score.</p>
     <p class="werr" id="tlErr"></p>
     <div class="obtns"><button class="btn obtn alt" type="button" id="tlCancel">CANCEL</button><button class="btn obtn" type="button" id="tlGo" data-focus>SIGN IN WITH GOOGLE</button></div>`);
   o.querySelector('#tlCancel').onclick = closeOverlay;
@@ -2726,7 +2766,7 @@ function tdClasses(){
   const rows = TD.classes.map(c => `<tr><td><b>${esc(c.name)}</b></td><td><span class="code-pill">${esc(c.code)}</span></td><td class="dim">${c.scale_assignment ? esc((c.scale_assignment.keys || []).filter(k => SCALES[k]).map(shortName).join(' · ') || 'any scales') : 'No assignment'}</td>
     <td style="text-align:right;white-space:nowrap"><button class="btn tbtn sm" type="button" data-rename="${esc(c.code)}">RENAME</button> <button class="btn tbtn sm" type="button" data-recode="${esc(c.code)}">CHANGE CODE</button> <button class="btn tbtn sm" type="button" data-clear="${esc(c.code)}">CLEAR SCALE QUEST DATA</button></td></tr>`).join('');
   $('#tdBody').innerHTML = `
-    <p class="dim" style="margin:0">These are the same classes and codes as the Rhythm Trainer. Students type the code on the welcome screen; from then on their practice shows up in <b>PROGRESS</b> and their CHAOS scores go on that class's board. (To delete a class completely, use the Rhythm Trainer's dashboard.)</p>
+    <p class="dim" style="margin:0">These are the same classes and codes as The Big Score. Students type the code on the welcome screen; from then on their practice shows up in <b>PROGRESS</b> and their CHAOS scores go on that class's board. (To delete a class completely, use The Big Score's dashboard.)</p>
     ${TD.classes.length ? `<div style="overflow-x:auto"><table class="t-table"><thead><tr><th>CLASS</th><th>CODE</th><th>ASSIGNMENT</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p><b>No classes yet.</b> Make your first one below.</p>'}
     <form class="t-row" id="newClassForm"><input id="newClassName" maxlength="40" placeholder="New class name, e.g. Period 3 Theory" aria-label="New class name"><input id="newClassCode" maxlength="7" style="flex:0 1 230px;min-width:180px;text-transform:uppercase" placeholder="Code (optional), e.g. CP2026" aria-label="Class code (optional)"><button class="btn obtn" type="submit">CREATE CLASS</button></form>
     <p class="dim" style="margin:0">Leave the code blank for a random one, or pick your own: 4–7 letters and numbers.</p>`;
@@ -2760,7 +2800,7 @@ function tdClasses(){
   });
   $('#tdBody').querySelectorAll('[data-clear]').forEach(b => b.onclick = () => {
     const c = TD.classes.find(x => x.code === b.dataset.clear);
-    const o = openOverlay(`<h2 class="otitle">CLEAR ${esc(c.name.toUpperCase())}?</h2><p class="osub">This deletes all Scale Quest practice data and CHAOS scores for ${esc(c.name)}, for example at the start of a new marking period. The class code and Rhythm Trainer data stay.</p>
+    const o = openOverlay(`<h2 class="otitle">CLEAR ${esc(c.name.toUpperCase())}?</h2><p class="osub">This deletes all Scale Quest practice data and CHAOS scores for ${esc(c.name)}, for example at the start of a new marking period. The class code and The Big Score data stay.</p>
       <p class="werr" id="dErr"></p><div class="obtns"><button class="btn obtn alt" type="button" id="dNo">CANCEL</button><button class="btn obtn mag" type="button" id="dYes">CLEAR DATA</button></div>`, 'mag');
     o.querySelector('#dNo').onclick = closeOverlay;
     o.querySelector('#dYes').onclick = async () => { try{ await Cloud.clearClassData(c.code); closeOverlay(); popupMsg(`${c.name} cleared.`); } catch(err){ o.querySelector('#dErr').textContent = errMsg(err); } };
