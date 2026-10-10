@@ -46,6 +46,7 @@ button{font:inherit;color:inherit}
 .btn{font-family:var(--px);border:3px solid var(--shadow);cursor:pointer;box-shadow:4px 4px 0 var(--shadow);transition:transform .06s,box-shadow .06s}
 .btn:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 var(--shadow)}
 .btn:disabled{opacity:.3;cursor:not-allowed}
+.btn.nova.locked{opacity:.45;filter:saturate(.4)}
 .tbtn{font-size:9px;padding:10px 12px;background:var(--panel);color:var(--ink);border-color:var(--line)}
 
 /* ---------- key select ---------- */
@@ -1046,13 +1047,13 @@ const classNames = p => classesOf(p).map(c => c.name).join(' · ');
 
 /* ---------- state ---------- */
 const S = {
-  selected: new Set(),
+  selected: new Set(['C']),   // C major is checked on a first visit, so START works right away
   qpk: store.get('qpk', 5),
   keySig: false,   // no key signatures: students write every accidental themselves (Scale Degrees shows them on its name-it questions)
   deg: false, degSel: 0, degFocus: 0,
   muted: store.get('muted', false),
   run: null, busy: false, overlay: false,
-  sel: new Set(), pos: 6, accSel: null,
+  sel: new Set(), lock: new Set(), pos: 6, accSel: null,
 };
 
 /* ---------- audio (Web Audio, no files) ---------- */
@@ -1109,7 +1110,8 @@ function renderKeyRows(){
   });
   document.querySelectorAll('#catSeg button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.cat === S.cat); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', b.dataset.cat === S.cat); b.disabled = S.deg && b.dataset.cat !== 'major'; });
   $('#degBtn').setAttribute('aria-pressed', S.deg);
-  $('#novaBtn').disabled = S.deg; $('#novaBtn').title = S.deg ? 'SUPERNOVA uses scale building, so it\'s off in Scale Degrees' : 'All 150 scales. 20 questions. 2 hearts.';
+  $('#novaBtn').disabled = S.deg; $('#novaBtn').classList.toggle('locked', !novaUnlocked());
+  $('#novaBtn').title = S.deg ? 'SUPERNOVA uses scale building, so it\'s off in Scale Degrees' : novaUnlocked() ? 'All 150 scales. 20 questions. 2 hearts.' : '🔒 Finish one CHAOS run to unlock SUPERNOVA';
   const forms = S.cat === 'minor' ? MINOR_FORMS.map(f => [f, SCALE_TYPES[f].name.split(' ')[0].toUpperCase()]) : S.cat === 'modes' ? MODE_TYPES.map(m => [m, SCALE_TYPES[m].name.toUpperCase()]) : [];
   $('#formSeg').innerHTML = forms.map(([k, l, full]) => `<button type="button" data-form="${k}" aria-pressed="${k === (S.cat === 'minor' ? S.form : S.modeType)}"${full ? ` title="${full}" aria-label="${full}"` : ''}>${l}</button>`).join('');
   $('#formSeg').hidden = !forms.length;
@@ -1215,6 +1217,11 @@ function clearPiano(){
   allKeys().forEach(g => { g.classList.remove('sel','ok','bad','miss','reveal','shown'); g.querySelector('text').textContent = ''; });
 }
 function paintSel(){ allKeys().forEach(g => g.classList.toggle('sel', S.sel.has(+g.dataset.m))); }
+// Build questions toggle keys; notes locked in green after a Try Again stay put.
+function pickKey(q, m){
+  if(q.type === 'build'){ if(S.lock.has(m)) return; S.sel.has(m) ? S.sel.delete(m) : S.sel.add(m); }
+  else { const had = S.sel.has(m); S.sel.clear(); if(!had) S.sel.add(m); }
+}
 function label(m, name){ PK[m].querySelector('text').textContent = fmt(name); }
 function keysOfPc(pc){ return Object.keys(PK).map(Number).filter(m => m % 12 === pc); }
 
@@ -1224,8 +1231,7 @@ $('#pianoWrap').addEventListener('pointerdown', e => {
   const m = +g.dataset.m, q = S.run && S.run.q;
   if(!q || S.busy || S.overlay || q.type === 'staff' || nameQ(q)) return;
   playMidi(m);
-  if(q.type === 'build'){ S.sel.has(m) ? S.sel.delete(m) : S.sel.add(m); }
-  else { const had = S.sel.has(m); S.sel.clear(); if(!had) S.sel.add(m); }
+  pickKey(q, m);
   paintSel(); say('', '');
 });
 
@@ -1762,7 +1768,7 @@ function nextQuestion(){
 }
 function renderQuestion(){
   const q = S.run.q, K = `<b>${q.name}</b>`;
-  S.busy = false; S.sel.clear(); say('', ''); setNext(null);
+  S.busy = false; S.sel.clear(); S.lock.clear(); say('', ''); setNext(null);
   $('#explain').hidden = true; $('#qHelp').hidden = false;
   updateHUD();
   const tag = $('#qTag');
@@ -1950,7 +1956,12 @@ function onWrong(){
     say(order
       ? `Right notes, wrong order! A scale starts on its root. ${startHint(q)}. One more try!`
       : `ALMOST! ${startHint(q)}. Green = right, red = wrong, flashing = missing. One more try!`, 'warn');
-    setNext('TRY AGAIN ▶', () => { allKeys().forEach(g => g.classList.remove('ok','bad','miss')); paintSel(); say('', ''); S.busy = false; });
+    // Try Again keeps the right notes (locked in green) and clears the wrong ones.
+    setNext('TRY AGAIN ▶', () => {
+      [...S.sel].forEach(m => { if(run.includes(m) || m === opt) S.lock.add(m); else S.sel.delete(m); });
+      allKeys().forEach(g => { g.classList.remove('bad','miss'); g.classList.toggle('ok', S.lock.has(+g.dataset.m)); });
+      paintSel(); say(S.lock.size ? 'Green notes stay. Add the missing ones, then SUBMIT.' : '', 'hint'); S.busy = false;
+    });
     return;
   }
   S.busy = true; $('#submitBtn').disabled = true;
@@ -2055,6 +2066,7 @@ function endRun(reason){
   let weak = null;
   keys.forEach(k => { const p = r.stats[k].right / r.stats[k].total; if(p < 1 && (!weak || p < weak.p)) weak = {k, p}; });
   const ranked = r.mode === 'chaos' && reason === 'complete';
+  if(ranked && !novaUnlocked()){ store.set('chaos_done', true); renderKeyRows(); }
   const kc = Math.min(15, r.keys.length), mult = keyBonus(kc), final = ranked ? Math.round(r.score * (9 + kc) / 10) : r.score;
   const eligible = ranked && !r.continued && final > 0;
   const why = eligible ? '' : r.mode === 'practice'
@@ -2148,6 +2160,8 @@ function novaEnd(reason){
   p.querySelector('#againBtn').onclick = () => startRun('nova');
   p.querySelector('#menuBtn').onclick = toMenu;
 }
+// SUPERNOVA unlocks after one finished CHAOS run on this device (or any CHAOS score already saved here).
+function novaUnlocked(){ return store.get('chaos_done', false) || store.get('ranked', []).length > 0 || store.get('ranked_deg', []).length > 0; }
 function novaWarning(){
   const p = openOverlay(`
     <div>${starSVG('t3')}</div>
@@ -2579,7 +2593,7 @@ $('#tdSignOut').onclick = async () => { try{ await Cloud.signOut(); } catch(e){}
 /* ---------- controls ---------- */
 $('#startBtn').onclick = () => { audio(); startRun('practice'); };
 $('#chaosBtn').onclick = () => { audio(); chaosPicker(); };
-$('#novaBtn').onclick = () => { audio(); if(!S.overlay) novaWarning(); };
+$('#novaBtn').onclick = () => { audio(); if(S.overlay) return; if(!novaUnlocked()) return focusToast('🔒 <b>SUPERNOVA</b> unlocks after you finish one <b>CHAOS</b> run. Try CHAOS first!'); novaWarning(); };
 $('#submitBtn').onclick = primary;
 $('#quitBtn').onclick = () => {
   const r = S.run; if(!r) return;
@@ -2630,8 +2644,7 @@ function midiNote(m){
   while(k < PIANO_LO) k += 12;
   while(k > PIANO_HI) k -= 12;
   playMidi(k);
-  if(q.type === 'build'){ S.sel.has(k) ? S.sel.delete(k) : S.sel.add(k); }
-  else { const had = S.sel.has(k); S.sel.clear(); if(!had) S.sel.add(k); }
+  pickKey(q, k);
   paintSel(); say('', '');
 }
 function midiStatus(){
