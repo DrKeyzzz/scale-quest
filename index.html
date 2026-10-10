@@ -6,8 +6,14 @@
 <title>Scale Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Press+Start+2P&family=VT323&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Music&text=%F0%9D%84%9E%F0%9D%84%AA%F0%9D%84%AB&display=swap">
+<script>
+/* Look (skin): 'clean' (default), 'day' or 'classic'. One choice for every game ('mtg_skin_v1'); ?skin=day previews and saves one. Set before the page draws. */
+(function(){ var s = null, ok = function(v){ return /^(clean|day|classic)$/.test(v || ''); };
+  try{ s = new URLSearchParams(location.search).get('skin'); if(ok(s)) localStorage.setItem('mtg_skin_v1', s); else s = localStorage.getItem('mtg_skin_v1'); }catch(e){}
+  document.documentElement.dataset.skin = ok(s) ? s : 'clean'; })();
+</script>
 <style>
 :root{
   color-scheme:dark;
@@ -550,6 +556,269 @@ button{font:inherit;color:inherit}
 }
 </style>
 <style>
+/* ---------- skins (2026-10): html[data-skin] = clean (default) | day | classic ----------
+   Classic is the original pixel-arcade look above, untouched. Clean and Day only override
+   colors, fonts, corners and shadows here; the layout is the same in all three. */
+html:not([data-skin="classic"]){
+  color-scheme:dark;
+  --bg:#0d1230; --bg2:#151b3d; --panel:#1e2650; --line:#2e3870;
+  --ink:#eef1ff; --dim:#a6afd9; --cyan:#4cc9f0; --mag:#b794f6; --yel:#ffd166;
+  --ok:#4ade80; --bad:#ff6b81; --paper:#ffffff; --paperink:#1b1f3b; --shadow:#0a0e26;
+  --px:'Outfit','Noto Music',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --vt:'Outfit','Noto Music',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --glow:#1c2766; --soft:0 6px 20px rgba(3,6,25,.35); --keybed:#0a0e26; --blk:#1d2140; --blkhov:#343b6e; --scrim:rgba(8,11,30,.82);
+}
+html[data-skin="day"]{
+  color-scheme:light;
+  --bg:#eef2fa; --bg2:#ffffff; --panel:#eef1f8; --line:#d3dae9;
+  --ink:#1b2340; --dim:#566086; --cyan:#0369a1; --mag:#9333ea; --yel:#b45309;
+  --ok:#15803d; --bad:#dc2626; --paper:#ffffff; --paperink:#1b1f3b; --shadow:#ffffff;
+  --glow:#dce6fb; --soft:0 4px 14px rgba(30,40,80,.10); --keybed:#dfe5f1; --blk:#1f2937; --blkhov:#3b4a63; --scrim:rgba(30,38,70,.45);
+}
+html:not([data-skin="classic"]) body{font-size:17px;line-height:1.3;background:radial-gradient(ellipse at 50% -10%,var(--glow) 0%,var(--bg) 60%) fixed,var(--bg)}
+html:not([data-skin="classic"]) .crt{display:none}
+html:not([data-skin="classic"]) :focus-visible{outline-color:var(--cyan)}
+html:not([data-skin="classic"]) :is(.logo,.otitle,.cta-title){font-weight:800;text-shadow:none;letter-spacing:.01em}
+html:not([data-skin="classic"]) .qtext{font-weight:700} html:not([data-skin="classic"]) .qtext b{font-weight:800}
+html:not([data-skin="classic"]) .popup{font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+/* text sizes: Outfit runs smaller than the pixel font and larger than VT323, so every size is rescaled */
+html:not([data-skin="classic"]) .logo{font-size:32px;font-weight:600}
+html:not([data-skin="classic"]) .logo small{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .xclasschip{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .tbtn{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .rowlabel{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .rowlabel small{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .cart .cname{font-size:20px;font-weight:600}
+html:not([data-skin="classic"]) .cart .cbadge{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .cart .ccheck{font-size:15px}
+html:not([data-skin="classic"]) .qpk .slabel{font-size:15px}
+html:not([data-skin="classic"]) .qpk .seg button{font-size:15px}
+html:not([data-skin="classic"]) .nova{font-size:27px;font-weight:600}
+html:not([data-skin="classic"]) .novatag{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .nova-intro p{font-size:clamp(30px,5vw,59px);font-weight:600}
+html:not([data-skin="classic"]) .cert .who{font-size:22px;font-weight:600}
+html:not([data-skin="classic"]) .cert .line{font-size:16px}
+html:not([data-skin="classic"]) .misses summary{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .misses li{font-size:15px}
+html:not([data-skin="classic"]) .famtabs button{font-size:15px;font-weight:600}
+html:not([data-skin="classic"]) #formSeg button{font-size:15px}
+html:not([data-skin="classic"]) .cats .seg button{font-size:15px}
+html:not([data-skin="classic"]) .selsum{font-size:15px}
+html:not([data-skin="classic"]) .selbtn{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .degbtn{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .degcard span{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .degbtns button{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .degbtns button b{font-size:19px;font-weight:600}
+html:not([data-skin="classic"]) .selmenu button{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .selmenu button small{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .slabel{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .seg button{font-size:15px;font-weight:600}
+html:not([data-skin="classic"]) .lockmsg{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .hlab{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .hval{font-size:20px;font-weight:600}
+html:not([data-skin="classic"]) .modetag{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .ladder span{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .qtag{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .qtext{font-size:35px}
+html:not([data-skin="classic"]) .qhelp{font-size:18px}
+html:not([data-skin="classic"]) .pk text{font-size:19px}
+html:not([data-skin="classic"]) .pk.black text{font-size:14px}
+html:not([data-skin="classic"]) .ghost text.glabel{font-size:16px}
+html:not([data-skin="classic"]) .acclab{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .feedback{font-size:22px}
+html:not([data-skin="classic"]) .submit{font-size:23px;font-weight:600}
+html:not([data-skin="classic"]) .keyhint{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .midibtn{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .popup{font-size:32px;font-weight:600}
+html:not([data-skin="classic"]) .popup.streak{font-size:22px;font-weight:600}
+html:not([data-skin="classic"]) .popup.speed{font-size:19px;font-weight:600}
+html:not([data-skin="classic"]) .timelab,html:not([data-skin="classic"]) .timeclock{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .tops h2{font-size:15px;font-weight:600}
+html:not([data-skin="classic"]) .steps .n{font-size:18px;font-weight:600}
+html:not([data-skin="classic"]) .steps b{font-size:14px;font-weight:600}
+html:not([data-skin="classic"]) .board{font-size:14px;font-weight:600}
+html:not([data-skin="classic"]) .board td.k{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .boardnote{font-size:15px}
+html:not([data-skin="classic"]) .otabs button{font-size:14px;font-weight:600}
+html:not([data-skin="classic"]) .opanel .board{font-size:15px}
+html:not([data-skin="classic"]) .start{font-size:27px;font-weight:600}
+html:not([data-skin="classic"]) .chaos{font-size:30px;font-weight:600}
+html:not([data-skin="classic"]) .quit{font-size:14px;font-weight:600}
+html:not([data-skin="classic"]) .otitle{font-size:30px;font-weight:600}
+html:not([data-skin="classic"]) .osub{font-size:21px}
+html:not([data-skin="classic"]) .obtn{font-size:16px;font-weight:600}
+html:not([data-skin="classic"]) .chips span{font-size:16px;font-weight:600}
+html:not([data-skin="classic"]) .bigstats small{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .bigstats strong{font-size:22px;font-weight:600}
+html:not([data-skin="classic"]) .bar{font-size:14px;font-weight:600}
+html:not([data-skin="classic"]) .weak{font-size:14px;font-weight:600}
+html:not([data-skin="classic"]) .initials label{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .initials input{font-size:27px;font-weight:600}
+html:not([data-skin="classic"]) .toggle{font-size:19px}
+html:not([data-skin="classic"]) .chaos-intro p{font-size:clamp(38px,8vw,86px);font-weight:600}
+html:not([data-skin="classic"]) .logo{font-size:27px;font-weight:600}
+html:not([data-skin="classic"]) .cart .cname{font-size:19px;font-weight:600}
+html:not([data-skin="classic"]) .hval{font-size:19px;font-weight:600}
+html:not([data-skin="classic"]) .qtext{font-size:clamp(22px,5.4vh,35px)}
+html:not([data-skin="classic"]) .qhelp{font-size:16px}
+html:not([data-skin="classic"]) .feedback{font-size:19px}
+html:not([data-skin="classic"]) .submit{font-size:20px;font-weight:600}
+html:not([data-skin="classic"]) .explain span{font-size:15px;font-weight:600}
+html:not([data-skin="classic"]) .explain sup{font-size:15px}
+html:not([data-skin="classic"]) .explain .clab{font-size:15px}
+html:not([data-skin="classic"]) .explain .steprow i{font-size:14px;font-weight:600}
+html:not([data-skin="classic"]) .explain .steprow i.aug{font-size:15px}
+@media (max-width:600px){ html:not([data-skin="classic"]) .explain .steprow span{font-size:15px} }
+@media (max-width:600px){ html:not([data-skin="classic"]) .explain .steprow i{font-size:11px;font-weight:600} }
+@media (max-width:600px){ html:not([data-skin="classic"]) .explain .steprow i.aug{font-size:15px} }
+html:not([data-skin="classic"]) .steps .n{font-size:15px;font-weight:600}
+html:not([data-skin="classic"]) .steps span{font-size:16px}
+html:not([data-skin="classic"]) .cta-title{font-size:clamp(22px,2.6vw,32px);font-weight:600}
+html:not([data-skin="classic"]) .playbig{font-size:clamp(24px,2.6vw,32px);font-weight:600}
+html:not([data-skin="classic"]) .cta-sum{font-size:19px}
+html:not([data-skin="classic"]) .cta-hint{font-size:16px}
+html:not([data-skin="classic"]) .cta-hint kbd{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .cta-piano text{font-size:12px}
+html:not([data-skin="classic"]) .dd > span{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .dd .sel{font-size:18px}
+html:not([data-skin="classic"]) .dd .sel::after{font-size:16px}
+html:not([data-skin="classic"]) .dd-menu button{font-size:18px}
+html:not([data-skin="classic"]) .dd-menu button small{font-size:15px}
+@media (max-width:520px){ html:not([data-skin="classic"]) .dd-menu.wide button small{font-size:15px} }
+html:not([data-skin="classic"]) .morebtn{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .mtabs button{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .mnote{font-size:16px}
+html:not([data-skin="classic"]) .midibtn.big{font-size:12px;font-weight:600}
+@media (max-width:700px){ html:not([data-skin="classic"]) .cta-sum{font-size:17px} }
+html:not([data-skin="classic"]) .wbox .logo{font-size:24px}
+html:not([data-skin="classic"]) .wp1{font-size:16px;font-weight:600}
+html:not([data-skin="classic"]) .wbox label{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .wbox input:not([type]),html:not([data-skin="classic"]) .wbox input[id="wFirst"],html:not([data-skin="classic"]) .wbox input[id="wInit"],html:not([data-skin="classic"]) .wbox input[id="wCode"]{font-size:22px;font-weight:600}
+html:not([data-skin="classic"]) .wx{font-size:16px;font-weight:600}
+html:not([data-skin="classic"]) .wadd{font-size:16px}
+html:not([data-skin="classic"]) .wsolo{font-size:18px!important}
+html:not([data-skin="classic"]) .werr{font-size:18px}
+html:not([data-skin="classic"]) .wnote{font-size:15px}
+html:not([data-skin="classic"]) .wguest{font-size:15px;font-weight:600}
+html:not([data-skin="classic"]) .assign .ab-t{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .assign .ab-k{font-size:18px;font-weight:600}
+html:not([data-skin="classic"]) .assign .ab-p{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .assign .ab-u{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .assign .ab-b{font-size:15px}
+html:not([data-skin="classic"]) .assign .ab-n{font-size:16px}
+html:not([data-skin="classic"]) .devtag{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .td-head h2{font-size:19px;font-weight:600}
+html:not([data-skin="classic"]) .td-head select,html:not([data-skin="classic"]) .td-sub select,html:not([data-skin="classic"]) .td-sub input,html:not([data-skin="classic"]) .td-form input,html:not([data-skin="classic"]) .td-form select,html:not([data-skin="classic"]) .t-row input{font-size:16px}
+html:not([data-skin="classic"]) .td-who{font-size:15px}
+html:not([data-skin="classic"]) .td-err{font-size:16px}
+html:not([data-skin="classic"]) .tbtn.sm{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .td-live{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .td-tiles span{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .td-tiles b{font-size:22px;font-weight:600}
+html:not([data-skin="classic"]) .td-sec h3{font-size:14px;font-weight:600}
+html:not([data-skin="classic"]) .hbar{font-size:16px}
+html:not([data-skin="classic"]) .hbar small{font-size:15px}
+html:not([data-skin="classic"]) .miss{font-size:16px}
+html:not([data-skin="classic"]) .miss small{font-size:15px}
+html:not([data-skin="classic"]) .td-table,html:not([data-skin="classic"]) .t-table{font-size:16px}
+html:not([data-skin="classic"]) .td-table th,html:not([data-skin="classic"]) .t-table th{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .chip{font-size:12px;font-weight:600}
+html:not([data-skin="classic"]) .code-pill{font-size:16px;font-weight:600}
+html:not([data-skin="classic"]) .td-form label{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .td-keyrow > span{font-size:11px;font-weight:600}
+html:not([data-skin="classic"]) .td-keys button{font-size:15px;font-weight:600}
+@media (max-width:760px){ html:not([data-skin="classic"]) .qtext{font-size:27px} }
+@media (max-width:760px){ html:not([data-skin="classic"]) .logo{font-size:24px;font-weight:600} }
+/* buttons, panels, chips: rounded corners and soft shadows instead of hard pixel ones */
+html:not([data-skin="classic"]) .btn{border:2px solid transparent;border-radius:12px;box-shadow:var(--soft);transition:transform .08s,filter .12s}
+html:not([data-skin="classic"]) .btn:hover:not(:disabled){filter:brightness(1.06)}
+html:not([data-skin="classic"]) .btn:active:not(:disabled){transform:translateY(2px);box-shadow:none}
+html:not([data-skin="classic"]) :is(.tbtn,.quit,.obtn.alt,.wguest){border-color:var(--line);box-shadow:none}
+html:not([data-skin="classic"]) .who{border-color:var(--yel)}
+html:not([data-skin="classic"]) .panel{border:1px solid var(--line);border-radius:16px;box-shadow:var(--soft)}
+html:not([data-skin="classic"]) .mpanel .keyselect{border:0;box-shadow:none}
+html:not([data-skin="classic"]) :where(.rowlabel,.cart,.seg button,.selbtn,.degbtn,.degbtns button,.dd .sel,.morebtn,.otabs button,.bigstats div,.initials input,.accs button,.wx,.td-keys button,.td-tiles div,.td-sec,.midibtn.big,.wbox input,.xclasschip,.arrow,.assign,.cert){border-width:2px;border-radius:10px;box-shadow:none}
+html:not([data-skin="classic"]) :where(.degcard span,.chips span,.explain span,.ladder span,.steps .n,.qtag,.modetag,.novatag,.devtag,.chip,.cta-hint kbd,.assign .ab-t,.bar .track,.hbar .tr){border-radius:7px}
+html:not([data-skin="classic"]) .explain .steprow{border-radius:0}
+html:not([data-skin="classic"]) .bar .fill,html:not([data-skin="classic"]) .hbar .tr i{border-radius:5px}
+html:not([data-skin="classic"]) .cart.sharp.on,html:not([data-skin="classic"]) .cart.flat.on,html:not([data-skin="classic"]) .cart.home.on{box-shadow:none}
+html:not([data-skin="classic"]) .keyselect.locked .cart{filter:saturate(.6) opacity(.7)}
+html:not([data-skin="classic"]) :is(.board td,.td-table td,.t-table td,.miss){border-bottom:1px solid var(--line)}
+html:not([data-skin="classic"]) :is(.selmenu hr,.dd-menu hr){border-top:1px solid var(--line)}
+html:not([data-skin="classic"]) :is(.selmenu,.dd-menu){border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.3)}
+html:not([data-skin="classic"]) :is(.selmenu button,.dd-menu button){border-radius:8px}
+html:not([data-skin="classic"]) .hcell{border-right-width:1px;border-bottom-width:1px}
+html:not([data-skin="classic"]) .famtabs{border-right-width:1px}
+html:not([data-skin="classic"]) .mtabs{border-bottom-width:1px}
+html:not([data-skin="classic"]) .mtabs button{margin-bottom:-1px}
+html:not([data-skin="classic"]) .timetrack{background:var(--line)}
+html:not([data-skin="classic"]) .timefill{border-radius:0 4px 4px 0}
+/* piano and staff: same key colors as Classic (selected cyan, right green, wrong red, answer yellow), a little softer */
+html:not([data-skin="classic"]) .pianowrap{background:var(--keybed);border:0;border-radius:14px;box-shadow:var(--soft)}
+html:not([data-skin="classic"]) .pk.black rect{fill:var(--blk);stroke:var(--blk)}
+html:not([data-skin="classic"]) .pk.white:hover rect{fill:#e9edfb}
+html:not([data-skin="classic"]) .pk.black:hover rect{fill:var(--blkhov)}
+html:not([data-skin="classic"]) .pk.white.sel rect{fill:#8be3fb} html:not([data-skin="classic"]) .pk.black.sel rect{fill:#0e8fb8}
+html:not([data-skin="classic"]) .pk.white.ok rect{fill:#8ef0b0} html:not([data-skin="classic"]) .pk.black.ok rect{fill:#16a34a}
+html:not([data-skin="classic"]) .pk.white.bad rect{fill:#ffa3b1} html:not([data-skin="classic"]) .pk.black.bad rect{fill:#dc2645}
+html:not([data-skin="classic"]) .pk.white.reveal rect{fill:#ffe066} html:not([data-skin="classic"]) .pk.black.reveal rect{fill:#c99700}
+html:not([data-skin="classic"]) .pk.miss rect{stroke:#c026d3}
+html:not([data-skin="classic"]) .cta-piano{opacity:1}
+html:not([data-skin="classic"]) .cta-piano svg{border-radius:8px}
+html:not([data-skin="classic"]) .cta-piano .b{fill:var(--blk)}
+html:not([data-skin="classic"]) .cta-piano .w.lit{fill:#ffe066} html:not([data-skin="classic"]) .cta-piano .b.lit{fill:#c99700}
+html:not([data-skin="classic"]) .paper{border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--soft)}
+/* big buttons: flat fills, no neon glow or glitch; PRACTICE cyan, CHAOS violet, SUPERNOVA gold */
+html:not([data-skin="classic"]) .playbig{animation:none}
+html:not([data-skin="classic"]) .chaos,html:not([data-skin="classic"]) .playbig.chaos{background:linear-gradient(100deg,#7c3aed,#c026d3);animation:none;text-shadow:none;color:#fff}
+html:not([data-skin="classic"]) .chaos:not(:disabled):hover{animation:none}
+html:not([data-skin="classic"]) .nova,html:not([data-skin="classic"]) .playbig.nova{background:linear-gradient(135deg,#ffe08a,#ffb547 60%,#ff9a3c);animation:none;box-shadow:var(--soft)}
+html:not([data-skin="classic"]) .modetag.chaos{color:#fff;background:#9333ea}
+html:not([data-skin="classic"]) :is(.star.t3,.star.badge,.nova-intro .big,.burst .big){filter:none}
+html:not([data-skin="classic"]) .burst i{box-shadow:none;border-radius:50%}
+html:not([data-skin="classic"]) .app.novaRun :is(.hud,.stage){border-color:#f5b83d;box-shadow:0 0 0 2px rgba(245,184,61,.35),var(--soft)}
+html:not([data-skin="classic"]) .opanel.nova-panel{border-color:#f5b83d;box-shadow:0 0 0 2px rgba(245,184,61,.35),0 20px 50px rgba(0,0,0,.35)}
+html:not([data-skin="classic"]) .stage.flash-ok{animation:fok2 .55s} html:not([data-skin="classic"]) .stage.flash-bad{animation:fbad2 .55s}
+@keyframes fok2{30%{box-shadow:inset 0 0 0 4px var(--ok)}}
+@keyframes fbad2{30%{box-shadow:inset 0 0 0 4px var(--bad)}}
+html:not([data-skin="classic"]) .chaos-intro p{animation:none;text-shadow:none;font-weight:800}
+html:not([data-skin="classic"]) .nova-intro p{text-shadow:none;font-weight:800}
+html:not([data-skin="classic"]) .wp1{animation:none}
+/* overlays and the sign-in card */
+html:not([data-skin="classic"]) .overlay{background:var(--scrim)}
+html:not([data-skin="classic"]) :is(.opanel,.wbox){border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+html:not([data-skin="classic"]) .opanel.mag{border-color:var(--mag);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+html:not([data-skin="classic"]) .welcome{background:radial-gradient(ellipse at 50% 0%,var(--glow) 0%,var(--bg) 65%),var(--bg)}
+html:not([data-skin="classic"]) .wbox input:not([type]),html:not([data-skin="classic"]) .wbox input[id]{border-radius:10px}
+html:not([data-skin="classic"]) :is(.td-head select,.td-sub select,.td-sub input,.td-form input,.td-form select,.t-row input){border-radius:8px}
+/* Day: light page, so the few hard-coded light-gold texts (SUPERNOVA titles, scores) get a darker gold */
+html[data-skin="day"] .overlay [style*="color:#fff3b0"],html[data-skin="day"] .cert .who{color:#a15c00!important;text-shadow:none!important}
+html[data-skin="day"] .overlay [style*="color:#ffcf4a"]{color:#a15c00!important}
+html[data-skin="day"] .app.novaRun #hudKey{color:#a15c00}
+html[data-skin="day"] .cert{background:#fff8e6}
+html[data-skin="day"] .novatag{color:#a15c00;border-color:#e0a526}
+html[data-skin="day"] .star.badge .core{fill:#fbbf24} html[data-skin="day"] .star.badge .rays{fill:#d97706}
+html[data-skin="day"] .burst .big .core{fill:#fbbf24} html[data-skin="day"] .burst .big .rays{fill:#e08a00} html[data-skin="day"] .burst i{background:#f5a623}
+html[data-skin="day"] .overlay .btn[style*="#ffcf4a"]{color:#2a1600}
+html[data-skin="day"] .board td.k{color:var(--mag)}
+html[data-skin="day"] .icon-pick button{background:var(--panel);border-color:var(--line)}
+html[data-skin="day"] .icon-pick button .ic-svg{color:var(--ink)}
+html[data-skin="day"] .td-table tr[data-sid]:hover td{background:rgba(0,0,0,.04)}
+/* LOOK tab (More options) */
+.skinpick{display:flex;gap:10px;flex-wrap:wrap}
+.skinpick button{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:120px;padding:10px 12px;font-family:var(--px);font-size:10px;letter-spacing:.06em;
+  background:var(--panel);color:var(--ink);border:3px solid var(--line);cursor:pointer}
+.skinpick button:hover{border-color:var(--dim)}
+.skinpick button[aria-pressed="true"]{border-color:var(--yel);color:var(--yel)}
+.skinpick button[aria-pressed="true"] b::before{content:'✓ ';font-family:system-ui,sans-serif}
+.skinpick b{font-weight:400}
+.sw{display:flex;width:96px;height:40px;border-radius:0;overflow:hidden;border:1px solid rgba(127,127,127,.45)}
+.sw i{flex:1}
+html:not([data-skin="classic"]) .skinpick button{font-size:15px;font-weight:600;letter-spacing:.02em;border-width:2px;border-radius:12px}
+html:not([data-skin="classic"]) .skinpick b{font-weight:600}
+html:not([data-skin="classic"]) .sw{border-radius:8px}
+</style>
+<style>
 /* Music Theory Games home link: the same in every game, on its own row at the top left of the header */
 .mtg-home { order: -1; flex: 0 0 100%; display: flex; gap: 8px; flex-wrap: wrap; }
 .mtg-home a { display: inline-flex; align-items: center; gap: 7px; width: fit-content; font: 600 13px/1 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .06em; color: inherit; text-decoration: none; opacity: .82; padding: 6px 12px 6px 10px; border: 1px solid color-mix(in srgb, currentColor 35%, transparent); border-radius: 999px; }
@@ -663,6 +932,7 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
       <div class="mtabs" role="tablist" aria-label="More options">
         <button type="button" role="tab" data-tab="scales" aria-selected="true">PICK SCALES</button>
         <button type="button" role="tab" data-tab="midi" aria-selected="false">MIDI KEYBOARD</button>
+        <button type="button" role="tab" data-tab="look" aria-selected="false">LOOK</button>
       </div>
       <div class="mpanel" data-panel="scales" role="tabpanel">
         <section class="panel keyselect" id="keySelect" aria-label="Choose scales">
@@ -684,6 +954,14 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
         <p class="mnote">Have a MIDI keyboard? Plug it in with a USB cable and connect it here. Its keys pick the piano keys (or move the staff note); you still press SUBMIT.</p>
         <button class="midibtn big" id="midiBtn2" type="button">🎹 CONNECT MIDI KEYBOARD</button>
         <p class="mnote" id="midiNo" hidden>This browser can't use MIDI keyboards (Chrome and Edge can). The mouse, touch screen and keyboard all work.</p>
+      </div>
+      <div class="mpanel" data-panel="look" role="tabpanel" hidden>
+        <div class="skinpick" id="skinPick" role="group" aria-label="Look">
+          <button type="button" data-look="clean" aria-pressed="false"><span class="sw" aria-hidden="true"><i style="background:#151b3d"></i><i style="background:#4cc9f0"></i><i style="background:#b794f6"></i></span><b>Clean</b></button>
+          <button type="button" data-look="day" aria-pressed="false"><span class="sw" aria-hidden="true"><i style="background:#eef2fa"></i><i style="background:#0369a1"></i><i style="background:#b45309"></i></span><b>Day</b></button>
+          <button type="button" data-look="classic" aria-pressed="false"><span class="sw" aria-hidden="true"><i style="background:#1a1142"></i><i style="background:#3ff0ff"></i><i style="background:#ff4fd8"></i></span><b>Classic</b></button>
+        </div>
+        <p class="mnote">Changes the colors and fonts. Your pick is used in every Music Theory Game on this device.</p>
       </div>
     </div>
     <div class="panel tops">
@@ -1399,6 +1677,15 @@ function openMore(tab){
 }
 $('#moreBtn').onclick = () => { SFX.click(); if($('#more').hidden) openMore(); else { $('#more').hidden = true; $('#moreBtn').setAttribute('aria-expanded', 'false'); } };
 $('#more .mtabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if(b){ SFX.click(); showMoreTab(b.dataset.tab); } });
+// LOOK tab: the skin applies at once and is saved for every game ('mtg_skin_v1', read in <head>).
+function showSkin(){ document.querySelectorAll('#skinPick [data-look]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.look === document.documentElement.dataset.skin))); }
+$('#skinPick').addEventListener('click', e => {
+  const b = e.target.closest('[data-look]'); if(!b) return;
+  SFX.click(); document.documentElement.dataset.skin = b.dataset.look;
+  try{ localStorage.setItem('mtg_skin_v1', b.dataset.look); }catch(err){}
+  showSkin();
+});
+showSkin();
 // START: How to play comes up once before a player's very first run.
 function playPressed(){
   if(S.run || S.overlay || $('#playBtn').disabled) return;
