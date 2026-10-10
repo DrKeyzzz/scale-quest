@@ -751,7 +751,7 @@ const DEG_NAME = {1:'Tonic',2:'Supertonic',3:'Mediant',4:'Subdominant',5:'Domina
 const ORDN = {1:'1st',2:'2nd',3:'3rd',4:'4th',5:'5th',6:'6th',7:'7th'};
 // "the SUPERTONIC (2nd)" in Scale Degrees, "the 2nd" otherwise
 const dw = (q, d) => q.dn ? `${DEG_NAME[d].toUpperCase()} (${ORDN[d]})` : ORD[d];
-// SUPERNOVA: every scale, 20 questions, 2 hearts, no second tries, no explanations until the end.
+// SUPERNOVA: every scale, 20 questions, 2 hearts, no second tries. A miss shows the right answer and waits for NEXT QUESTION.
 const NOVA_HEARTS = 2;
 const isTimed = m => m === 'chaos' || m === 'nova';
 // The mode ladder's stars: t1 practice, t2 chaos, t3 supernova (also 'badge' and 'big').
@@ -1957,12 +1957,10 @@ function onWrong(){
   logAnswer(q, false);
   r.streak = 0; r.lives--; stat(q.key, false);
   flash('bad'); SFX.buzz();
+  // SUPERNOVA: the miss goes on the end-screen list too, then the right answer shows like practice.
   if(r.mode === 'nova'){
     r.misses.push(q.type === 'build' ? `Build ${q.name}: ${notesLine(q).split(': ')[1]}` : whyWrong(q)[0]);
-    say(r.lives > 0 ? `MISSED! ${r.lives} HEART LEFT.` : 'OUT OF HEARTS.', 'bad');
-    updateHUD();
-    later(() => r.lives <= 0 ? endRun('fail') : advance(), 1300);
-    return;
+    popup(r.lives > 0 ? `MISSED! ${r.lives} HEART LEFT` : 'OUT OF HEARTS');
   }
   if(nameQ(q)){
     $(`#degBtns [data-d="${S.degSel}"]`).classList.add('bad'); $(`#degBtns [data-d="${q.degree}"]`).classList.add('ok');
@@ -1995,8 +1993,8 @@ function onWrong(){
     explain(text, chips);
   }
   updateHUD();
-  const next = () => r.lives <= 0 ? continuePrompt() : advance();
-  if(practice) setNext('NEXT QUESTION ▶', next);
+  const next = () => r.lives <= 0 ? (r.mode === 'nova' ? endRun('fail') : continuePrompt()) : advance();
+  if(practice || r.mode === 'nova') setNext(r.mode === 'nova' && r.lives <= 0 ? 'SEE RESULTS ▶' : 'NEXT QUESTION ▶', next);
   else later(next, q.type === 'build' ? 5000 : 3400);   // longer to study the right scale
 }
 function advance(){
@@ -2156,7 +2154,7 @@ function novaWarning(){
     <h2 class="otitle" style="color:#fff3b0;text-shadow:0 0 18px #ff9d2e">SUPERNOVA</h2>
     <p class="osub">The hardest test in Scale Quest.</p>
     <div class="bigstats"><div><small>SCALES</small><strong>150</strong></div><div><small>QUESTIONS</small><strong>${CHAOS_LEN}</strong></div><div><small>HEARTS</small><strong>${NOVA_HEARTS}</strong></div></div>
-    <p class="osub dim" style="font-size:20px">Every major, minor and mode, with double sharps and flats. No second tries, no CONTINUE, and no hints until the end.</p>
+    <p class="osub dim" style="font-size:20px">Every major, minor and mode, with double sharps and flats. No second tries and no CONTINUE. Miss one and you'll see the right answer before you move on.</p>
     <p class="osub" style="font-size:20px">Finish all ${CHAOS_LEN} to earn the <b style="color:#ffcf4a">SUPERNOVA</b> star next to your name on every leaderboard. Reach question 10 for the <b style="color:#ffcf4a">SURVIVOR</b> mark.</p>
     <p class="otitle" style="font-size:14px">ARE YOU SURE?</p>
     <div class="obtns"><button class="btn obtn alt" id="novaBack" type="button">BACK</button><button class="btn obtn" id="novaGo" type="button" data-focus style="background:#ffcf4a">START SUPERNOVA</button></div>`, 'nova-panel');

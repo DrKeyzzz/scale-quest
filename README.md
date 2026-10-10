@@ -50,7 +50,7 @@ Scale Quest shares the **Rhythm Trainer's Firebase project** (`rhythm-trainer-fc
 
 ## SUPERNOVA (the ultimate test)
 
-- One button next to START and CHAOS. It always uses **all 150 scales**: 20 questions, **2 hearts**, no CONTINUE, no second try at building a scale, and no explanations until the end (the end screen lists every miss). Same timer and speed bonus as CHAOS.
+- One button next to START and CHAOS. It always uses **all 150 scales**: 20 questions, **2 hearts**, no CONTINUE, no second try at building a scale. A miss shows the right answer and an explanation, then waits for **NEXT QUESTION** (the clock is paused); the end screen also lists every miss. Same timer and speed bonus as CHAOS.
 - Modes are shown as a ladder of stars: PRACTICE (small calm star), CHAOS (pulsing star), SUPERNOVA (big swelling star with rays).
 - **Finish all 20** for a celebration screen with a certificate and a permanent animated star next to your name on every Scale Quest leaderboard. Reach question 10 for the **SURVIVOR** mark.
 - The **★ SUPERNOVA** tab on the leaderboard shows class and world runs (finished first). Runs are stored in `nova_scores`.
