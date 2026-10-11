@@ -6,6 +6,7 @@ rules_version = '2';
 //   Tidal Tones               https://drkeyzzz.github.io/tidal-tones/
 //   Rooftop Runner            https://drkeyzzz.github.io/rooftop-runner/
 //   Earshot Saloon            https://drkeyzzz.github.io/earshot-saloon/
+//   Home page                 https://drkeyzzz.github.io/  (teacher/ sets each class's hub_assignment)
 // All the games share this project, its classes and teacher sign-in.
 // The SAME file lives in every game's GitHub repo; keep them identical.
 // Paste this into Firebase → Firestore Database → Rules, then click Publish.
@@ -91,7 +92,7 @@ service cloud.firestore {
 
       allow create: if isTeacher()
         && code.matches('^[A-Z0-9]{4,7}$')   // random 5-character codes, or a teacher's own 4–7 character code
-        && request.resource.data.keys().hasOnly(['name', 'ownerEmail', 'created_at', 'assignment', 'scale_assignment', 'tidal_assignment', 'rooftop_assignment'])
+        && request.resource.data.keys().hasOnly(['name', 'ownerEmail', 'created_at', 'assignment', 'scale_assignment', 'tidal_assignment', 'rooftop_assignment', 'hub_assignment'])
         && request.resource.data.ownerEmail == request.auth.token.email
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 40
@@ -99,7 +100,7 @@ service cloud.firestore {
 
       allow update: if isTeacher()
         && resource.data.ownerEmail == request.auth.token.email
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'assignment', 'scale_assignment', 'tidal_assignment', 'rooftop_assignment'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'assignment', 'scale_assignment', 'tidal_assignment', 'rooftop_assignment', 'hub_assignment'])
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 40;
 
