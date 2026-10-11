@@ -80,6 +80,14 @@ button{font:inherit;color:inherit}
 .cart.home.on{background:var(--yel);border-color:var(--yel);box-shadow:0 0 18px rgba(255,228,92,.6),0 4px 0 var(--shadow)}
 .cart.on .cname{color:var(--shadow)}
 .cart.on .ccheck{opacity:1;color:var(--shadow)}
+/* mastery stars: top-left corner of each scale card (the ✓ is top-right), so cards don't grow */
+.cart .cstars{position:absolute;top:2px;left:4px;font-family:system-ui,sans-serif;font-size:10px;line-height:1;letter-spacing:-.5px;color:var(--yel)}
+.cart.on .cstars{color:var(--shadow)}
+@media (max-width:760px){ .cart .cstars{font-size:8px;letter-spacing:-1px;top:3px;left:3px} }
+.mlegend{margin:0;font-size:13px;color:var(--dim);font-family:system-ui,sans-serif;line-height:1.3}
+.mlegend b{color:var(--yel);font-weight:400}
+.bonusline{margin:0;font-size:17px;color:var(--dim);line-height:1.35}
+.bonusline b{color:var(--ink);font-weight:400}
 .cats{display:flex;flex-wrap:nowrap;gap:8px 12px;align-items:center;min-width:0}
 .cats > .seg{flex:none}
 .qpk{display:flex;gap:8px;align-items:center}
@@ -183,6 +191,8 @@ button{font:inherit;color:inherit}
 .hud{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1.1fr;gap:0}
 .hcell{padding:10px 12px;border-right:3px solid var(--line);display:flex;flex-direction:column;gap:8px;min-width:0}
 .hcell:last-child{border-right:0}
+.hcell[hidden]{display:none}
+.hud.nohealth{grid-template-columns:1.6fr 1fr 1fr 1fr}   /* practice: no hearts */
 .hlab{font-family:var(--px);font-size:8px;color:var(--dim);letter-spacing:.08em;display:flex;gap:8px;align-items:center}
 .hval{font-family:var(--px);font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
 #hudKey{color:var(--yel)}
@@ -542,6 +552,7 @@ button{font:inherit;color:inherit}
   .krow{grid-template-columns:1fr;gap:6px}
   .kgrid{grid-template-columns:repeat(4,1fr)}
   .hud{grid-template-columns:1fr 1fr}
+  .hud.nohealth{grid-template-columns:1fr 1fr 1fr}
   .hcell{border-right:0;border-bottom:3px solid var(--line)}
   .hcell.keycell{grid-column:1/-1}
   .staffwrap{flex-direction:column}
@@ -791,6 +802,8 @@ html:not([data-skin="classic"]) .opanel.mag{border-color:var(--mag);box-shadow:0
 html:not([data-skin="classic"]) .welcome{background:radial-gradient(ellipse at 50% 0%,var(--glow) 0%,var(--bg) 65%),var(--bg)}
 html:not([data-skin="classic"]) .wbox input:not([type]),html:not([data-skin="classic"]) .wbox input[id]{border-radius:10px}
 html:not([data-skin="classic"]) :is(.td-head select,.td-sub select,.td-sub input,.td-form input,.td-form select,.t-row input){border-radius:8px}
+html[data-skin="day"] .cart .cstars,html[data-skin="day"] .mlegend b{color:#a16207}
+html[data-skin="day"] .cart.on .cstars{color:var(--shadow)}
 /* Day: light page, so the few hard-coded light-gold texts (SUPERNOVA titles, scores) get a darker gold */
 html[data-skin="day"] .overlay [style*="color:#fff3b0"],html[data-skin="day"] .cert .who{color:#a15c00!important;text-shadow:none!important}
 html[data-skin="day"] .overlay [style*="color:#ffcf4a"]{color:#a15c00!important}
@@ -881,7 +894,7 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
     <div class="hcell"><div class="hlab">QUESTION</div><div class="hval" id="hudQ">1/5</div></div>
     <div class="hcell"><div class="hlab">SCORE</div><div class="hval" id="hudScore">000000</div></div>
     <div class="hcell"><div class="hlab">STREAK</div><div class="hval" id="hudStreak">x0</div></div>
-    <div class="hcell"><div class="hlab">HEALTH</div><div class="hearts" id="hudLives"></div></div>
+    <div class="hcell" id="hudHealth"><div class="hlab">HEALTH</div><div class="hearts" id="hudLives"></div></div>
   </section>
 
   <section class="panel stage" id="stage">
@@ -976,6 +989,7 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
           </div>
           <div class="krow sharp"><button type="button" class="rowlabel" data-row="sharp" aria-pressed="false" title="Select all sharp keys (click again for none)"><span>SHARP<br>KEYS ♯</span></button><div class="kgrid" id="sharpRow"></div></div>
           <div class="krow flat"><button type="button" class="rowlabel" data-row="flat" aria-pressed="false" title="Select all flat keys (click again for none)"><span>FLAT<br>KEYS ♭</span></button><div class="kgrid" id="flatRow"></div></div>
+          <p class="mlegend" id="mLegend" title="Stars come from your last week of answers on this device (signed-in players)"><b>★</b> practiced · <b>★★</b> 80%+ of your last 10 answers · <b>★★★</b> 90%+ of your last 10, on 2+ days</p>
         </section>
       </div>
       <div class="mpanel" data-panel="midi" role="tabpanel" hidden>
@@ -1120,7 +1134,7 @@ const stdSig = id => { const n = sigNotes(id); return n.every(x => Math.abs(accO
 const stepsOf = id => { const r = pcOf(SCALES[id][0]); return SCALES[id].map(n => (pcOf(n) - r + 12) % 12); };
 const ORD = {1:'tonic (1st)',2:'2nd',3:'3rd',4:'4th',5:'5th',6:'6th',7:'7th',8:'octave (8th)'};
 /* Ranked CHAOS: every run is the same length, so scores compare fairly.
-   Final score = points × key bonus (+10% for each key beyond the first). */
+   Final score = points × key bonus (+10% for each ★★ scale beyond the first; see KEY_BONUS_* below). */
 const CHAOS_LEN = 20;
 // SCALE DEGREES mode (major keys only)
 const DEG_NAME = {1:'Tonic',2:'Supertonic',3:'Mediant',4:'Subdominant',5:'Dominant',6:'Submediant',7:'Leading Tone'};
@@ -1136,7 +1150,11 @@ function starSVG(cls){
   const rays = /t3|badge|big/.test(cls) ? `<g class="rays">${Array.from({length: 12}, (_, i) => `<polygon points="49,2 51,2 50,22" transform="rotate(${i * 30} 50 50)"/>`).join('')}</g>` : '';
   return `<svg class="star ${cls}" viewBox="0 0 100 100" aria-hidden="true">${rays}<polygon class="core" points="${pts(/t1/.test(cls) ? 4 : 5)}"/></svg>`;
 }
-const keyBonus = n => Math.round((1 + 0.1*(Math.min(15, n)-1)) * 10) / 10;   // counts up to 15 scales
+/* CHAOS key bonus: +10% for each scale beyond the first (up to 15), but only scales the student has at
+   ★★ or better count. The others count ×1.0, so checking lots of scales you don't know yet earns nothing. */
+const KEY_BONUS_STEP = 0.1, KEY_BONUS_CAP = 15, KEY_BONUS_MIN_STARS = 2;
+const keyBonus = n => Math.round((1 + KEY_BONUS_STEP*(Math.max(1, Math.min(KEY_BONUS_CAP, n))-1)) * 10) / 10;
+const bonusKeys = keys => { const m = masteryMap(); return keys.filter(k => (m[k] || 0) >= KEY_BONUS_MIN_STARS); };
 const pick = a => a[Math.floor(Math.random()*a.length)];
 const $ = s => document.querySelector(s);
 
@@ -1481,7 +1499,7 @@ function renderKeyRows(){
   [['#sharpRow', rows[0], 'sharp'], ['#flatRow', rows[1], 'flat']].forEach(([id, list, cls]) => {
     $(id).innerHTML = rowIds(list).map(k => { const ok = !!SCALES[k];
       return `<button type="button" class="cart ${cls}${tonicOf(k) === (S.cat === 'minor' ? 'A' : 'C') ? ' home' : ''}" data-key="${k}" aria-pressed="false" aria-label="${ok ? scaleName(k) : fmt(tonicOf(k)) + ': needs a double sharp or flat'}" ${ok ? '' : 'disabled title="Needs a double sharp or flat"'}>
-        <span class="cname">${fmt(tonicOf(k))}${S.cat === 'minor' ? 'm' : ''}</span><span class="cbadge">${ok ? (S.cat === 'modes' ? SCALE_TYPES[S.modeType].name.toUpperCase() : sigLabel(k)) : '—'}</span><span class="ccheck" aria-hidden="true">✓</span>
+        <span class="cname">${fmt(tonicOf(k))}${S.cat === 'minor' ? 'm' : ''}</span><span class="cbadge">${ok ? (S.cat === 'modes' ? SCALE_TYPES[S.modeType].name.toUpperCase() : sigLabel(k)) : '—'}</span><span class="ccheck" aria-hidden="true">✓</span><span class="cstars" aria-hidden="true"></span>
       </button>`; }).join('');
   });
   document.querySelectorAll('#catSeg button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.cat === S.cat); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', b.dataset.cat === S.cat); b.disabled = S.deg && b.dataset.cat !== 'major'; });
@@ -1526,9 +1544,13 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('#selMen
 const familyKeys = () => PLAY_ORDER.filter(k => S.cat === 'major' ? typeOf(k) === 'major' : S.cat === 'minor' ? MINOR_FORMS.includes(typeOf(k)) : MODE_TYPES.includes(typeOf(k)));
 const rowKeys = row => [...row.closest('.krow').querySelectorAll('.cart:not(:disabled)')].map(c => c.dataset.key);
 function updateCarts(){
+  const ms = masteryMap();
   document.querySelectorAll('.cart').forEach(b => {
     const on = S.selected.has(b.dataset.key);
     b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+    const n = ms[b.dataset.key] || 0, st = b.querySelector('.cstars');
+    if(st && !b.disabled){ st.textContent = starText(n); b.title = n ? `${starText(n)} ${STAR_WORDS[n]}` : 'Not played yet';
+      b.setAttribute('aria-label', scaleName(b.dataset.key) + (n ? `, ${n} star${n > 1 ? 's' : ''}` : '')); }
   });
   document.querySelectorAll('.rowlabel').forEach(b => { const ks = rowKeys(b); b.setAttribute('aria-pressed', ks.length > 0 && ks.every(k => S.selected.has(k))); });
   $('#selBtn').innerHTML = S.selected.size ? `SELECT · <b>${S.selected.size}</b> ▾` : 'SELECT ▾';
@@ -1591,11 +1613,15 @@ function scalesTitle(){
 }
 const curValue = name => name === 'scales' ? scalesValue() : name === 'mode' ? S.mode : String(S.qpk);
 function ddOptions(name){
-  if(name === 'scales') return [...PRESETS,
+  if(name === 'scales'){
+    const ms = masteryMap(), withStars = PRESETS.map(p => { const n = p.keys.filter(k => (ms[k] || 0) >= 2).length, tried = p.keys.some(k => ms[k]);
+      return tried ? {...p, d: p.d + (p.keys.length === 1 ? ` · ${starText(ms[p.keys[0]]) || '☆'}` : ` · ${n}/${p.keys.length} at ★★+`)} : p; });
+    return [...withStars,
     {v: 'deg', t: 'Scale degrees', d: 'Name the tonic, dominant… in major keys'},
     {v: 'pick', t: 'Pick my own…', d: 'Check any scales in More options', sep: true}];
+  }
   if(name === 'mode') return [
-    {v: 'practice', t: 'Practice', d: 'One scale at a time. No clock.'},
+    {v: 'practice', t: 'Practice', d: 'One scale at a time. No clock, no hearts.'},
     {v: 'chaos', t: 'CHAOS', d: `${CHAOS_LEN} timed questions from your scales. Post a high score!`},
     S.deg ? {v: 'nova', t: 'SUPERNOVA', d: 'Off in Scale degrees (it builds scales)', locked: true}
       : novaUnlocked() ? {v: 'nova', t: 'SUPERNOVA', d: `All 150 scales, ${CHAOS_LEN} questions, ${NOVA_HEARTS} hearts.`}
@@ -1736,7 +1762,7 @@ function howTo(then){
   const p = openOverlay(`<h2 class="otitle">HOW TO PLAY</h2>
     <ol class="steps howsteps">
       <li><span class="n">1</span><div><b>PICK YOUR SCALES</b><span>C major is ready to go. The SCALES menu has more sets, or choose Pick my own… to check any scale.</span></div></li>
-      <li><span class="n">2</span><div><b>PRESS START</b><span>Build each scale on the piano or the staff (tap, click or use the arrow keys), then press SUBMIT or Enter. Practice has no clock, so take your time.</span></div></li>
+      <li><span class="n">2</span><div><b>PRESS START</b><span>Build each scale on the piano or the staff (tap, click or use the arrow keys), then press SUBMIT or Enter. Practice has no clock and no hearts, so take your time: a miss shows you the right answer.</span></div></li>
       <li><span class="n">3</span><div><b>TRY CHAOS</b><span>Set MODE to CHAOS: ${CHAOS_LEN} timed questions from your scales. Answer fast for bonus points and post a high score. Finish one to unlock SUPERNOVA.</span></div></li>
     </ol>
     <div class="obtns"><button class="btn obtn" type="button" id="howGo" data-focus>${then ? 'GOT IT · START!' : 'GOT IT'}</button></div>`);
@@ -1913,6 +1939,7 @@ function updateHUD(){
   $('#hudQ').textContent = isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
   $('#hudScore').textContent = String(r.score).padStart(6, '0');
   $('#hudStreak').textContent = 'x' + r.streak;
+  $('#hudHealth').hidden = r.mode === 'practice'; $('#hud').classList.toggle('nohealth', r.mode === 'practice');   // practice has no hearts
   $('#hudLives').innerHTML = Array.from({length: r.mode === 'nova' ? NOVA_HEARTS : 3}, (_, i) => heart(i < r.lives)).join('');
   $('#hudLives').setAttribute('aria-label', `${r.lives} of ${r.mode === 'nova' ? NOVA_HEARTS : 3} health`);
   // A long run (SUPERNOVA, or CHAOS with lots of scales) shows a one-line summary instead of every scale.
@@ -1933,9 +1960,9 @@ function flash(kind){
 function later(fn, ms){ const r = S.run; setTimeout(() => { if(S.run === r && r && !r.ended) fn(); }, ms); }
 
 /* ---------- speed timer (CHAOS only; practice has no clock) ----------
-   Correct answers earn up to +100, shrinking to 0 over the window below.
+   Correct answers earn up to +SPEED_MAX (was +100 before 2026-10-11), shrinking to 0 over the window below.
    The clock pauses while feedback or a menu is showing. */
-const SPEED_MAX = 100;
+const SPEED_MAX = 50;
 const TIME_WINDOW = {build: 25, piano: 10, staff: 12, dstaff: 10, dpiano: 10};   // seconds
 const timer = {start: 0, pausedAt: 0};
 function timerStart(){ timer.start = performance.now(); timer.pausedAt = 0; }
@@ -2018,6 +2045,21 @@ function logAnswer(q, ok){
   todayOf(log).q.push({k: q.key, y: nameQ(q) ? 'n' : q.type[0], d: q.degree || 0, ok: ok ? 1 : 0, pk: ok ? '' : pickOf(q), t0: q.t0 || Date.now(), t1: Date.now(), m: S.run.mode[0]});
   writeLog(log); scheduleSync(); setTimeout(renderAssignment, 0);
 }
+/* ---------- mastery stars, from the answer log above (this device, signed-in players, last 7 days) ----------
+   ★ = answered at least once · ★★ = 80%+ of the last 10 answers on that scale · ★★★ = 90%+ of the last 10, practiced on 2+ days */
+const MASTERY = {last: 10, two: .8, three: .9, days: 2};
+function masteryMap(){
+  if(isGuest()) return {};
+  const log = readLog(), by = {}, out = {};
+  Object.keys(log).sort().forEach(d => ((log[d] || {}).q || []).forEach(e => { const a = by[e.k] || (by[e.k] = {ok: [], days: new Set()}); a.ok.push(e.ok); a.days.add(d); }));
+  for(const [k, a] of Object.entries(by)){
+    const last = a.ok.slice(-MASTERY.last), acc = last.reduce((t, x) => t + x, 0) / last.length, full = last.length >= MASTERY.last;
+    out[k] = full && acc >= MASTERY.three && a.days.size >= MASTERY.days ? 3 : full && acc >= MASTERY.two ? 2 : 1;
+  }
+  return out;
+}
+const starText = n => '★'.repeat(n || 0);
+const STAR_WORDS = ['', 'practiced', '80%+ of your last 10', '90%+ of your last 10 on 2+ days'];
 function logRun(run){ if(isGuest()) return; const log = readLog(); todayOf(log).runs.push(run); writeLog(log); scheduleSync(); }
 function activeMinutes(qs){
   const ts = qs.flatMap(e => [e.t0, e.t1]).filter(Boolean).sort((a,b) => a - b);
@@ -2319,7 +2361,7 @@ function startRun(mode){
   const keys = mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!S.deg || typeOf(k) === 'major')); if(!keys.length) return;
   S.awaitNext = null;
   S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives: mode === 'nova' ? NOVA_HEARTS : 3, misses: [],
-           stats:{}, lastInstr:null, lastKey:null, lastType:null, lastDeg:{}, q:null, ended:false, deg: S.deg && mode !== 'nova'};
+           stats:{}, pts:{base:0, speed:0, streak:0}, bonusKeys: mode === 'chaos' ? bonusKeys(keys) : [], lastInstr:null, lastKey:null, lastType:null, lastDeg:{}, q:null, ended:false, deg: S.deg && mode !== 'nova'};
   setPlaying(true); updateHUD();
   $('#timer').hidden = !isTimed(mode);
   $('#app').classList.toggle('novaRun', mode === 'nova');
@@ -2471,7 +2513,7 @@ function onCorrect(){
   if(isTimed(r.mode)) r.times.push(elapsed());
   let bonus = 0;
   if(r.streak === 3) bonus = 50; else if(r.streak === 5) bonus = 100; else if(r.streak % 10 === 0) bonus = 250;
-  r.score += pts + speed + bonus; stat(q.key, true); logAnswer(q, true);
+  r.score += pts + speed + bonus; r.pts.base += pts; r.pts.speed += speed; r.pts.streak += bonus; stat(q.key, true); logAnswer(q, true);
   flash('ok'); SFX.coin(); popup('+' + (pts + speed));
   if(speed) setTimeout(() => popup(`SPEED +${speed} · ${elapsed().toFixed(1)}s`, 'speed'), 120);
   if(bonus){ SFX.streak(); setTimeout(() => popup(`STREAK x${r.streak}! +${bonus}`, 'streak'), 250); }
@@ -2608,7 +2650,7 @@ function onWrong(){
   }
   S.busy = true; $('#submitBtn').disabled = true;
   logAnswer(q, false);
-  r.streak = 0; r.lives--; stat(q.key, false);
+  r.streak = 0; if(!practice) r.lives--; stat(q.key, false);   // practice never costs a heart
   flash('bad'); SFX.buzz();
   // SUPERNOVA: the miss goes on the end-screen list too, then the right answer shows like practice.
   if(r.mode === 'nova'){
@@ -2681,9 +2723,7 @@ function keyCleared(){
 }
 function continuePrompt(){
   const r = S.run; SFX.over();
-  const msg = r.mode === 'practice'
-    ? `Continuing restarts ${scaleName(r.q.key)} with full health. Your score stays.`
-    : 'Continuing refills your health, but this run can no longer post a high score.';
+  const msg = 'Continuing refills your health, but this run can no longer post a high score.';   // CHAOS only: practice has no hearts
   const p = openOverlay(`
     <h2 class="otitle" style="color:var(--bad)">OUT OF HEALTH</h2>
     <p class="otitle" style="font-size:18px;animation:blink 1s steps(2) infinite">CONTINUE?</p>
@@ -2691,9 +2731,15 @@ function continuePrompt(){
     <div class="obtns"><button class="btn obtn" id="contBtn" type="button" data-focus>CONTINUE</button><button class="btn obtn alt" id="endBtn" type="button">END RUN</button></div>`, 'mag');
   p.querySelector('#contBtn').onclick = () => {
     closeOverlay(); r.lives = 3; r.streak = 0;
-    if(r.mode === 'practice'){ r.qInKey = 0; nextQuestion(); } else { r.continued = true; advance(); }
+    r.continued = true; advance();
   };
   p.querySelector('#endBtn').onclick = () => endRun('quit');
+}
+// "2 of 5 scales at ★★ (C · G count)". Only scales at ★★ or better when the run started add to the key bonus.
+function bonusLine(r){
+  const n = r.bonusKeys.length, all = r.keys.length;
+  if(!n) return `none of your ${all > 1 ? all + ' scales' : 'scale'} are at ★★ yet, so no key bonus. Get a scale to ★★ in Practice (80%+ of your last 10 answers) and it counts here.`;
+  return `${n} of ${all} scale${all > 1 ? 's' : ''} at ★★ (${n <= 6 ? r.bonusKeys.map(shortName).join(' · ') : selSummary(r.bonusKeys)}). +${Math.round(KEY_BONUS_STEP * 100)}% for each ★★ scale after the first.`;
 }
 function endRun(reason){
   const r = S.run; if(!r) return; r.ended = true; S.busy = true;
@@ -2709,7 +2755,7 @@ function endRun(reason){
   keys.forEach(k => { const p = r.stats[k].right / r.stats[k].total; if(p < 1 && (!weak || p < weak.p)) weak = {k, p}; });
   const ranked = r.mode === 'chaos' && reason === 'complete';
   if(ranked && !novaUnlocked()){ store.set('chaos_done', true); renderKeyRows(); }
-  const kc = Math.min(15, r.keys.length), mult = keyBonus(kc), final = ranked ? Math.round(r.score * (9 + kc) / 10) : r.score;
+  const mult = keyBonus(r.bonusKeys.length), final = ranked ? Math.round(r.score * mult) : r.score;
   const eligible = ranked && !r.continued && final > 0;
   const why = eligible ? '' : r.mode === 'practice'
     ? `Practice runs don't go on the board. Finish a ${CHAOS_LEN}-question CHAOS run to post a high score.`
@@ -2726,6 +2772,7 @@ function endRun(reason){
       <div><small>BEST STREAK</small><strong>x${r.best}</strong></div>
       ${r.times.length ? `<div><small>AVG ANSWER</small><strong>${(r.times.reduce((a,b) => a+b, 0) / r.times.length).toFixed(1)}s</strong></div>` : ''}
     </div>
+    ${r.mode === 'chaos' ? `<p class="bonusline">Points: answers <b>${r.pts.base}</b> + speed <b>${r.pts.speed}</b> + streaks <b>${r.pts.streak}</b> = <b>${r.score}</b>${ranked ? `<br>Key bonus <b>x${mult.toFixed(1)}</b>: ${bonusLine(r)}` : ''}</p>` : ''}
     ${bars ? `<div class="bars">${bars}</div>` : '<p class="osub dim">No questions answered.</p>'}
     ${weak ? `<button class="btn obtn mag" type="button" id="weakBtn">PRACTICE NEXT: ${scaleName(weak.k).toUpperCase()} ▶</button>` : (total ? '<p class="weak" style="color:var(--ok)">FLAWLESS! EVERY SCALE AT 100%</p>' : '')}
     ${why ? `<p class="osub dim" style="font-size:20px">${why}</p>` : ''}
@@ -2883,15 +2930,16 @@ function boardPanel(){
 }
 function chaosPicker(){
   const keys = PLAY_ORDER.filter(k => S.selected.has(k) && (!S.deg || typeOf(k) === 'major'));
+  const bk = bonusKeys(keys);
   const p = openOverlay(`
     <h2 class="otitle" style="color:var(--mag)">${S.deg ? 'CHAOS: SCALE DEGREES' : 'CHAOS MODE'}</h2>
     <p class="osub">${CHAOS_LEN} random ${S.deg ? 'scale-degree ' : ''}questions from: ${keys.map(shortName).join(' · ')}</p>
     <div class="bigstats">
       <div><small>QUESTIONS</small><strong>${CHAOS_LEN}</strong></div>
       <div><small>SCALES</small><strong>${keys.length}</strong></div>
-      <div><small>KEY BONUS</small><strong>x${keyBonus(keys.length).toFixed(1)}</strong></div>
+      <div><small>KEY BONUS</small><strong>x${keyBonus(bk.length).toFixed(1)}</strong></div>
     </div>
-    <p class="osub dim" style="font-size:20px">Finish all ${CHAOS_LEN} without using CONTINUE to post your score. Fast answers earn a speed bonus. More keys = bigger key bonus.</p>
+    <p class="osub dim" style="font-size:20px">Finish all ${CHAOS_LEN} without using CONTINUE to post your score. Fast answers earn a speed bonus. The key bonus counts only your ★★ scales: ${bk.length} of ${keys.length}.</p>
     <div class="obtns"><button class="btn obtn mag" id="goChaos" type="button" data-focus>START CHAOS</button><button class="btn obtn alt" id="cancelChaos" type="button">CANCEL</button></div>`, 'mag');
   p.querySelector('#goChaos').onclick = () => startRun('chaos');
   p.querySelector('#cancelChaos').onclick = closeOverlay;
