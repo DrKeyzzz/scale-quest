@@ -396,5 +396,30 @@ service cloud.firestore {
         && m.get('M7', 0) is int && m.get('M7', 0) >= 0 && m.get('M7', 0) <= 100000
         && m.get('P8', 0) is int && m.get('P8', 0) >= 0 && m.get('P8', 0) <= 100000;
     }
+
+    // ================= Feedback =================
+    // Any student or guest can send one short note from the Feedback button in a game. Nobody can edit it.
+    // Only the admin, or the teacher who owns the sender's class, can read or delete it.
+    match /game_feedback/{noteId} {
+      allow read: if isAdmin() || (isTeacher() && resource.data.owner == request.auth.token.email);
+      allow create: if feedbackOk(request.resource.data) && classCodesOk(request.resource.data);
+      allow update: if false;
+      allow delete: if isAdmin() || (isTeacher() && resource.data.owner == request.auth.token.email);
+    }
+
+    function feedbackOk(d) {
+      return d.keys().hasOnly(['game', 'text', 'name', 'class_code', 'class_codes', 'owner', 'created_at'])
+        && d.game in ['scale-quest', 'tidal-tones', 'earshot-saloon', 'rhythm-trainer', 'rooftop-runner', 'hub']
+        && d.text is string && d.text.size() >= 3 && d.text.size() <= 300
+        && d.name is string && d.name.size() <= 24
+        && (isAdmin() || !d.name.lower().matches('milnes *d[.]? *'))   // only the developer can be Milnes D.
+        && d.class_code is string && d.owner is string && d.owner.size() <= 100
+        && (d.class_code == ''
+          ? d.owner == ''
+          : (exists(/databases/$(database)/documents/classes/$(d.class_code))
+             && get(/databases/$(database)/documents/classes/$(d.class_code)).data.ownerEmail == d.owner))
+        && d.created_at == request.time;
+    }
+
   }
 }
