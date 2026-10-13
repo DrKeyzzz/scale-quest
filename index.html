@@ -2757,6 +2757,7 @@ function endRun(reason){
   if(ranked && !novaUnlocked()){ store.set('chaos_done', true); renderKeyRows(); }
   const mult = keyBonus(r.bonusKeys.length), final = ranked ? Math.round(r.score * mult) : r.score;
   const eligible = ranked && !r.continued && final > 0;
+  if(S.test && S.testRun) return tsEnd(r, {acc, total, final, reason});
   const why = eligible ? '' : r.mode === 'practice'
     ? `Practice runs don't go on the board. Finish a ${CHAOS_LEN}-question CHAOS run to post a high score.`
     : r.continued ? 'This run used CONTINUE, so it can\'t post a high score.'
@@ -2875,6 +2876,7 @@ function novaTable(list){
 function toMenu(){
   closeOverlay(); S.run = null; S.busy = false; $('#app').classList.remove('novaRun');
   setPlaying(false); renderBoard(); updateCarts();
+  if(S.test && S.test.doc){ S.testRun = false; tsLobby(); }
 }
 function markMe(list){ const p = getProfile(), n = p ? displayName(p) : null; return list.map(x => ({...x, me: x.name === n})); }
 function renderBoard(){
@@ -3381,8 +3383,175 @@ $('#whoBtn').onclick = whoMenu;
 $('#wGuest').onclick = playAsGuest;
 renderKeyRows(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); updateWho(); renderBoard(); updateCarts(); setPlaying(false);
 if(!getProfile() && !isGuest()) showWelcome(false); else refreshClassInfo();
+/* ---------- TEST MODE: ?test=<id> from the home page's Tests card ----------
+   The teacher's test (tests/<id>) carries the settings, how it is graded (acc | score) and the tries (0 = unlimited).
+   The student sees a newsroom "THIS IS A TEST" screen, can't change anything, and the best result is kept in
+   test_results/<id>_<sid>. A try is used when it starts (reloading or leaving counts), the best score is saved when it ends. */
+const HUB_URL = '../';
+function newsSting(){
+  // an original broadcast bumper: timpani roll, brass stabs, a held chord and teletype ticks
+  tone(98, {type:'sine', dur:.9, vol:.16, slide:70});
+  for(let i = 0; i < 8; i++) tone(110 + (i % 2) * 6, {type:'sine', dur:.09, vol:.05 + i * .008, at:i * .07});
+  [[293,.62],[370,.8],[440,.98]].forEach(([f, at]) => { tone(f, {type:'sawtooth', dur:.2, vol:.07, at}); tone(f * 2, {type:'square', dur:.16, vol:.025, at}); });
+  [587, 740, 880, 1175].forEach(f => { tone(f, {type:'sawtooth', dur:1.5, vol:.05, at:1.25, attack:.02}); tone(f / 2, {type:'triangle', dur:1.5, vol:.05, at:1.25}); });
+  for(let i = 0; i < 14; i++) tone(2400 + (i % 3) * 300, {type:'square', dur:.012, vol:.03, at:1.6 + i * .06 + (i % 4) * .01});
+}
+const TS_CSS = `
+#tsplash{position:fixed;inset:0;z-index:5000;display:flex;flex-direction:column;background:radial-gradient(900px 500px at 50% -10%,#1b2d52,#0a101d 70%);color:#f2f5fb;font-family:Georgia,'Times New Roman',serif;overflow:auto}
+#tsplash[hidden]{display:none}
+#tsplash .bar{display:flex;align-items:center;gap:14px;background:#c8102e;color:#fff;padding:10px 18px;font:700 15px/1 Arial,Helvetica,sans-serif;letter-spacing:.14em;text-transform:uppercase}
+#tsplash .lamp{display:inline-flex;align-items:center;gap:8px;background:#7a0a1c;border-radius:6px;padding:6px 10px}
+#tsplash .lamp i{width:12px;height:12px;border-radius:50%;background:#ff5d6c;box-shadow:0 0 10px #ff5d6c;animation:tsblink 1.2s infinite}
+@keyframes tsblink{50%{opacity:.25}}
+#tsplash .bar span.sp{flex:1}
+#tsplash .main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 20px;gap:14px}
+#tsplash h1{margin:0;font-size:clamp(40px,8vw,84px);line-height:1;letter-spacing:.02em;text-transform:uppercase}
+#tsplash h2{margin:0;font:700 clamp(18px,3vw,28px)/1.2 Arial,Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#ffcf4a}
+#tsplash p{margin:0;font:400 clamp(17px,2.2vw,22px)/1.45 Georgia,serif;max-width:46ch;color:#cdd6e6}
+#tsplash .facts{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin:8px 0}
+#tsplash .fact{min-width:140px;padding:12px 18px;border:1px solid #33466e;border-radius:10px;background:#101a30;font-family:Arial,Helvetica,sans-serif}
+#tsplash .fact small{display:block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#93a6c8}
+#tsplash .fact b{display:block;font-size:30px;margin-top:4px}
+#tsplash button.go{font:800 18px Arial,Helvetica,sans-serif;letter-spacing:.14em;text-transform:uppercase;padding:16px 34px;border-radius:999px;border:0;background:#ffcf4a;color:#161006;cursor:pointer}
+#tsplash button.go:disabled{opacity:.45;cursor:default}
+#tsplash button.alt{font:700 15px Arial,Helvetica,sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:12px 24px;border-radius:999px;border:1px solid #4a5f8c;background:transparent;color:#f2f5fb;cursor:pointer;text-decoration:none}
+#tsplash button:focus-visible,#tsplash a:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#tsplash .err{color:#ff9aa6;font:700 17px Arial,Helvetica,sans-serif}
+#tsplash .tick{background:#c8102e;color:#fff;overflow:hidden;white-space:nowrap;font:700 15px Arial,Helvetica,sans-serif;letter-spacing:.14em;text-transform:uppercase;padding:10px 0}
+#tsplash .tick span{display:inline-block;padding-left:100%;animation:tsscroll 38s linear infinite}
+@keyframes tsscroll{to{transform:translateX(-100%)}}
+@media (prefers-reduced-motion:reduce){#tsplash .tick span{animation:none;padding-left:18px}#tsplash .lamp i{animation:none}}
+body.testmode .mtg-home,body.testmode .mtgfb-foot,body.testmode #teacherTopBtn,body.testmode #whoBtn,body.testmode #boardBtn{display:none!important}
+`;
+const TICKER = 'THIS IS A TEST • TAKE YOUR TIME • READ EACH QUESTION CAREFULLY • YOUR BEST SCORE COUNTS • DO NOT RELOAD OR LEAVE THIS PAGE • GOOD LUCK • ';
+function tsEl(){
+  let el = $('#tsplash');
+  if(!el){
+    const st = document.createElement('style'); st.textContent = TS_CSS; document.head.appendChild(st);
+    el = document.createElement('div'); el.id = 'tsplash'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Test');
+    document.body.appendChild(el);
+  }
+  return el;
+}
+function tsShow(main, {sound = false} = {}){
+  const el = tsEl(); el.hidden = false; S.overlay = true;
+  $('#app').inert = true; $('#overlay').hidden = true;
+  el.innerHTML = `<div class="bar"><span class="lamp"><i></i>ON AIR</span><span class="sp"></span><span>Music Theory News Desk</span></div>
+    <div class="main">${main}</div><div class="tick" aria-hidden="true"><span>${TICKER.repeat(3)}</span></div>`;
+  const f = el.querySelector('[data-focus]'); if(f) setTimeout(() => f.focus(), 30);
+  if(sound) newsSting();
+  return el;
+}
+function tsHide(){ const el = $('#tsplash'); if(el) el.hidden = true; $('#app').inert = false; S.overlay = false; }
+const tsTries = t => t.tries ? (t.tries === 1 ? 'One and done' : `${t.tries} tries, best score counts`) : 'Unlimited tries, best score counts';
+const tsLeft = () => { const t = S.test.doc, u = S.test.result ? S.test.result.tries : 0; return t.tries ? Math.max(0, t.tries - u) : Infinity; };
+const tsMetric = (acc, final) => S.test.doc.grade === 'score' ? final : acc;
+const tsUnit = () => S.test.doc.grade === 'score' ? '' : '%';
+function tsLobby(note){
+  const T = S.test, t = T.doc, r = T.result, left = tsLeft(), p = getProfile();
+  const used = r ? r.tries : 0;
+  const best = r && used ? `${r.best}${tsUnit()}` : '–';
+  const block = left === 0;
+  const el = tsShow(`
+    <h2>${esc(String(t.className || ''))}</h2>
+    <h1>This is a test</h1>
+    <h2 style="color:#fff">${esc(t.name)}</h2>
+    <p>Take your time. Read each question carefully and do your best. Once you begin, the settings are locked.</p>
+    <div class="facts">
+      <div class="fact"><small>Student</small><b style="font-size:22px">${esc(p ? displayName(p) : '')}</b></div>
+      <div class="fact"><small>Tries</small><b style="font-size:22px">${esc(tsTries(t))}</b></div>
+      <div class="fact"><small>Tries used</small><b>${used}${t.tries ? ' / ' + t.tries : ''}</b></div>
+      <div class="fact"><small>Your best</small><b>${esc(best)}</b></div>
+    </div>
+    ${note ? `<p class="err" role="alert">${esc(note)}</p>` : ''}
+    <p style="font-size:16px;color:#93a6c8">Reloading or leaving the page after you begin counts as a try.</p>
+    ${block ? '<p class="err">You have used all your tries for this test.</p>' : ''}
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+      <button class="go" type="button" id="tsGo" data-focus${block ? ' disabled' : ''}>${used ? 'Begin another try' : 'Begin the test'}</button>
+      <button class="alt" type="button" id="tsHome">Back to home</button>
+    </div>`, {sound: !T.heard});
+  T.heard = true;
+  el.querySelector('#tsHome').onclick = () => { location.href = HUB_URL; };
+  el.querySelector('#tsGo').onclick = tsBegin;
+}
+function tsError(msg, home = true){
+  tsShow(`<h2>Music Theory News Desk</h2><h1>Test unavailable</h1><p class="err" role="alert">${esc(msg)}</p>
+    <div><button class="go" type="button" id="tsHome" data-focus>Back to home</button></div>`);
+  $('#tsplash #tsHome').onclick = () => { location.href = HUB_URL; };
+}
+const tsRef = ({fs, db}) => fs.doc(db, 'test_results', S.test.id + '_' + sidOf(getProfile()));
+async function tsBegin(){
+  const T = S.test, t = T.doc, p = getProfile(); if(!p || tsLeft() === 0) return;
+  const btn = $('#tsGo'); if(btn){ btn.disabled = true; btn.textContent = 'Starting...'; }
+  const used = T.result ? T.result.tries : 0;
+  const next = {test: T.id, class_code: t.class_code, owner: t.owner, game: t.game, sid: sidOf(p), student: displayName(p), tries: used + 1,
+                best: T.result ? T.result.best : 0, best_acc: T.result ? T.result.best_acc : 0, best_score: T.result ? T.result.best_score : 0};
+  try{
+    await Cloud.run(({fs, db, ...f}) => fs.setDoc(tsRef({fs, db}), {...next, updated_at: fs.serverTimestamp()}));
+    T.result = next;
+  } catch(e){ return tsLobby("Couldn't start the test: " + (e.message || 'check your internet connection') + ' Try again.'); }
+  tsHide();
+  if(t.settings) try{ applySettings(t.settings); }catch(e){}
+  S.testRun = true;
+  const mode = S.mode === 'nova' ? 'practice' : S.mode;
+  startRun(mode);
+}
+async function tsEnd(r, {acc, total, final, reason}){
+  const T = S.test, t = T.doc; S.testRun = false;
+  const value = tsMetric(acc, final), cur = T.result || {best: 0, tries: 1};
+  const improved = value > cur.best;
+  let saved = true;
+  if(improved){
+    const next = {...T.result, best: Math.min(1000000, value), best_acc: Math.min(100, acc), best_score: Math.min(1000000, final)};
+    try{ await Cloud.run(({fs, db}) => fs.setDoc(tsRef({fs, db}), {...next, updated_at: fs.serverTimestamp()})); T.result = next; }
+    catch(e){ saved = false; }
+  }
+  const left = tsLeft(), early = reason === 'quit';
+  const el = tsShow(`
+    <h2>${esc(t.name)}</h2>
+    <h1>${early ? 'Test ended' : 'Test complete'}</h1>
+    <div class="facts">
+      <div class="fact"><small>This try</small><b>${value}${tsUnit()}</b></div>
+      <div class="fact"><small>Accuracy</small><b>${acc}%</b></div>
+      <div class="fact"><small>Your best</small><b>${T.result.best}${tsUnit()}</b></div>
+      <div class="fact"><small>Tries used</small><b>${T.result.tries}${t.tries ? ' / ' + t.tries : ''}</b></div>
+    </div>
+    ${saved ? `<p>${improved ? 'New best score saved for your teacher.' : 'Your best score stays saved for your teacher.'}</p>` : '<p class="err" role="alert">Your score could not be saved. Tell your teacher before you leave this page.</p>'}
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+      ${left > 0 ? '<button class="go" type="button" id="tsAgain" data-focus>Take it again</button>' : ''}
+      <button class="${left > 0 ? 'alt' : 'go'}" type="button" id="tsHome"${left > 0 ? '' : ' data-focus'}>${left > 0 ? 'Back to home' : 'Done'}</button>
+    </div>`);
+  el.querySelector('#tsHome').onclick = () => { location.href = HUB_URL; };
+  const again = el.querySelector('#tsAgain'); if(again) again.onclick = () => { S.run = null; tsLobby(); };
+  if(early) SFX.over(); else SFX.win();
+}
+async function initTest(){
+  const id = new URLSearchParams(location.search).get('test'); if(!id) return;
+  document.body.classList.add('testmode');
+  S.test = {id}; $('#welcome').hidden = true;
+  tsShow('<h2>Music Theory News Desk</h2><h1>Loading test</h1><p>One moment.</p>');
+  const p = getProfile();
+  if(!Cloud.on) return tsError('Tests need an internet connection.');
+  if(!p) return tsError('Sign in on the home page with your name and class code, then open the test again.');
+  try{
+    const snap = await Cloud.run(({fs, db}) => fs.getDoc(fs.doc(db, 'tests', id)));
+    if(!snap.exists()) return tsError("That test doesn't exist any more. Check the home page for your teacher's current tests.");
+    const t = snap.data(); S.test.doc = t;
+    if(t.game !== 'scale') return tsError('This test is for a different game. Open it from the home page.');
+    if(!t.open) return tsError('This test is closed right now. Ask your teacher to open it.');
+    const cl = classesOf(p).find(c => c.code === t.class_code);
+    if(!cl) return tsError("This test isn't for your class. Sign in on the home page with the right class code.");
+    t.className = cl.name || cl.code;
+    const rs = await Cloud.run(async f => f.fs.getDoc(tsRef(f)));
+    S.test.result = rs.exists() ? rs.data() : null;
+    if(t.settings) applySettings(t.settings);
+    tsLobby();
+  } catch(e){ tsError(e.message || 'Something went wrong. Check your internet connection.'); }
+}
+
 applySettingsFromUrl();
 applyFocusFromUrl();
+initTest();
 /* ---------- Header hints (same in every Music Theory Game): hover, keyboard focus or long-press a header button to see what it does ---------- */
 function headerHints(HINTS) {
   const tip = document.createElement('div'); tip.className = 'mtg-hint'; tip.setAttribute('aria-hidden', 'true');

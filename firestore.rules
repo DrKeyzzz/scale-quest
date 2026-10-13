@@ -421,5 +421,65 @@ service cloud.firestore {
         && d.created_at == request.time;
     }
 
+
+    // ================= Tests =================
+    // A teacher publishes a test for a class (a game, its settings, how it is graded, how many tries).
+    // Anyone can read a test (students need it to start). Only the teacher who owns the class can create, change or delete it.
+    match /tests/{testId} {
+      allow read: if true;
+      allow create: if ownsClass(request.resource.data.class_code) && testOk(request.resource.data)
+        && request.resource.data.owner == request.auth.token.email;
+      allow update: if ownsClass(resource.data.class_code) && testOk(request.resource.data)
+        && request.resource.data.class_code == resource.data.class_code && request.resource.data.owner == resource.data.owner;
+      allow delete: if isAdmin() || ownsClass(resource.data.class_code);
+    }
+
+    function testOk(d) {
+      return d.keys().hasOnly(['name', 'game', 'class_code', 'owner', 'settings', 'grade', 'tries', 'open', 'created_at'])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 60
+        && d.game in ['scale', 'tidal', 'rooftop', 'rhythm', 'earshot']
+        && d.grade in ['acc', 'score']
+        && d.tries is int && d.tries >= 0 && d.tries <= 20
+        && d.open is bool && d.settings is map && d.owner is string && d.class_code is string
+        && d.created_at is timestamp;
+    }
+
+    // One result per student per test (document ID = testId_sid). A student's game starts a try (tries + 1) and later
+    // posts the best result of the tries. Anyone can read a single result (a student reads their own); only the teacher who
+    // owns the test can list them all or delete one (which gives that student their tries back).
+    match /test_results/{resultId} {
+      allow get: if true;
+      allow list: if isAdmin() || (isTeacher() && resource.data.owner == request.auth.token.email);
+      allow create: if resultOk(request.resource.data) && resultId == request.resource.data.test + '_' + request.resource.data.sid
+        && request.resource.data.tries == 1 && request.resource.data.best == 0
+        && request.resource.data.best_acc == 0 && request.resource.data.best_score == 0;
+      allow update: if resultOk(request.resource.data) && resultId == request.resource.data.test + '_' + request.resource.data.sid
+        && request.resource.data.test == resource.data.test && request.resource.data.sid == resource.data.sid
+        && ((request.resource.data.tries == resource.data.tries + 1 && request.resource.data.best == resource.data.best
+              && request.resource.data.best_acc == resource.data.best_acc && request.resource.data.best_score == resource.data.best_score)
+            || (request.resource.data.tries == resource.data.tries && request.resource.data.best >= resource.data.best));
+      allow delete: if isAdmin() || (isTeacher() && resource.data.owner == request.auth.token.email);
+    }
+
+    function testDoc(id) {
+      return get(/databases/$(database)/documents/tests/$(id)).data;
+    }
+    function resultOk(d) {
+      return d.keys().hasOnly(['test', 'class_code', 'owner', 'game', 'sid', 'student', 'tries', 'best', 'best_acc', 'best_score', 'updated_at'])
+        && d.test is string && d.test.size() >= 1 && d.test.size() <= 40
+        && exists(/databases/$(database)/documents/tests/$(d.test))
+        && testDoc(d.test).open == true
+        && testDoc(d.test).class_code == d.class_code && testDoc(d.test).owner == d.owner && testDoc(d.test).game == d.game
+        && (testDoc(d.test).tries == 0 || d.tries <= testDoc(d.test).tries)
+        && d.sid is string && d.sid.matches('^[a-z]{2,16}$')
+        && d.student is string && d.student.size() <= 24
+        && (isAdmin() || !d.student.lower().matches('milnes *d[.]? *'))   // only the developer can be Milnes D.
+        && d.tries is int && d.tries >= 1 && d.tries <= 100
+        && d.best is int && d.best >= 0 && d.best <= 1000000
+        && d.best_acc is int && d.best_acc >= 0 && d.best_acc <= 100
+        && d.best_score is int && d.best_score >= 0 && d.best_score <= 1000000
+        && d.updated_at == request.time;
+    }
+
   }
 }
