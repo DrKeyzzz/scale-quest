@@ -435,7 +435,8 @@ service cloud.firestore {
     }
 
     function testOk(d) {
-      return d.keys().hasOnly(['name', 'game', 'class_code', 'owner', 'settings', 'grade', 'tries', 'open', 'created_at'])
+      return d.keys().hasOnly(['name', 'game', 'class_code', 'owner', 'settings', 'grade', 'tries', 'open', 'opens_at', 'closes_at', 'created_at'])
+        && (!('opens_at' in d) || d.opens_at is timestamp) && (!('closes_at' in d) || d.closes_at is timestamp)
         && d.name is string && d.name.size() >= 1 && d.name.size() <= 60
         && d.game in ['scale', 'tidal', 'rooftop', 'rhythm', 'earshot']
         && d.grade in ['acc', 'score']
@@ -469,6 +470,8 @@ service cloud.firestore {
         && d.test is string && d.test.size() >= 1 && d.test.size() <= 40
         && exists(/databases/$(database)/documents/tests/$(d.test))
         && testDoc(d.test).open == true
+        && (!('opens_at' in testDoc(d.test)) || testDoc(d.test).opens_at <= request.time)
+        && (!('closes_at' in testDoc(d.test)) || testDoc(d.test).closes_at >= request.time)
         && testDoc(d.test).class_code == d.class_code && testDoc(d.test).owner == d.owner && testDoc(d.test).game == d.game
         && (testDoc(d.test).tries == 0 || d.tries <= testDoc(d.test).tries)
         && d.sid is string && d.sid.matches('^[a-z]{2,16}$')

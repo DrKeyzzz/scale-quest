@@ -3538,7 +3538,10 @@ async function initTest(){
     if(!snap.exists()) return tsError("That test doesn't exist any more. Check the home page for your teacher's current tests.");
     const t = snap.data(); S.test.doc = t;
     if(t.game !== 'scale') return tsError('This test is for a different game. Open it from the home page.');
+    const tms = v => v && typeof v.toMillis === 'function' ? v.toMillis() : v && v.seconds ? v.seconds * 1000 : 0, tnow = Date.now();
     if(!t.open) return tsError('This test is closed right now. Ask your teacher to open it.');
+    if(tms(t.opens_at) > tnow) return tsError('This test opens ' + new Date(tms(t.opens_at)).toLocaleString(undefined, {weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'}) + '.');
+    if(tms(t.closes_at) && tms(t.closes_at) < tnow) return tsError('This test has ended.');
     const cl = classesOf(p).find(c => c.code === t.class_code);
     if(!cl) return tsError("This test isn't for your class. Sign in on the home page with the right class code.");
     t.className = cl.name || cl.code;
