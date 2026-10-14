@@ -1437,6 +1437,13 @@ function classesOf(p) {
   return list.filter(c => c && c.code).slice(0, 3);
 }
 const classNames = p => classesOf(p).map(c => c.name).join(' · ');
+/* MTG_CLASSSWITCH: a student can save up to 3 classes (p.saved) but only ONE is active (p.classes = [active]); scores, practice and tests count for the active class */
+const savedOf = p => { if (!p) return []; const l = Array.isArray(p.saved) && p.saved.length ? p.saved : classesOf(p); return l.filter(c => c && c.code).slice(0, 3); };
+const prefillOf = p => { const s = savedOf(p); return p ? [...s.filter(c => c.code === p.classCode), ...s.filter(c => c.code !== p.classCode)] : []; };
+function switchClass(code) { const p = getProfile(), s = savedOf(p), c = s.find(x => x.code === code); if (!p || !c) return; setProfile({ ...p, classCode: c.code, className: c.name || c.code, classOwner: c.owner || '', classes: [c], saved: s }); location.reload(); }
+const switchHTML = p => { const s = savedOf(p); return s.length > 1 ? `<div class="clsw" role="group" aria-label="Switch class" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0 2px">${s.map(c => `<button type="button" class="btn obtn${c.code === p.classCode ? '' : ' alt'}" data-switch-class="${esc(c.code)}" aria-pressed="${c.code === p.classCode}" style="min-width:0">${esc(c.name || c.code)}${c.code === p.classCode ? ' ✓' : ''}</button>`).join('')}</div><p class="osub" style="margin:2px 0 8px">Tap a class to switch. Your scores and practice count for the class with the check.</p>` : ''; };
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-switch-class]'); if (b) switchClass(b.dataset.switchClass); });
+/* /MTG_CLASSSWITCH */
 
 /* ---------- state ---------- */
 const savedKeys = (store.get('keys', null) || []).filter(k => SCALES[k]);
@@ -2111,15 +2118,16 @@ S.assignment = null;
 S.moreAssign = [];   // assignments from the student's other classes: [{code, name, a}]
 const goalFor = () => (S.assignment && S.assignment.goal) || DAILY_GOAL;
 async function refreshClassInfo(){
-  const p = getProfile(), list = classesOf(p);
+  const p = getProfile(), list = savedOf(p);
   if(!Cloud.on || !list.length){ S.assignment = null; S.moreAssign = []; renderAssignment(); return; }
   try{
     // re-read every class: keep the ones that still exist (fresh name/teacher), drop deleted ones
-    const found = (await Promise.all(list.map(c => Cloud.getClass(c.code)))).filter(Boolean), main = found[0];
+    const found = (await Promise.all(list.map(c => Cloud.getClass(c.code)))).filter(Boolean), main = found.find(c => c.code === p.classCode) || found[0];
+    const one = c => ({code: c.code, name: c.name, owner: c.ownerEmail || ''});
     setProfile({...p, classCode: main ? main.code : '', className: main ? main.name : '', classOwner: main ? main.ownerEmail || '' : '',
-      classes: found.map(c => ({code: c.code, name: c.name, owner: c.ownerEmail || ''}))});
+      classes: main ? [one(main)] : [], saved: found.map(one)});
     S.assignment = (main && main.scale_assignment) || null;
-    S.moreAssign = found.slice(1).filter(c => c.scale_assignment).map(c => ({code: c.code, name: c.name, a: c.scale_assignment}));
+    S.moreAssign = [];
     updateWho(); renderAssignment();
     if(found.length < list.length) renderBoard();
     if(main) scheduleSync();
@@ -2277,7 +2285,7 @@ function showWelcome(keep){
   closeOverlay();
   const p = keep ? getProfile() : null;
   setPickedIcon(p && p.icon);
-  const cls = classesOf(p);
+  const cls = prefillOf(p);
   $('#wFirst').value = p ? p.first : ''; $('#wInit').value = p ? p.init : ''; $('#wCode').value = cls.length ? cls[0].code : '';
   $('#wSolo').checked = !!(p && !p.classCode); $('#wError').textContent = '';
   $('#wMore').innerHTML = ''; syncCodeBoxes(); cls.slice(1).forEach(c => addCodeBox(c.code));
@@ -2306,9 +2314,9 @@ async function submitWelcome(e){
   }
   const main = found[0];
   setProfile({first, init, classCode: main ? main.code : '', className: main ? main.name : '', classOwner: main ? main.ownerEmail || '' : '',
-    classes: found.map(c => ({code: c.code, name: c.name, owner: c.ownerEmail || ''})), icon: pickedIcon()});
+    classes: found.slice(0, 1).map(c => ({code: c.code, name: c.name, owner: c.ownerEmail || ''})), saved: found.map(c => ({code: c.code, name: c.name, owner: c.ownerEmail || ''})), icon: pickedIcon()});
   S.assignment = (main && main.scale_assignment) || null;
-  S.moreAssign = found.slice(1).filter(c => c.scale_assignment).map(c => ({code: c.code, name: c.name, a: c.scale_assignment}));
+  S.moreAssign = [];
   $('#welcome').hidden = true; S.overlay = false;
   SFX.level(); updateWho(); renderAssignment(); renderBoard();
 }
@@ -2334,7 +2342,7 @@ function whoMenu(){
   const p = getProfile(); if(!p){ showWelcome(false); return; }
   const cls = classesOf(p);
   const o = openOverlay(`<h2 class="otitle">${esc(displayName(p).toUpperCase())}</h2>
-    <p class="osub">${cls.length ? `Class${cls.length > 1 ? 'es' : ''}: ${cls.map(c => `<b>${esc(c.name)}</b> (code ${esc(c.code)})`).join(' · ')}` : 'Not in a class: your scores go on the World board only.'}</p>
+    <p class="osub">${cls.length ? `Class: <b>${esc(cls[0].name)}</b> (code ${esc(cls[0].code)})` : 'Not in a class: your scores go on the World board only.'}</p>${switchHTML(p)}
     <div class="obtns"><button class="btn obtn alt" type="button" id="whoClose">CLOSE</button><button class="btn obtn" type="button" id="whoClass">CHANGE CLASS</button><button class="btn obtn mag" type="button" id="whoSwitch">SWITCH STUDENT</button></div>`);
   o.querySelector('#whoClose').onclick = closeOverlay;
   o.querySelector('#whoClass').onclick = () => showWelcome(true);
