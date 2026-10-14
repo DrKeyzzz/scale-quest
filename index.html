@@ -2802,7 +2802,7 @@ function endRun(reason){
     if(!Cloud.on){ area.innerHTML = `<p class="weak" style="color:var(--yel)">SAVED FOR ${esc(name.toUpperCase())}!</p>`; return; }
     area.innerHTML = '<p class="weak" style="color:var(--yel)">POSTING...</p>';
     try{
-      await Cloud.submit({name, classCode: me.classCode || '', classCodes: classesOf(me).map(c => c.code), score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: Math.min(15, r.keys.length), keyList: r.keys.join(' ').slice(0, 60), col: r.deg ? 'degree_scores' : null});
+      await Cloud.submit({name, classCode: me.classCode || '', classCodes: classesOf(me).map(c => c.code), score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: Math.min(15, Math.max(1, r.bonusKeys.length)), keyList: (r.bonusKeys.length ? r.bonusKeys : r.keys).join(' ').slice(0, 60), col: r.deg ? 'degree_scores' : null});
       const [w, c] = r.deg
         ? await Promise.all([Cloud.worldRank(final, 'degree_scores'), me.classCode ? Cloud.degBoard(me.classCode).then(l => l.findIndex(x => x.name === name) + 1) : 0])
         : await Promise.all([Cloud.worldRank(final), me.classCode ? Cloud.classRank(me.classCode, name, final) : 0]);
