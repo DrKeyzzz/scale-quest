@@ -2793,7 +2793,7 @@ function endRun(reason){
   if(ranked && !r.deg) logRun({s: final, a: acc, k: r.keys.length, t: Date.now()});   // the teacher's best-CHAOS column is regular CHAOS only
   const sp = p.querySelector('#signInPost'); if(sp) sp.onclick = () => showWelcome(false);
   const post = p.querySelector('#postBtn');
-  if(post) post.onclick = async () => {
+  const doPost = async () => {
     const me = getProfile(), name = displayName(me), area = p.querySelector('#postArea');
     const lk = r.deg ? 'ranked_deg' : 'ranked', list = store.get(lk, []);
     list.push({n: name, s: final, b: r.best, k: Math.min(15, r.keys.length)});
@@ -2808,8 +2808,9 @@ function endRun(reason){
         : await Promise.all([Cloud.worldRank(final), me.classCode ? Cloud.classRank(me.classCode, name, final) : 0]);
       const bits = [c ? `#${c} IN ${esc(String(me.className).toUpperCase())}` : '', `#${w} IN THE WORLD`].filter(Boolean);
       area.innerHTML = `<p class="weak" style="color:var(--yel)">POSTED! ${bits.join(' · ')}</p>`;
-    } catch(err){ area.innerHTML = `<p class="weak" style="color:var(--bad)">SAVED ON THIS DEVICE. ${esc(errMsg(err)).toUpperCase()}</p>`; }
+    } catch(err){ area.innerHTML = `<p class="weak" style="color:var(--bad)">SAVED ON THIS DEVICE. ${esc(errMsg(err)).toUpperCase()}</p><button class="btn obtn mag" type="button" id="retryPost">TRY POSTING AGAIN</button>`; const rb = area.querySelector('#retryPost'); if(rb) rb.onclick = doPost; }
   };
+  if(post){ post.onclick = doPost; if(!/[?&]selftest/.test(location.search)) doPost(); }   // scores post automatically
   p.querySelector('#againBtn').onclick = () => startRun(r.mode);
   p.querySelector('#menuBtn').onclick = toMenu;
   const wb = p.querySelector('#weakBtn');   // straight into practice on the weakest scale (Scale Degrees stays on for a degrees run)
@@ -2849,14 +2850,15 @@ function novaEnd(reason){
     <div class="obtns"><button class="btn obtn" id="againBtn" type="button">TRY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, 'nova-panel');
   const si = p.querySelector('#novaSignIn'); if(si) si.onclick = () => showWelcome(false);
   const post = p.querySelector('#novaPost');
-  if(post) post.onclick = async () => {
+  const doNova = async () => {
     const area = p.querySelector('#postArea'); SFX.coin();
     area.innerHTML = '<p class="weak" style="color:#ffcf4a">POSTING...</p>';
     try{
       await Cloud.novaSubmit({name: displayName(me), classCode: me.classCode || '', classCodes: classesOf(me).map(c => c.code), score: final, points: r.score, streak: r.best, accuracy: acc, reached, finished});
       area.innerHTML = `<p class="weak" style="color:#ffcf4a">POSTED! ${finished ? 'YOUR SUPERNOVA STAR NOW SHINES NEXT TO YOUR NAME.' : 'SURVIVOR MARK SAVED.'}</p>`;
-    } catch(err){ area.innerHTML = `<p class="weak" style="color:var(--bad)">${esc(errMsg(err)).toUpperCase()}</p>`; }
+    } catch(err){ area.innerHTML = `<p class="weak" style="color:var(--bad)">${esc(errMsg(err)).toUpperCase()}</p><button class="btn obtn" type="button" id="retryNova" style="background:#ffcf4a">TRY POSTING AGAIN</button>`; const rb = area.querySelector('#retryNova'); if(rb) rb.onclick = doNova; }
   };
+  if(post){ post.onclick = doNova; if(!/[?&]selftest/.test(location.search)) doNova(); }   // scores post automatically
   p.querySelector('#againBtn').onclick = () => startRun('nova');
   p.querySelector('#menuBtn').onclick = toMenu;
 }
