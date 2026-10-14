@@ -6,6 +6,7 @@ rules_version = '2';
 //   Tidal Tones               https://drkeyzzz.github.io/tidal-tones/
 //   Rooftop Runner            https://drkeyzzz.github.io/rooftop-runner/
 //   Earshot Saloon            https://drkeyzzz.github.io/earshot-saloon/
+//   Ear Brain (Synapse)       https://drkeyzzz.github.io/ear-brain/
 //   Home page                 https://drkeyzzz.github.io/  (teacher/ sets each class's hub_assignment)
 // All the games share this project, its classes and teacher sign-in.
 // The SAME file lives in every game's GitHub repo; keep them identical.
@@ -335,6 +336,69 @@ service cloud.firestore {
         && d.created_at == request.time;
     }
 
+    // ================= Ear Brain progress =================
+    // Which levels a student has finished, so their progress follows them to any computer. Document ID = class code (or 'none') + '_' + first name and initial.
+    match /earbrain_progress/{docId} {
+      allow read: if true;
+      allow create, update: if docId.size() <= 60 && earbrainProgress(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    function earbrainProgress(d) {
+      return d.keys().hasOnly(['name', 'class_code', 'synapse', 'intervals', 'updated_at'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
+        && d.class_code is string && d.class_code.size() <= 12
+        && d.synapse is list && d.synapse.size() <= 12
+        && d.get('intervals', []) is list && d.get('intervals', []).size() <= 12
+        && d.updated_at == request.time;
+    }
+
+    // ================= Synapse =================
+    // Leaderboard runs: anyone can see them and add one in the right shape; nobody can edit them.
+    match /synapse_scores/{scoreId} {
+      allow read: if true;
+      allow create: if synapseScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data) && classCodesOk(request.resource.data);
+      allow update: if false;
+      allow delete: if isAdmin() || ownsAnyClass(resource.data);
+    }
+
+    // A finished run: score (speed and floor weighted), rounds played, deepest floor (1-6), accuracy %, tightest cents x10, best streak.
+    function synapseScore(d) {
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'rounds', 'floor', 'acc', 'tight', 'streak', 'created_at', 'dev', 'icon', 'class_codes'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
+        && d.get('class_code', '') is string
+        && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
+        && d.score is int && d.score >= 0 && d.score <= 100000000
+        && d.rounds is int && d.rounds >= 1 && d.rounds <= 10000
+        && d.floor is int && d.floor >= 1 && d.floor <= 6
+        && d.acc is int && d.acc >= 0 && d.acc <= 100
+        && d.tight is int && d.tight >= 10 && d.tight <= 600
+        && d.streak is int && d.streak >= 0 && d.streak <= 10000
+        && d.created_at == request.time;
+    }
+
+    // ================= Ear Brain: Intervals =================
+    match /intervals_scores/{scoreId} {
+      allow read: if true;
+      allow create: if intervalsScore(request.resource.data) && devOk(request.resource.data) && iconOk(request.resource.data) && classCodesOk(request.resource.data);
+      allow update: if false;
+      allow delete: if isAdmin() || ownsAnyClass(resource.data);
+    }
+
+    // A finished run: score, rounds played, deepest level (1-6), accuracy %, best streak.
+    function intervalsScore(d) {
+      return d.keys().hasOnly(['name', 'class_code', 'score', 'rounds', 'floor', 'acc', 'streak', 'created_at', 'dev', 'icon', 'class_codes'])
+        && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
+        && d.get('class_code', '') is string
+        && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
+        && d.score is int && d.score >= 0 && d.score <= 100000000
+        && d.rounds is int && d.rounds >= 1 && d.rounds <= 10000
+        && d.floor is int && d.floor >= 1 && d.floor <= 6
+        && d.acc is int && d.acc >= 0 && d.acc <= 100
+        && d.streak is int && d.streak >= 0 && d.streak <= 10000
+        && d.created_at == request.time;
+    }
+
     // ================= Earshot Saloon =================
     // Leaderboard runs: anyone can see them and add one in the right shape; nobody can edit them.
     match /earshot_scores/{scoreId} {
@@ -409,7 +473,7 @@ service cloud.firestore {
 
     function feedbackOk(d) {
       return d.keys().hasOnly(['game', 'text', 'name', 'class_code', 'class_codes', 'owner', 'created_at'])
-        && d.game in ['scale-quest', 'tidal-tones', 'earshot-saloon', 'rhythm-trainer', 'rooftop-runner', 'hub']
+        && d.game in ['scale-quest', 'tidal-tones', 'earshot-saloon', 'rhythm-trainer', 'rooftop-runner', 'ear-brain', 'hub']
         && d.text is string && d.text.size() >= 3 && d.text.size() <= 300
         && d.name is string && d.name.size() <= 24
         && (isAdmin() || !d.name.lower().matches('milnes *d[.]? *'))   // only the developer can be Milnes D.
@@ -438,7 +502,7 @@ service cloud.firestore {
       return d.keys().hasOnly(['name', 'game', 'class_code', 'owner', 'settings', 'grade', 'tries', 'open', 'opens_at', 'closes_at', 'created_at'])
         && (!('opens_at' in d) || d.opens_at is timestamp) && (!('closes_at' in d) || d.closes_at is timestamp)
         && d.name is string && d.name.size() >= 1 && d.name.size() <= 60
-        && d.game in ['scale', 'tidal', 'rooftop', 'rhythm', 'earshot']
+        && d.game in ['scale', 'tidal', 'rooftop', 'rhythm', 'earshot', 'synapse']
         && d.grade in ['acc', 'score']
         && d.tries is int && d.tries >= 0 && d.tries <= 20
         && d.open is bool && d.settings is map && d.owner is string && d.class_code is string

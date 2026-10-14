@@ -2438,6 +2438,16 @@ function nextQuestion(){
   renderQuestion();
 }
 function renderQuestion(){
+  // Test mode: never ask the same question twice in a run (same scale, kind of question, degree and direction).
+  if(window.MTGTest && MTGTest.active && S.run && S.run.q){
+    const r = S.run, k = r.q, sig = [k.key, k.type, k.degree, k.dir].join('|'); r.seen = r.seen || new Set();
+    if(r.seen.has(sig)){
+      r.redo = (r.redo || 0) + 1;
+      if(r.redo < 60) return r.deg ? degQuestion() : nextQuestion();
+      r.seen.clear();   // every different question has been used: start a fresh round of them
+    }
+    r.redo = 0; r.seen.add(sig);
+  }
   const q = S.run.q, K = `<b>${q.name}</b>`;
   S.busy = false; S.sel.clear(); S.lock.clear(); say('', ''); setNext(null);
   $('#explain').hidden = true; $('#qHelp').hidden = false;
