@@ -16,6 +16,18 @@ Only a finished **CHAOS** run can go on the board. Every CHAOS run is 20 questio
 - **Key bonus:** +10% for each key beyond the first (4 keys = x1.3, all 15 = x2.4).
 - Runs that use CONTINUE, practice runs and quit runs can't be posted.
 
+## LEARN
+
+The **📖 LEARN** button (top bar) opens a no-score reference for any of the 150 scales:
+
+- The scale on the treble staff with letter names, degree numbers and the step pattern (W, H, W+H). Melodic minor shows going up and coming down.
+- The piano below with the scale's keys shaded and the roots marked.
+- **▶ PLAY** plays the scale; each note lights up on the staff and the piano at the same time. Tempo, up and down, and loop. Click any note or key to hear it.
+- **Key signature** box: the signature on a small staff, in plain words, with where it comes from (relative major for minor, parent major for modes). Theoretical keys (like G♯ major) say why there's no real signature and link to the same-sounding key. A checkbox writes the scale on the big staff with its key signature.
+- **Circle of fifths**: majors outside, relative minors inside; the current key lights up (modes light their parent major). Click any key to learn it.
+- **Learn what you missed**: every end screen (practice, CHAOS, SUPERNOVA, tests) with mistakes has a button that opens LEARN with just the missed scales and what was missed, then **PRACTICE THESE SCALES ▶**.
+- Link straight to a scale with `?learn=G` (or `?learn=D:dor`).
+
 ## SCALE DEGREES
 
 Click **SCALE DEGREES** in the top bar (major keys only; MINOR, MODES and SUPERNOVA are switched off while it's on). Check the keys, then press START or CHAOS. Questions rotate between:

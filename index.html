@@ -499,6 +499,73 @@ button{font:inherit;color:inherit}
 .devtag{font-family:var(--px);font-size:7px;padding:2px 4px;margin-left:4px;background:var(--mag);color:var(--shadow);vertical-align:middle}
 /* ---------- teacher dashboard ---------- */
 .app.teacher > :not(.topbar):not(.tview){display:none!important}
+.app.learning > :not(.topbar):not(.lview){display:none!important}
+/* LEARN */
+.lview{display:flex;flex-direction:column;gap:8px;padding:10px 14px}
+.lv-head{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.lv-head h2{margin:0;font-family:var(--px);font-size:16px;color:var(--yel)}
+.lv-head #lvBack{margin-left:auto;order:2}
+.lv-pick{order:3;flex-basis:100%}
+.lv-pick{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.lv-seg{display:flex;flex-wrap:wrap;gap:3px}
+.lv-seg button,.lv-list button{font-family:var(--px);font-size:9px;padding:5px 7px;background:var(--panel);color:var(--ink);border:2px solid var(--line);border-radius:8px;cursor:pointer}
+.lv-seg button[aria-pressed="true"]{background:var(--yel);color:var(--shadow);border-color:var(--yel)}
+.lv-seg button:disabled{opacity:.3;cursor:not-allowed}
+.lv-seg.tonics button{min-width:34px;font-size:11px}
+.lv-list{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;border:2px dashed var(--line);border-radius:12px}
+.lv-list .ll-t{font-family:var(--px);font-size:9px;color:var(--yel);margin-right:4px}
+.lv-list button.cur{border-color:var(--cyan);background:#13a9bd;color:#fff}
+.lv-list button.done::before{content:"✓ ";color:var(--ok)}
+.lv-list button small{opacity:.75;margin-left:4px}
+.lv-list .ll-miss{flex-basis:100%;margin:2px 0 0;color:var(--dim);font-size:17px}
+.lv-main{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:12px;align-items:start}
+.lv-left{display:flex;flex-direction:column;gap:8px;align-items:center;min-width:0}
+.lv-titlerow{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;justify-content:center;text-align:center}
+.lv-title{margin:0;font-family:var(--px);font-size:18px;color:var(--yel)}
+.lv-tip{margin:0;color:var(--dim);font-size:18px}
+.lv-staff{width:100%;flex:none}
+.lv-staff svg{display:block;width:100%;height:auto;max-height:26vh}
+.lv-staff .ln{cursor:pointer}
+.lv-staff .ln .nh{fill:var(--paperink)} .lv-staff .ln .accg{stroke:var(--paperink)}
+.lv-staff .ln.lit .nh{fill:#ff8a00} .lv-staff .ln.lit .accg{stroke:#ff8a00}
+.lv-staff .ln.lit text{fill:#d9480f;font-weight:700}
+.lv-staff text{fill:var(--paperink);font-family:var(--vt,monospace);text-anchor:middle}
+.lv-staff .stp{fill:#6b5fa8;font-size:15px} .lv-staff .stp.aug{fill:#c2255c}
+.lv-staff .dir{font-size:15px;fill:#6b5fa8;text-anchor:start}
+.lv-row{display:flex;gap:12px;align-items:stretch;width:100%}
+.lv-piano{flex:1;min-width:0;padding:8px;background:#0b0720;border-radius:12px;display:flex;align-items:center}
+.lv-cofbox{flex:none;padding:6px}
+.lv-cofbox h4{font-size:8px}
+.lv-piano svg{display:block;width:100%;height:auto;max-height:21vh}
+.lk{cursor:pointer} .lk rect{stroke:#07031a;stroke-width:1.2}
+.lk.white rect{fill:#fff} .lk.black rect{fill:#17112e}
+.lk.white.insc rect{fill:#cfd2ee} .lk.black.insc rect{fill:#5a5d8a}
+.lk.lit rect{fill:#ff8a00!important}
+.lk .rt{fill:#6b5fa8} .lk.black .rt{fill:#cfd2ee}
+.lv-ctl{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:center}
+.lv-play{font-size:15px;padding:9px 18px;background:var(--yel);color:var(--shadow)}
+.lv-go{font-size:12px;padding:10px 14px;background:var(--cyan);color:var(--shadow)}
+.lv-tempo,.lv-chk{font-family:var(--px);font-size:9px;color:var(--dim);display:flex;align-items:center;gap:6px;cursor:pointer}
+.lv-tempo b{color:var(--ink);font-weight:400;min-width:3ch}
+.lv-side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.lv-box{border:2px solid var(--line);border-radius:12px;padding:8px;background:var(--panel);display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
+.lv-box h4{margin:0;font-family:var(--px);font-size:10px;color:var(--yel);letter-spacing:.08em}
+.lv-sig{width:170px;flex:none} .lv-sig svg{display:block;width:100%;height:auto}
+.lv-sigtext{margin:0;font-size:15px;line-height:1.2;color:var(--ink)}
+.lv-rule,.lv-cofnote{margin:0;font-size:13px;color:var(--dim);line-height:1.2}
+.lv-rule b{color:var(--ink);font-weight:400;letter-spacing:.1em}
+.lv-cof svg{display:block;width:min(180px,22vh);height:auto}
+.lv-cof .seg{cursor:pointer}
+.lv-cof .seg path{fill:var(--panel);stroke:var(--line);stroke-width:1.5}
+.lv-cof .seg:hover path{fill:#2f2660}
+.lv-cof .seg text{fill:var(--ink);font-size:13px;text-anchor:middle;dominant-baseline:middle;font-family:system-ui,sans-serif;font-weight:700;pointer-events:none}
+.lv-cof .seg .cnt{fill:var(--dim);font-size:9px;font-weight:400}
+.lv-cof .seg.inner text{font-size:11px}
+.lv-cof .seg.on path{fill:#ff8a00;stroke:#ffd8a8} .lv-cof .seg.on text{fill:#1a1142}
+.lv-cof .seg.rel path{fill:#3d2f7a}
+.lv-enh{font-size:12px;padding:8px 10px;background:var(--cyan);color:var(--shadow)}
+@media (max-width:700px){ .lv-row{flex-direction:column;align-items:center} }
+@media (max-width:980px){ .lv-main{grid-template-columns:1fr} .lv-side{flex-direction:row;flex-wrap:wrap;justify-content:center} .lv-box{flex:1 1 260px} }
 .tview{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
 .td-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .td-head h2{margin:0 auto 0 0;font-family:var(--px);font-size:14px;color:var(--yel);font-weight:400}
@@ -878,6 +945,7 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
         </div>
       </div>
       <button class="btn tbtn who" id="whoBtn" type="button">👤 SIGN IN</button>
+      <button class="btn tbtn" id="learnTopBtn" type="button">📖 LEARN</button>
       <button class="btn tbtn" id="boardBtn" type="button">LEADERBOARD</button>
       <button class="btn tbtn" id="muteBtn" type="button">SOUND: ON</button>
       <button class="btn tbtn quit" id="quitBtn" type="button" hidden>QUIT</button>
@@ -944,6 +1012,46 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
       <button class="btn submit" id="submitBtn" type="button">SUBMIT</button>
       <span class="keyhint" id="keyHint">ENTER = SUBMIT</span>
       <button class="midibtn" id="midiBtn" type="button" hidden>🎹 CONNECT MIDI KEYBOARD</button>
+    </div>
+  </section>
+
+  <section class="panel lview" id="learnView" hidden aria-label="Learn a scale">
+    <div class="lv-head">
+      <h2>📖 LEARN</h2>
+      <div class="lv-pick" id="lvPick"></div>
+      <button class="btn tbtn" id="lvBack" type="button">BACK TO GAME</button>
+    </div>
+    <div class="lv-list" id="lvList" hidden></div>
+    <div class="lv-main">
+      <div class="lv-left">
+        <div class="lv-titlerow"><h3 class="lv-title" id="lvTitle"></h3><p class="lv-tip" id="lvTip"></p></div>
+        <div class="paper lv-staff" id="lvStaff"></div>
+        <div class="lv-row">
+          <div class="lv-piano" id="lvPiano"></div>
+          <div class="lv-box lv-cofbox">
+            <h4>CIRCLE OF FIFTHS</h4>
+            <div class="lv-cof" id="lvCof"></div>
+          </div>
+        </div>
+        <div class="lv-ctl">
+          <button class="btn lv-play" id="lvPlay" type="button">▶ PLAY</button>
+          <label class="lv-tempo">TEMPO <input type="range" id="lvTempo" min="40" max="140" step="10" value="60"><b id="lvBpm">60</b></label>
+          <label class="lv-chk"><input type="checkbox" id="lvUpDown"> UP AND DOWN</label>
+          <label class="lv-chk"><input type="checkbox" id="lvLoop"> LOOP</label>
+          <label class="lv-chk" title="Write the scale with its key signature, so only the extra accidentals show"><input type="checkbox" id="lvSigOn"> KEY SIGNATURE ON STAFF</label>
+          <button class="btn lv-go" id="lvPractice" type="button">PRACTICE THIS SCALE ▶</button>
+        </div>
+      </div>
+      <div class="lv-side">
+        <div class="lv-box">
+          <h4>KEY SIGNATURE</h4>
+          <div class="paper lv-sig" id="lvSig"></div>
+          <p class="lv-sigtext" id="lvSigText"></p>
+          <div id="lvEnh"></div>
+          <p class="lv-cofnote" id="lvCofNote"></p>
+          <p class="lv-rule">Sharps always go <b>F C G D A E B</b>. Flats always go <b>B E A D G C F</b>.</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -2361,7 +2469,7 @@ function setPlaying(on){
   $('#question').hidden = !on;
   $('#question').style.display = on ? 'contents' : 'none';
   $('#quitBtn').hidden = !on;
-  $('#teacherTopBtn').hidden = on;
+  $('#teacherTopBtn').hidden = on; $('#learnTopBtn').hidden = on;
 }
 function startRun(mode){
   closeOverlay();
@@ -2648,6 +2756,7 @@ function whyWrong(q){
 function onWrong(){
   timerPause();
   const r = S.run, q = r.q, practice = r.mode === 'practice';
+  learnNote(r, q);
   if(q.type === 'build' && q.tries === 0 && practice){
     q.tries = 1; S.busy = true;
     const {run, opt} = buildSpec(q), order = rightNotesWrongOrder(q);
@@ -2798,7 +2907,8 @@ function endRun(reason){
     ${eligible ? `<div class="initials" id="postArea">${getProfile()
       ? `<button class="btn obtn mag" type="button" id="postBtn" data-focus>POST MY SCORE AS ${esc(displayName(getProfile()).toUpperCase())}</button>`
       : `${isGuest() ? '<p class="weak" style="color:var(--dim)">GUEST GAME: THIS SCORE ISN\'T SAVED.</p>' : ''}<button class="btn obtn mag" type="button" id="signInPost" data-focus>${isGuest() ? 'SIGN IN FOR NEXT TIME' : 'ENTER YOUR NAME TO POST'}</button>`}</div>` : ''}
-    <div class="obtns"><button class="btn obtn" id="againBtn" type="button">PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, reason === 'quit' ? 'mag' : '');
+    <div class="obtns">${learnBtnHTML(r)}<button class="btn obtn" id="againBtn" type="button">PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, reason === 'quit' ? 'mag' : '');
+  wireLearnBtn(p, r);
   if(total) MTG_HIST.run('scale', {score: r.mode === 'chaos' ? final : 0, level: r.keys.length, acc});
   if(ranked && !r.deg) logRun({s: final, a: acc, k: r.keys.length, t: Date.now()});   // the teacher's best-CHAOS column is regular CHAOS only
   const sp = p.querySelector('#signInPost'); if(sp) sp.onclick = () => showWelcome(false);
@@ -2857,7 +2967,8 @@ function novaEnd(reason){
     + misses + `
     ${postable ? `<div class="initials" id="postArea">${me ? `<button class="btn obtn" type="button" id="novaPost" data-focus style="background:#ffcf4a">POST TO THE SUPERNOVA BOARD</button>`
       : `${isGuest() ? '<p class="weak" style="color:var(--dim)">GUEST GAME: THIS RUN ISN\'T SAVED.</p>' : ''}<button class="btn obtn" type="button" id="novaSignIn" data-focus>${isGuest() ? 'SIGN IN FOR NEXT TIME' : 'ENTER YOUR NAME TO POST'}</button>`}</div>` : ''}
-    <div class="obtns"><button class="btn obtn" id="againBtn" type="button">TRY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, 'nova-panel');
+    <div class="obtns">${learnBtnHTML(r)}<button class="btn obtn" id="againBtn" type="button">TRY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, 'nova-panel');
+  wireLearnBtn(p, r);
   const si = p.querySelector('#novaSignIn'); if(si) si.onclick = () => showWelcome(false);
   const post = p.querySelector('#novaPost');
   const doNova = async () => {
@@ -3394,6 +3505,215 @@ if(navigator.requestMIDIAccess){
     navigator.permissions.query({name: 'midi'}).then(p => { if(p.state === 'granted') midiConnect(true); }).catch(() => {});
 } else { $('#midiBtn2').hidden = true; $('#midiNo').hidden = false; }
 
+/* ---------- LEARN: see and hear any scale, with its key signature and the circle of fifths (no score) ---------- */
+const LV = {id: 'C', list: [], miss: {}, done: new Set(), cat: 'major', form: 'nat', mode: 'dor', seq: [], timer: 0, playing: false, onBack: null};
+const MODE_OFF = {major: 0, dor: 1, phr: 2, lyd: 3, mix: 4, aeo: 5, loc: 6, nat: 5, harm: 5, mel: 5};
+// The major key whose key signature this scale uses (relative major for minor, parent major for modes).
+const parentTonic = id => sigNotes(id)[(7 - MODE_OFF[typeOf(id)]) % 7];
+const sigList = id => { const n = sigNotes(id), order = isFlatKey(id) ? 'BEADGCF' : 'FCGDAEB'; return [...order].map(l => n.find(x => x[0] === l)).filter(x => x && accOf(x)); };
+const stepName = d => d === 1 ? 'H' : d === 2 ? 'W' : d === 3 ? 'W+H' : '?';
+// Scale mistakes for LEARN WHAT YOU MISSED: what was missed, per scale.
+function learnNote(r, q){
+  const m = r.lm || (r.lm = {}), a = m[q.key] || (m[q.key] = []);
+  const d = q.lks ? 'the key signature' : q.type === 'build' ? 'building it' : q.degree ? `the ${q.dn ? DEG_NAME[q.degree] : ORDN[q.degree]} (${fmt(q.answer)})` : '';
+  if(d && !a.includes(d)) a.push(d);
+}
+// Missed scales, the most-missed first.
+function learnMissed(r){
+  if(!r || !r.lm) return [];
+  const n = k => { const st = r.stats[k]; return st ? st.total - st.right : 1; };
+  return Object.keys(r.lm).filter(k => SCALES[k]).sort((a, b) => n(b) - n(a));
+}
+const learnBtnHTML = r => learnMissed(r).length ? '<button class="btn obtn alt" id="learnMissBtn" type="button">📖 LEARN WHAT YOU MISSED</button>' : '';
+function wireLearnBtn(p, r){
+  const b = p.querySelector('#learnMissBtn'); if(!b) return;
+  b.onclick = () => { const ids = learnMissed(r), miss = r.lm; closeOverlay(); toMenu(); openLearn(ids, miss); };
+}
+function openLearn(list = [], miss = {}, onBack = null){
+  if(S.run && !S.run.ended) return;
+  LV.list = list; LV.miss = miss; LV.done = new Set(); LV.onBack = onBack;
+  $('#app').classList.add('learning'); $('#learnView').hidden = false; window.scrollTo({top: 0});
+  $('#lvPractice').hidden = !!onBack;   // not from a test
+  learnSet(list[0] || PLAY_ORDER.find(k => S.selected.has(k)) || LV.id || 'C');
+}
+function closeLearn(){
+  learnStop(); $('#app').classList.remove('learning'); $('#learnView').hidden = true;
+  const back = LV.onBack; LV.onBack = null; if(back) back();
+}
+function learnSet(id){
+  if(!SCALES[id]) id = 'C';
+  learnStop(); LV.id = id;
+  const t = typeOf(id); LV.cat = t === 'major' ? 'major' : MINOR_FORMS.includes(t) ? 'minor' : 'modes';
+  if(LV.cat === 'minor') LV.form = t; if(LV.cat === 'modes') LV.mode = t;
+  learnRender();
+}
+function learnIdFor(tonic){ return LV.cat === 'major' ? tonic : tonic + ':' + (LV.cat === 'minor' ? LV.form : LV.mode); }
+function learnPicker(){
+  const fam = [['major', 'MAJOR'], ['minor', 'MINOR'], ['modes', 'MODES']].map(([k, l]) => `<button type="button" data-lcat="${k}" aria-pressed="${LV.cat === k}">${l}</button>`).join('');
+  const forms = LV.cat === 'minor' ? MINOR_FORMS.map(f => [f, SCALE_TYPES[f].name.split(' ')[0].toUpperCase()]) : LV.cat === 'modes' ? MODE_TYPES.map(m => [m, SCALE_TYPES[m].name.toUpperCase()]) : [];
+  const cur = LV.cat === 'minor' ? LV.form : LV.mode;
+  const tonics = (LV.cat === 'minor' ? MINOR_ORDER : MAJOR_ORDER).map(tn => { const id = learnIdFor(tn);
+    return `<button type="button" data-lton="${tn}" aria-pressed="${id === LV.id}"${SCALES[id] ? '' : ' disabled title="Needs a triple sharp or flat"'}>${fmt(tn)}${LV.cat === 'minor' ? 'm' : ''}</button>`; }).join('');
+  $('#lvPick').innerHTML = `<div class="lv-seg">${fam}</div>${forms.length ? `<div class="lv-seg">${forms.map(([k, l]) => `<button type="button" data-lform="${k}" aria-pressed="${k === cur}">${l}</button>`).join('')}</div>` : ''}<div class="lv-seg tonics">${tonics}</div>`;
+}
+function learnList(){
+  const el = $('#lvList'); el.hidden = !LV.list.length; if(!LV.list.length) return;
+  const i = LV.list.indexOf(LV.id), miss = LV.miss[LV.id];
+  el.innerHTML = `<span class="ll-t">YOU MISSED:</span>` + LV.list.map(k => `<button type="button" data-lgo="${k}" class="${k === LV.id ? 'cur' : ''}${LV.done.has(k) ? ' done' : ''}">${esc(shortName(k))}</button>`).join('')
+    + `<button type="button" data-lstep="-1"${i <= 0 ? ' disabled' : ''}>◀ PREV</button><button type="button" data-lstep="1"${i < 0 || i >= LV.list.length - 1 ? ' disabled' : ''}>NEXT ▶</button>`
+    + (miss && miss.length ? `<p class="ll-miss">In ${esc(scaleName(LV.id))} you missed ${esc(miss.join(', '))}.</p>` : '');
+  $('#lvPractice').textContent = 'PRACTICE THESE SCALES ▶';
+}
+// Notes in play order: up one octave (and back down when asked; melodic minor always comes down as natural minor).
+function learnSeq(id){
+  const n = SCALES[id], li = LETTERS.indexOf(n[0][0]), root = 60 + NAT[n[0][0]] + accOf(n[0]), st = stepsOf(id), t = typeOf(id);
+  const seq = n.map((x, i) => ({note: x, pos: li + i, midi: root + st[i], deg: i + 1}));
+  seq.push({note: n[0], pos: li + 7, midi: root + 12, deg: 8});
+  if(t === 'mel' || $('#lvUpDown').checked){
+    const dk = t === 'mel' ? tonicOf(id) + ':nat' : id, dn = SCALES[dk], ds = stepsOf(dk);
+    for(let i = 6; i >= 0; i--) seq.push({note: dn[i], pos: li + i, midi: root + ds[i], deg: i + 1, down: true});
+  }
+  return seq;
+}
+const onPiano = m => m < PIANO_LO ? m + 12 : m > PIANO_HI ? m - 12 : m;
+function learnStaff(id, seq){
+  const sigOn = $('#lvSigOn').checked && stdSig(id), sig = sigOn ? sigMarkup(id) : '';
+  const x0 = sigOn ? 104 + sigCount(id) * 16 + 26 : 120, dx = seq.length > 8 ? 46 : 64, W = x0 + seq.length * dx + 10;
+  const lines = [2, 4, 6, 8, 10].map(i => `<line class="staff-line" x1="8" x2="${W - 8}" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('');
+  const names = S.deg && typeOf(id) === 'major' && seq.length <= 8;
+  let notes = '', steps = '';
+  seq.forEach((e, i) => {
+    const x = x0 + i * dx + dx / 2, a = accOf(e.note);
+    const shown = sigOn ? (a !== accOf(sigNotes(id).find(m => m[0] === e.note[0]) || e.note[0]) ? ACC_KEY[a] : null) : (a ? ACC_KEY[a] : null);
+    notes += `<g class="ln" data-i="${i}">${ledgerLines(e.pos, x)}${accSvg(shown, x - 30, yOf(e.pos))}<ellipse class="nh" cx="${x}" cy="${yOf(e.pos)}" rx="12.5" ry="8.6"/><ellipse cx="${x}" cy="${yOf(e.pos)}" rx="4.4" ry="7" transform="rotate(-50 ${x} ${yOf(e.pos)})" fill="var(--paper)"/>`
+      + `<text x="${x}" y="222" font-size="22">${fmt(e.note)}</text><text x="${x}" y="242" font-size="${names ? 11 : 17}">${names ? DEG_NAME[e.deg === 8 ? 1 : e.deg].toUpperCase() : e.deg}</text></g>`;
+    if(i){ const d = Math.abs(e.midi - seq[i - 1].midi); steps += `<text class="stp${d === 3 ? ' aug' : ''}" x="${x - dx / 2}" y="262">${stepName(d)}</text>`; }
+  });
+  const down = seq.findIndex(e => e.down);
+  const dirs = down > 0 ? `<text class="dir" x="${x0 + 4}" y="34">GOING UP</text><text class="dir" x="${x0 + down * dx + 4}" y="34">${typeOf(id) === 'mel' ? 'COMING DOWN (NATURAL MINOR)' : 'COMING DOWN'}</text>` : '';
+  $('#lvStaff').innerHTML = `<svg viewBox="0 18 ${W} 252" role="img" aria-label="${esc(scaleName(id))} on the treble staff">${lines}<line class="staff-line" x1="8" x2="8" y1="${yOf(10)}" y2="${yOf(2)}"/><text class="clef" x="14" y="${yOf(2) + 17}" font-size="104" style="text-anchor:start">𝄞</text>${sig}${dirs}${notes}${steps}</svg>`;
+}
+function learnPiano(seq){
+  const W = 40, H = 190, BW = 24, BH = 118, ins = new Set(seq.map(e => onPiano(e.midi))), roots = new Set(seq.filter(e => e.deg === 1 || e.deg === 8).map(e => onPiano(e.midi)));
+  let wi = 0, whites = '', blacks = '';
+  for(let m = PIANO_LO; m <= PIANO_HI; m++){
+    const black = [1, 3, 6, 8, 10].includes(m % 12), cls = `lk ${black ? 'black' : 'white'}${ins.has(m) ? ' insc' : ''}`;
+    if(!black){ const x = wi * W; whites += `<g class="${cls}" data-m="${m}"><rect x="${x + 1}" y="1" width="${W - 2}" height="${H - 2}" rx="4"/>${roots.has(m) ? `<circle class="rt" cx="${x + W / 2}" cy="${H - 18}" r="6"/>` : ''}</g>`; wi++; }
+    else { const x = wi * W - BW / 2; blacks += `<g class="${cls}" data-m="${m}"><rect x="${x}" y="1" width="${BW}" height="${BH}" rx="3"/>${roots.has(m) ? `<circle class="rt" cx="${x + BW / 2}" cy="${BH - 14}" r="5"/>` : ''}</g>`; }
+  }
+  $('#lvPiano').innerHTML = `<svg viewBox="0 0 ${wi * W} ${H}" role="img" aria-label="Piano with the scale's keys shaded">${whites}${blacks}</svg>`;
+}
+function learnSigBox(id){
+  const t = typeOf(id), P = fmt(parentTonic(id)) + ' major', name = scaleName(id), c = sigCount(id), list = sigList(id).map(fmt);
+  const cw = c ? `${c} ${isFlatKey(id) ? 'flat' : 'sharp'}${c > 1 ? 's' : ''} (${list.join(', ')})` : 'no sharps or flats';
+  const std = stdSig(id);
+  let txt;
+  if(t === 'major') txt = std ? `<b>${name}</b>: ${cw}.` : `<b>${name}</b> would need ${cw}, so it has no real key signature.`;
+  else if(t === 'nat') txt = `<b>${name}</b> shares ${P}'s key signature (its relative major): ${cw}.`;
+  else if(MINOR_FORMS.includes(t)){
+    const raised = (t === 'harm' ? [6] : [5, 6]).map(i => fmt(SCALES[id][i])).join(' and ');
+    txt = `<b>${name}</b> uses ${fmt(tonicOf(id))} natural minor's key signature (relative major ${P}): ${cw}. The raised ${t === 'harm' ? '7th' : '6th and 7th'} (${raised}) ${t === 'harm' ? 'is an accidental' : 'are accidentals'}, not part of the key signature.`;
+  } else txt = `<b>${name}</b> uses ${P}'s key signature (its parent major): ${cw}.`;
+  if(!std && t !== 'major') txt += ' That needs more than 7 sharps or flats (or a double), so it isn\'t a real key signature.';
+  $('#lvSig').innerHTML = `<svg viewBox="0 22 230 176" role="img" aria-label="${esc(name)} key signature"><line class="staff-line" x1="6" x2="224" y1="${yOf(2)}" y2="${yOf(2)}"/>${[4, 6, 8, 10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('')}<text class="clef" x="12" y="${yOf(2) + 17}" font-size="104">𝄞</text>${std ? sigMarkup(id) : `<text x="150" y="${yOf(6) + 6}" font-size="18" fill="var(--paperink)" text-anchor="middle">${c > 7 || !std ? 'NONE' : ''}</text>`}</svg>`;
+  $('#lvSigText').innerHTML = txt;
+  const enh = std ? null : PLAY_ORDER.find(k => k !== id && typeOf(k) === t && pcOf(tonicOf(k)) === pcOf(tonicOf(id)) && stdSig(k));
+  $('#lvEnh').innerHTML = enh ? `<p class="lv-rule">Musicians write it as <b>${esc(scaleName(enh))}</b> instead (same sound).</p><button class="btn lv-enh" type="button" data-lgo="${enh}">LEARN ${esc(scaleName(enh)).toUpperCase()} ▶</button>` : '';
+}
+// Circle of fifths: majors outside (C at the top, sharps clockwise), relative minors inside.
+const COF_OUT = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'Db', 'Ab', 'Eb', 'Bb', 'F'], COF_IN = ['A', 'E', 'B', 'F#', 'C#', 'G#', 'Eb', 'Bb', 'F', 'C', 'G', 'D'];
+const COF_OUT_ALT = {5: 'C♭', 6: 'G♭', 7: 'C♯'}, COF_IN_ALT = {6: 'd♯', 7: 'a♯'};
+const COF_CNT = ['0', '1♯', '2♯', '3♯', '4♯', '5♯', '6♯/6♭', '5♭', '4♭', '3♭', '2♭', '1♭'];
+function cofPos(id){ const c = sigCount(id) % 12; return isFlatKey(id) ? (12 - c) % 12 : c; }
+function learnCof(id){
+  const t = typeOf(id), pos = cofPos(id), inner = MINOR_FORMS.includes(t), cx = 130, cy = 130;
+  const pt = (r, a) => [cx + r * Math.sin(a), cy - r * Math.cos(a)];
+  const wedge = (r1, r2, i) => { const a0 = (i - .5) * Math.PI / 6, a1 = (i + .5) * Math.PI / 6, [x1, y1] = pt(r2, a0), [x2, y2] = pt(r2, a1), [x3, y3] = pt(r1, a1), [x4, y4] = pt(r1, a0);
+    return `M${x1} ${y1}A${r2} ${r2} 0 0 1 ${x2} ${y2}L${x3} ${y3}A${r1} ${r1} 0 0 0 ${x4} ${y4}Z`; };
+  let out = '';
+  for(let i = 0; i < 12; i++){
+    const a = i * Math.PI / 6, [ox, oy] = pt(103, a), [ix, iy] = pt(62, a);
+    out += `<g class="seg${!inner && i === pos ? ' on' : inner && i === pos ? ' rel' : ''}" data-lgo="${COF_OUT[i]}"><title>${scaleName(COF_OUT[i])}</title><path d="${wedge(82, 126, i)}"/><text x="${ox}" y="${oy - (COF_OUT_ALT[i] ? 6 : 3)}">${fmt(COF_OUT[i])}</text>${COF_OUT_ALT[i] ? `<text class="cnt" x="${ox}" y="${oy + 6}">${COF_OUT_ALT[i]}</text>` : ''}<text class="cnt" x="${ox}" y="${oy + (COF_OUT_ALT[i] ? 16 : 10)}">${COF_CNT[i]}</text></g>`;
+    out += `<g class="seg inner${inner && i === pos ? ' on' : !inner && i === pos ? ' rel' : ''}" data-lgo="${COF_IN[i]}:nat"><title>${scaleName(COF_IN[i] + ':nat')}</title><path d="${wedge(42, 82, i)}"/><text x="${ix}" y="${iy - (COF_IN_ALT[i] ? 5 : 0)}">${fmt(COF_IN[i]).toLowerCase()}</text>${COF_IN_ALT[i] ? `<text class="cnt" x="${ix}" y="${iy + 7}">${COF_IN_ALT[i]}</text>` : ''}</g>`;
+  }
+  $('#lvCof').innerHTML = `<svg viewBox="0 0 260 260" role="img" aria-label="Circle of fifths">${out}<text x="130" y="126" text-anchor="middle" font-size="10" fill="var(--dim)" font-family="system-ui">MAJOR</text><text x="130" y="140" text-anchor="middle" font-size="10" fill="var(--dim)" font-family="system-ui">outside</text></svg>`;
+  const P = fmt(parentTonic(id)) + ' major', std = stdSig(id);
+  $('#lvCofNote').innerHTML = !std ? `${esc(scaleName(id))} isn't on the circle: it's a theoretical key. Its spot is shared with the same-sounding key.`
+    : t === 'major' ? `Each step clockwise adds a sharp; counter-clockwise adds a flat. The inside ring shows the relative minor.`
+    : inner ? `Minor keys are on the inside ring, next to their relative major (${esc(P)}).`
+    : `${esc(scaleName(id))} lives in ${esc(P)}'s key signature, so ${esc(P)} lights up.`;
+}
+function learnRender(){
+  const id = LV.id, t = typeOf(id);
+  learnPicker(); learnList();
+  $('#lvTitle').textContent = scaleName(id).toUpperCase();
+  const st = stepsOf(id).concat(12), pat = st.slice(1).map((v, i) => stepName(v - st[i])).join(' ');
+  $('#lvTip').textContent = t === 'mel' ? `Going up: ${pat}. Coming down it's natural minor.` : `${SCALE_TYPES[t].name[0].toUpperCase() + SCALE_TYPES[t].name.slice(1)} = ${pat}. Every letter appears once.`;
+  const ud = $('#lvUpDown'); ud.disabled = t === 'mel'; if(t === 'mel') ud.checked = true;
+  LV.seq = learnSeq(id);
+  learnStaff(id, LV.seq); learnPiano(LV.seq); learnSigBox(id); learnCof(id);
+  if(!LV.list.length) $('#lvPractice').textContent = 'PRACTICE THIS SCALE ▶';
+}
+function learnLight(i){
+  document.querySelectorAll('#learnView .lit').forEach(e => e.classList.remove('lit'));
+  if(i < 0) return;
+  const e = LV.seq[i]; if(!e) return;
+  const g = document.querySelector(`#lvStaff .ln[data-i="${i}"]`); if(g) g.classList.add('lit');
+  const k = document.querySelector(`#lvPiano .lk[data-m="${onPiano(e.midi)}"]`); if(k) k.classList.add('lit');
+}
+function learnStop(){ clearTimeout(LV.timer); LV.playing = false; const b = $('#lvPlay'); if(b) b.textContent = '▶ PLAY'; learnLight(-1); }
+function learnPlay(){
+  if(LV.playing) return learnStop();
+  audio(); LV.playing = true; $('#lvPlay').textContent = '■ STOP';
+  let i = 0; const id = LV.id;
+  const beat = () => 60000 / +$('#lvTempo').value;
+  const step = () => {
+    if(!LV.playing || LV.id !== id) return;
+    if(i >= LV.seq.length){
+      LV.done.add(id); learnList();
+      if($('#lvLoop').checked) i = 0; else { LV.timer = setTimeout(learnStop, beat() * .9); return; }
+    }
+    learnLight(i); playMidi(LV.seq[i].midi, beat() / 1000 * .95); i++;
+    LV.timer = setTimeout(step, beat());
+  };
+  step();
+}
+function learnPractice(){
+  const ids = LV.list.length ? LV.list.slice() : [LV.id];
+  closeLearn();
+  if(S.mode !== 'practice') setChoice('mode', 'practice');
+  if(S.deg) setDeg(false);
+  S.selected = new Set(ids);
+  const t = typeOf(ids[0]); S.cat = t === 'major' ? 'major' : MINOR_FORMS.includes(t) ? 'minor' : 'modes';
+  if(S.cat === 'minor') S.form = t; if(S.cat === 'modes') S.modeType = t;
+  renderKeyRows(); renderAssignment(); syncQuick(); audio(); startRun('practice');
+}
+$('#learnTopBtn').onclick = () => { if(!S.overlay && !S.run) openLearn(); };
+$('#lvBack').onclick = closeLearn;
+$('#lvPlay').onclick = learnPlay;
+$('#lvPractice').onclick = learnPractice;
+$('#lvTempo').oninput = e => { $('#lvBpm').textContent = e.target.value; };
+$('#lvUpDown').onchange = $('#lvSigOn').onchange = () => { learnStop(); learnRender(); };
+$('#learnView').addEventListener('click', e => {
+  const c = e.target.closest('[data-lcat]'), f = e.target.closest('[data-lform]'), tn = e.target.closest('[data-lton]'), go = e.target.closest('[data-lgo]'), stp = e.target.closest('[data-lstep]');
+  if(c){ LV.cat = c.dataset.lcat; const tonic = LV.cat === 'minor' ? (MINOR_ORDER.find(x => pcOf(x) === pcOf(tonicOf(LV.id))) || 'A') : (MAJOR_ORDER.find(x => x === tonicOf(LV.id)) || 'C'); const id = learnIdFor(tonic); learnSet(SCALES[id] ? id : learnIdFor(LV.cat === 'minor' ? 'A' : 'C')); return; }
+  if(f){ if(LV.cat === 'minor') LV.form = f.dataset.lform; else LV.mode = f.dataset.lform; const id = learnIdFor(tonicOf(LV.id)); learnSet(SCALES[id] ? id : learnIdFor(LV.cat === 'minor' ? 'A' : 'C')); return; }
+  if(tn){ learnSet(learnIdFor(tn.dataset.lton)); return; }
+  if(go){ learnSet(go.dataset.lgo); return; }
+  if(stp){ const i = LV.list.indexOf(LV.id) + +stp.dataset.lstep; if(LV.list[i]) learnSet(LV.list[i]); return; }
+  const n = e.target.closest('#lvStaff .ln');
+  if(n){ const i = +n.dataset.i; audio(); learnLight(i); playMidi(LV.seq[i].midi, .9); return; }
+  const k = e.target.closest('#lvPiano .lk');
+  if(k){ const m = +k.dataset.m, i = LV.seq.findIndex(x => onPiano(x.midi) === m); audio(); learnLight(i); if(i < 0) k.classList.add('lit'); playMidi(i >= 0 ? LV.seq[i].midi : m, .9); }
+});
+// ?learn=G (or a scale name) opens LEARN on that scale.
+function learnFromUrl(){
+  const q = new URLSearchParams(location.search), v = q.get('learn'); if(v == null) return;
+  q.delete('learn'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+  const id = SCALES[v] ? v : PLAY_ORDER.find(k => scaleName(k).toLowerCase() === v.toLowerCase());
+  openLearn(); if(id) learnSet(id);
+}
+
 /* ---------- boot ---------- */
 document.querySelectorAll('#accs button').forEach(b => b.querySelector('svg').innerHTML = ACC_SHAPE[b.dataset.acc]);
 $('#wForm').onsubmit = submitWelcome;
@@ -3441,7 +3761,7 @@ const TS_CSS = `
 #tsplash .tick span{display:inline-block;padding-left:100%;animation:tsscroll 38s linear infinite}
 @keyframes tsscroll{to{transform:translateX(-100%)}}
 @media (prefers-reduced-motion:reduce){#tsplash .tick span{animation:none;padding-left:18px}#tsplash .lamp i{animation:none}}
-body.testmode .mtg-home,body.testmode .mtgfb-foot,body.testmode #teacherTopBtn,body.testmode #whoBtn,body.testmode #boardBtn{display:none!important}
+body.testmode .mtg-home,body.testmode .mtgfb-foot,body.testmode #teacherTopBtn,body.testmode #learnTopBtn,body.testmode #whoBtn,body.testmode #boardBtn{display:none!important}
 `;
 const TICKER = 'THIS IS A TEST • TAKE YOUR TIME • READ EACH QUESTION CAREFULLY • YOUR BEST SCORE COUNTS • DO NOT RELOAD OR LEAVE THIS PAGE • GOOD LUCK • ';
 function tsEl(){
@@ -3538,11 +3858,13 @@ async function tsEnd(r, {acc, total, final, reason}){
     </div>
     ${saved ? `<p>${improved ? 'New best score saved for your teacher.' : 'Your best score stays saved for your teacher.'}</p>` : '<p class="err" role="alert">Your score could not be saved. Tell your teacher before you leave this page.</p>'}
     <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+      ${learnMissed(r).length ? '<button class="alt" type="button" id="tsLearn">📖 Learn what you missed</button>' : ''}
       ${left > 0 ? '<button class="go" type="button" id="tsAgain" data-focus>Take it again</button>' : ''}
       <button class="${left > 0 ? 'alt' : 'go'}" type="button" id="tsHome"${left > 0 ? '' : ' data-focus'}>${left > 0 ? 'Back to home' : 'Done'}</button>
     </div>`);
   el.querySelector('#tsHome').onclick = () => { location.href = HUB_URL; };
   const again = el.querySelector('#tsAgain'); if(again) again.onclick = () => { S.run = null; tsLobby(); };
+  const tl = el.querySelector('#tsLearn'); if(tl) tl.onclick = () => { const ids = learnMissed(r), miss = r.lm; tsHide(); S.run = null; openLearn(ids, miss, () => tsLobby()); };
   if(early) SFX.over(); else SFX.win();
 }
 async function initTest(){
@@ -3574,6 +3896,7 @@ async function initTest(){
 
 applySettingsFromUrl();
 applyFocusFromUrl();
+if(!document.body.classList.contains('testmode')) learnFromUrl();
 initTest();
 /* ---------- Header hints (same in every Music Theory Game): hover, keyboard focus or long-press a header button to see what it does ---------- */
 function headerHints(HINTS) {
@@ -3656,6 +3979,7 @@ headerHints({
   '#muteBtn': () => S.muted ? 'Sound is off · turn it on' : 'Sound is on · turn it off',
   '#quitBtn': 'End this game and go back',
   '#teacherTopBtn': 'For teachers: classes, scores and assignments',
+  '#learnTopBtn': 'See and hear any scale, with its key signature and circle of fifths',
 });
 </script>
 <!-- MTG_TIME start: identical in every game, only data-mount / data-place change. Master copy: Music Games/shared/mtg-time.snippet.html -->
