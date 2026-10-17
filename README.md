@@ -28,6 +28,15 @@ The **📖 LEARN** button (top bar) opens a no-score reference for any of the 15
 - **Learn what you missed**: every end screen (practice, CHAOS, SUPERNOVA, tests) with mistakes has a button that opens LEARN with just the missed scales and what was missed, then **PRACTICE THESE SCALES ▶**.
 - Link straight to a scale with `?learn=G` (or `?learn=D:dor`).
 
+## KEY SIGNATURES
+
+- **KEY SIGS** tab (next to MAJOR / MINOR / MODES), or **Key signatures** in the Scales dropdown. Check the major keys to practice; **+ MINOR KEYS** also asks for the relative minor.
+- Three question types: **Name it** (a key signature on the staff: which major or minor key?), **Count it** ("How many sharps or flats are in A♭ major?") and **Write it** (pick ♯ or ♭ and click the staff where each one goes, in order).
+- Practice explains every miss (the key signature, the order of sharps or flats, a tip, and the circle of fifths with the key lit). CHAOS posts to its own **KEY SIGS** leaderboard tab (`key_scores`). SUPERNOVA is off in this tab.
+- **KEY SIG QUESTIONS** (on by default, in the same row): regular practice ends each scale with a "name it" question for that scale's key signature, and CHAOS mixes in about 1 in 6. Modes ask for their parent major, minor scales for their minor key.
+- **SUPERNOVA** always has exactly 3 "name it" questions out of its 20.
+- The top bar hides the key during "name it" questions so it doesn't give the answer away.
+
 ## SCALE DEGREES
 
 Click **SCALE DEGREES** in the top bar (major keys only; MINOR, MODES and SUPERNOVA are switched off while it's on). Check the keys, then press START or CHAOS. Questions rotate between:

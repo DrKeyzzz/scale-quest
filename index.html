@@ -151,6 +151,15 @@ button{font:inherit;color:inherit}
 .degbtn{font-family:var(--px);font-size:9px;padding:7px 9px;background:var(--panel);color:var(--ink);border:3px solid var(--line);cursor:pointer;white-space:nowrap;flex:none}
 .degbtn:hover{border-color:var(--cyan)} .degbtn[aria-pressed="true"]{background:var(--yel);color:var(--shadow);border-color:var(--yel)}
 .famtabs button:disabled{opacity:.3;cursor:not-allowed}
+.kschk{font-family:var(--px);font-size:9px;color:var(--dim);display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;flex:none}
+.degbtns.many{grid-template-columns:repeat(8,minmax(0,1fr))}
+.degbtns.many button{font-size:18px!important;padding:10px 2px}
+.degbtns.tools{grid-template-columns:repeat(4,minmax(0,1fr));max-width:560px}
+.degbtns.tools button{font-size:15px!important}
+.explain .kscofw{flex-basis:100%;display:flex;justify-content:center;padding:0!important;border:0!important;background:none!important}
+.explain .kscofw svg.kscof{width:min(118px,16vh);height:auto}
+#staffWrap.ksbuild .paper{cursor:crosshair}
+@media (max-width:700px){.degbtns.many{grid-template-columns:repeat(5,minmax(0,1fr))}}
 .degcard{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .degcard span{font-family:var(--px);font-size:9px;padding:5px 7px;border:2px solid var(--line);background:var(--panel);color:var(--dim)}
 .degcard b{color:var(--yel);font-weight:400;margin-right:4px}
@@ -1086,9 +1095,11 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
       <div class="mpanel" data-panel="scales" role="tabpanel">
         <section class="panel keyselect" id="keySelect" aria-label="Choose scales">
           <div class="cats">
-            <div class="famtabs" id="catSeg" role="tablist" aria-label="Scale family"><button type="button" data-cat="major">MAJOR</button><button type="button" data-cat="minor">MINOR</button><button type="button" data-cat="modes">MODES</button></div>
+            <div class="famtabs" id="catSeg" role="tablist" aria-label="Scale family"><button type="button" data-cat="major">MAJOR</button><button type="button" data-cat="minor">MINOR</button><button type="button" data-cat="modes">MODES</button><button type="button" data-cat="keys">KEY SIGS</button></div>
             <div class="seg" id="formSeg" role="group" aria-label="Scale type"></div>
             <button type="button" class="degbtn" id="degBtn" aria-pressed="false" title="Name the scale degrees (tonic, supertonic, mediant...) in major keys">SCALE DEGREES</button>
+            <label class="kschk" id="ksMinorWrap" hidden title="Also ask for the minor key that shares each key signature"><input type="checkbox" id="ksMinor"> + MINOR KEYS</label>
+            <label class="kschk" id="ksMixWrap" title="About 1 question in 6 asks you to name a scale's key signature"><input type="checkbox" id="ksMix"> KEY SIG QUESTIONS</label>
             <span class="selwrap">
               <button type="button" class="selbtn" id="selBtn" aria-haspopup="true" aria-expanded="false" title="Check or uncheck whole groups of scales">SELECT ▾</button>
               <span class="selmenu" id="selMenu" role="menu" hidden></span>
@@ -1433,10 +1444,10 @@ const Cloud = {
   worldTop(){ return this.cached('scale_scores|world', () => this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(10)))).docs.map(d => this.row(d)))); },
   worldRank(score, col = 'scale_scores'){ return this.run(async ({fs, db}) => (await fs.getCountFromServer(fs.query(fs.collection(db, col), fs.where('score', '>', score)))).data().count + 1); },
   // SCALE DEGREES CHAOS board: a class (plus the developer's runs) or the World top 10, each player's best run.
-  degBoard(code){ return this.cached('deg|' + (code || 'world'), () => this.run(async ({fs, db}) => {
-    const col = fs.collection(db, 'degree_scores');
+  degBoard(code, name = 'degree_scores'){ return this.cached((name === 'degree_scores' ? 'deg|' : 'degks|') + (code || 'world'), () => this.run(async ({fs, db}) => {
+    const col = fs.collection(db, name);
     let rows = (await fs.getDocs(code ? fs.query(col, fs.where('class_code', '==', code)) : fs.query(col, fs.orderBy('score', 'desc'), fs.limit(30)))).docs.map(d => this.row(d));
-    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat([...await multiRows(fs, db, 'degree_scores', code), ...await devRows(fs, db, 'degree_scores')].map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
+    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat([...await multiRows(fs, db, name, code), ...await devRows(fs, db, name)].map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
     return this.bestOf(rows);
   })); },
   // Teacher dashboard: every score in the class (plus runs from students in 2+ classes that list this one in class_codes).
@@ -1560,6 +1571,7 @@ const S = {
   qpk: store.get('qpk', 5),
   keySig: false,   // no key signatures: students write every accidental themselves (Scale Degrees shows them on its name-it questions)
   deg: store.get('deg', false) === true, degSel: 0, degFocus: 0,
+  ks: store.get('ks', false) === true, ksMinor: store.get('ksMinor', false) === true, ksMix: store.get('ksMix', true) !== false, ksSel: '', ksAcc: '#', ksPlaced: [],
   muted: store.get('muted', false),
   run: null, busy: false, overlay: false,
   sel: new Set(), lock: new Set(), pos: 6, accSel: null,
@@ -1617,7 +1629,10 @@ function renderKeyRows(){
         <span class="cname">${fmt(tonicOf(k))}${S.cat === 'minor' ? 'm' : ''}</span><span class="cbadge">${ok ? (S.cat === 'modes' ? SCALE_TYPES[S.modeType].name.toUpperCase() : sigLabel(k)) : '—'}</span><span class="ccheck" aria-hidden="true">✓</span><span class="cstars" aria-hidden="true"></span>
       </button>`; }).join('');
   });
-  document.querySelectorAll('#catSeg button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.cat === S.cat); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', b.dataset.cat === S.cat); b.disabled = S.deg && b.dataset.cat !== 'major'; });
+  const tabOn = b => S.ks ? b.dataset.cat === 'keys' : b.dataset.cat === S.cat;
+  document.querySelectorAll('#catSeg button').forEach(b => { b.setAttribute('aria-pressed', tabOn(b)); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', tabOn(b)); b.disabled = S.deg && b.dataset.cat !== 'major'; });
+  $('#ksMinorWrap').hidden = !S.ks; $('#ksMixWrap').hidden = S.ks || S.deg; $('#degBtn').hidden = S.ks;
+  $('#ksMinor').checked = S.ksMinor; $('#ksMix').checked = S.ksMix;
   $('#degBtn').setAttribute('aria-pressed', S.deg);
   const forms = S.cat === 'minor' ? MINOR_FORMS.map(f => [f, SCALE_TYPES[f].name.split(' ')[0].toUpperCase()]) : S.cat === 'modes' ? MODE_TYPES.map(m => [m, SCALE_TYPES[m].name.toUpperCase()]) : [];
   $('#formSeg').innerHTML = forms.map(([k, l, full]) => `<button type="button" data-form="${k}" aria-pressed="${k === (S.cat === 'minor' ? S.form : S.modeType)}"${full ? ` title="${full}" aria-label="${full}"` : ''}>${l}</button>`).join('');
@@ -1635,7 +1650,7 @@ function selSummary(sel){
 const inForm = (k, t) => typeOf(k) === t;
 function selectGroups(){
   const g = [];
-  if(S.deg) return [['All major', familyKeys()]];
+  if(S.deg || S.ks) return [['All major', familyKeys()]];
   if(S.cat === 'minor') g.push([`All ${SCALE_TYPES[S.form].name}`, PLAY_ORDER.filter(k => inForm(k, S.form))]);
   if(S.cat === 'modes') g.push([`All ${SCALE_TYPES[S.modeType].name}`, PLAY_ORDER.filter(k => inForm(k, S.modeType))]);
   g.push([S.cat === 'major' ? 'All major' : S.cat === 'minor' ? 'All minor' : 'All modes', familyKeys()]);
@@ -1676,7 +1691,7 @@ function updateCarts(){
 $('#keySelect').addEventListener('click', e => {
   if(S.run) return;
   const cat = e.target.closest('[data-cat]'), form = e.target.closest('[data-form]');
-  if(cat){ S.cat = cat.dataset.cat; SFX.click(); toggleSelMenu(false); renderKeyRows(); return; }
+  if(cat){ SFX.click(); toggleSelMenu(false); if(cat.dataset.cat === 'keys'){ setKs(true); return; } if(S.ks) setKs(false); S.cat = cat.dataset.cat; renderKeyRows(); return; }
   if(form){ if(S.cat === 'minor') S.form = form.dataset.form; else S.modeType = form.dataset.form; SFX.click(); renderKeyRows(); return; }
   if(e.target.closest('#degBtn')){ setDeg(!S.deg); SFX.click(); return; }
   if(e.target.closest('#selBtn')){ toggleSelMenu($('#selMenu').hidden); SFX.click(); return; }
@@ -1717,12 +1732,14 @@ const PRESETS = [
 const selKeys = () => PLAY_ORDER.filter(k => S.selected.has(k));
 function scalesValue(){
   if(S.deg) return 'deg';
+  if(S.ks) return 'ks';
   const p = PRESETS.find(p => p.keys.length === S.selected.size && p.keys.every(k => S.selected.has(k)));
   return p ? p.v : 'pick';
 }
 function scalesTitle(){
   const v = scalesValue(), sel = selKeys();
   if(v === 'deg') return 'Scale degrees';
+  if(v === 'ks') return 'Key signatures';
   if(v !== 'pick') return PRESETS.find(p => p.v === v).t;
   return sel.length === 1 ? scaleName(sel[0]) : sel.length ? `My pick (${sel.length} scales)` : 'None picked';
 }
@@ -1733,12 +1750,13 @@ function ddOptions(name){
       return tried ? {...p, d: p.d + (p.keys.length === 1 ? ` · ${starText(ms[p.keys[0]]) || '☆'}` : ` · ${n}/${p.keys.length} at ★★+`)} : p; });
     return [...withStars,
     {v: 'deg', t: 'Scale degrees', d: 'Name the tonic, dominant… in major keys'},
+    {v: 'ks', t: 'Key signatures', d: 'Name, count and write key signatures'},
     {v: 'pick', t: 'Pick my own…', d: 'Check any scales in More options', sep: true}];
   }
   if(name === 'mode') return [
     {v: 'practice', t: 'Practice', d: 'One scale at a time. No clock, no hearts.'},
     {v: 'chaos', t: 'CHAOS', d: `${CHAOS_LEN} timed questions from your scales. Post a high score!`},
-    S.deg ? {v: 'nova', t: 'SUPERNOVA', d: 'Off in Scale degrees (it builds scales)', locked: true}
+    S.deg || S.ks ? {v: 'nova', t: 'SUPERNOVA', d: `Off in ${S.ks ? 'Key signatures' : 'Scale degrees'} (it builds scales)`, locked: true}
       : novaUnlocked() ? {v: 'nova', t: 'SUPERNOVA', d: `All 150 scales, ${CHAOS_LEN} questions, ${NOVA_HEARTS} hearts.`}
       : {v: 'nova', t: '🔒 SUPERNOVA', d: 'Finish one CHAOS run to unlock', locked: true}];
   return [3, 5, 8, 10].map(n => ({v: String(n), t: `${n} per scale`}));
@@ -1747,7 +1765,14 @@ function setChoice(name, v){
   if(S.run) return;
   if(name === 'scales'){
     if(v === 'pick'){ openMore('scales'); return; }
+    if(v === 'ks'){
+      const maj = selKeys().filter(k => typeOf(k) === 'major');
+      S.selected = new Set(maj.length ? maj : ['C', 'G', 'D', 'F', 'Bb']);
+      if(S.mode === 'nova'){ S.mode = 'practice'; store.set('mode', S.mode); }
+      setKs(true); return;
+    }
     if(v === 'deg'){   // keep the major keys already picked (or C), the way the SCALE DEGREES button does
+      if(S.ks) setKs(false);
       const maj = selKeys().filter(k => typeOf(k) === 'major');
       S.selected = new Set(maj.length ? maj : ['C']);
       if(S.mode === 'nova'){ S.mode = 'practice'; store.set('mode', S.mode); }
@@ -1758,10 +1783,12 @@ function setChoice(name, v){
     const t = typeOf(p.keys[0]);   // show that family in the key grid
     S.cat = t === 'major' ? 'major' : MINOR_FORMS.includes(t) ? 'minor' : 'modes';
     if(S.cat === 'minor') S.form = t; if(S.cat === 'modes') S.modeType = t;
+    if(S.ks) setKs(false);
     if(S.deg) setDeg(false); else { renderKeyRows(); renderAssignment(); }
     return;
   }
   if(name === 'mode'){
+    if(v === 'nova' && S.ks) return focusToast('<b>SUPERNOVA</b> builds scales, so it\'s off in <b>Key signatures</b>. Pick other scales first.');
     if(v === 'nova' && S.deg) return focusToast('<b>SUPERNOVA</b> builds scales, so it\'s off in <b>Scale degrees</b>. Pick other scales first.');
     if(v === 'nova' && !novaUnlocked()) return focusToast('🔒 <b>SUPERNOVA</b> unlocks after you finish one <b>CHAOS</b> run. Try CHAOS first!');
     S.mode = v; store.set('mode', v);
@@ -1770,7 +1797,7 @@ function setChoice(name, v){
 }
 // Dropdown buttons, the summary under START, and START itself
 function syncQuick(){
-  if(S.mode === 'nova' && (S.deg || !novaUnlocked())) S.mode = 'practice';
+  if(S.mode === 'nova' && (S.deg || S.ks || !novaUnlocked())) S.mode = 'practice';
   const sel = selKeys(), nova = S.mode === 'nova';
   document.querySelectorAll('#quick .dd').forEach(dd => {
     const name = dd.dataset.name, o = ddOptions(name).find(o => o.v === curValue(name)), t = name === 'scales' ? scalesTitle() : o ? o.t : '';
@@ -1781,7 +1808,7 @@ function syncQuick(){
   b.className = 'btn playbig ' + (S.mode === 'practice' ? 'start' : S.mode);
   b.disabled = !nova && !sel.length;
   $('#playLabel').textContent = {practice: 'START', chaos: 'START CHAOS', nova: 'START SUPERNOVA'}[S.mode];
-  const what = nova ? 'ALL 150 SCALES' : !sel.length ? 'NO SCALES PICKED' : S.deg ? 'SCALE DEGREES' + (S.degFocus ? ` (+${DEG_NAME[S.degFocus].toUpperCase()})` : '') + ' · ' + (sel.length === 1 ? scaleName(sel[0]).toUpperCase() : selSummary(sel))
+  const what = nova ? 'ALL 150 SCALES' : !sel.length ? 'NO SCALES PICKED' : S.ks ? 'KEY SIGNATURES' + (S.ksMinor ? ' + MINOR' : '') + ' · ' + (sel.length === 1 ? scaleName(sel[0]).toUpperCase() : selSummary(sel)) : S.deg ? 'SCALE DEGREES' + (S.degFocus ? ` (+${DEG_NAME[S.degFocus].toUpperCase()})` : '') + ' · ' + (sel.length === 1 ? scaleName(sel[0]).toUpperCase() : selSummary(sel))
     : scalesValue() !== 'pick' || sel.length === 1 ? scalesTitle().toUpperCase() : selSummary(sel);
   const how = nova ? `SUPERNOVA · ${NOVA_HEARTS} HEARTS` : S.mode === 'chaos' ? `CHAOS · ${CHAOS_LEN} TIMED QUESTIONS` : `PRACTICE · ${S.qpk} PER SCALE`;
   $('#playSum').innerHTML = `<b>${esc(what)}</b> · ${how}`;
@@ -1927,7 +1954,7 @@ $('#pianoWrap').addEventListener('pointerdown', e => {
   const g = e.target.closest('.pk'); if(!g) return;
   e.preventDefault();
   const m = +g.dataset.m, q = S.run && S.run.q;
-  if(!q || S.busy || S.overlay || q.type === 'staff' || nameQ(q)) return;
+  if(!q || S.busy || S.overlay || q.type === 'staff' || nameQ(q) || ksQ(q)) return;
   playMidi(m);
   pickKey(q, m);
   paintSel(); say('', '');
@@ -2049,7 +2076,9 @@ function heart(on){
 function updateHUD(){
   const r = S.run; if(!r) return;
   const q = r.q;
-  $('#hudKey').textContent = q ? scaleName(q.key).toUpperCase() : '—';
+  const hideKey = q && q.type === 'ksname';   // naming the key: don't show it
+  $('#hudKey').textContent = q ? (hideKey ? 'KEY SIGNATURE' : ksQ(q) ? q.name.toUpperCase() : scaleName(q.key).toUpperCase()) : '—';
+  $('#ladder').style.visibility = hideKey ? 'hidden' : '';
   const tag = $('#modeTag'); tag.textContent = (r.deg ? 'DEGREES · ' : '') + (r.mode === 'nova' ? 'SUPERNOVA' : r.mode === 'chaos' ? 'CHAOS' : 'PRACTICE'); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
   $('#hudQ').textContent = isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
   $('#hudScore').textContent = String(r.score).padStart(6, '0');
@@ -2078,7 +2107,7 @@ function later(fn, ms){ const r = S.run; setTimeout(() => { if(S.run === r && r 
    Correct answers earn up to +SPEED_MAX (was +100 before 2026-10-11), shrinking to 0 over the window below.
    The clock pauses while feedback or a menu is showing. */
 const SPEED_MAX = 50;
-const TIME_WINDOW = {build: 25, piano: 10, staff: 12, dstaff: 10, dpiano: 10};   // seconds
+const TIME_WINDOW = {build: 25, piano: 10, staff: 12, dstaff: 10, dpiano: 10, ksname: 10, kscount: 10, ksbuild: 25};   // seconds
 const timer = {start: 0, pausedAt: 0};
 function timerStart(){ timer.start = performance.now(); timer.pausedAt = 0; }
 function timerPause(){ if(!timer.pausedAt) timer.pausedAt = performance.now(); }
@@ -2147,6 +2176,7 @@ function writeLog(log){ const ks = Object.keys(log).sort(); while(ks.length > 7)
 function todayOf(log){ const k = dayKey(); return log[k] || (log[k] = {q: [], runs: []}); }
 // What the student actually answered, so the teacher sees "often played F" next to a miss.
 function pickOf(q){
+  if(ksQ(q)) return q.type === 'ksbuild' ? S.ksPlaced.map(x => x.acc === '#' ? '♯' : '♭').join('') : ksLabel(q, S.ksSel);
   if(nameQ(q)) return S.degSel ? DEG_NAME[S.degSel] : '';
   if(q.type === 'build') return '';
   if(q.type === 'piano'){ const m = [...S.sel][0]; if(m == null) return ''; const i = scaleIdxOfPc(q.sk, m % 12); return i >= 0 ? SCALES[q.sk][i] : PC_NAMES[m % 12]; }
@@ -2154,10 +2184,10 @@ function pickOf(q){
   return letter + ({2: '##', 1: '#', '-1': 'b', '-2': 'bb'}[a] || '');
 }
 function logAnswer(q, ok){
-  MTG_HIST.note('scale', q.dn ? [scaleName(q.key), DEG_NAME[q.degree]] : [scaleName(q.key), TYPE_NAME[q.type[0]]], ok);
+  MTG_HIST.note('scale', ksQ(q) ? ['Key signatures'] : q.dn ? [scaleName(q.key), DEG_NAME[q.degree]] : [scaleName(q.key), TYPE_NAME[q.type[0]]], ok);
   if(isGuest()) return;
   const log = readLog();
-  todayOf(log).q.push({k: q.key, y: nameQ(q) ? 'n' : q.type[0], d: q.degree || 0, ok: ok ? 1 : 0, pk: ok ? '' : pickOf(q), t0: q.t0 || Date.now(), t1: Date.now(), m: S.run.mode[0]});
+  todayOf(log).q.push({k: q.key, y: ksQ(q) ? 'k' : nameQ(q) ? 'n' : q.type[0], d: q.degree || 0, ok: ok ? 1 : 0, pk: ok ? '' : pickOf(q), t0: q.t0 || Date.now(), t1: Date.now(), m: S.run.mode[0]});
   writeLog(log); scheduleSync(); setTimeout(renderAssignment, 0);
 }
 /* ---------- mastery stars, from the answer log above (this device, signed-in players, last 7 days) ----------
@@ -2166,7 +2196,7 @@ const MASTERY = {last: 10, two: .8, three: .9, days: 2};
 function masteryMap(){
   if(isGuest()) return {};
   const log = readLog(), by = {}, out = {};
-  Object.keys(log).sort().forEach(d => ((log[d] || {}).q || []).forEach(e => { const a = by[e.k] || (by[e.k] = {ok: [], days: new Set()}); a.ok.push(e.ok); a.days.add(d); }));
+  Object.keys(log).sort().forEach(d => ((log[d] || {}).q || []).filter(e => e.y !== 'k').forEach(e => { const a = by[e.k] || (by[e.k] = {ok: [], days: new Set()}); a.ok.push(e.ok); a.days.add(d); }));
   for(const [k, a] of Object.entries(by)){
     const last = a.ok.slice(-MASTERY.last), acc = last.reduce((t, x) => t + x, 0) / last.length, full = last.length >= MASTERY.last;
     out[k] = full && acc >= MASTERY.three && a.days.size >= MASTERY.days ? 3 : full && acc >= MASTERY.two ? 2 : 1;
@@ -2182,7 +2212,7 @@ function activeMinutes(qs){
   return Math.max(qs.length ? 1 : 0, Math.round(ms / 60000));
 }
 function buildDay(){
-  const day = todayOf(readLog()), qs = day.q, byKey = {}, types = {b:[0,0], p:[0,0], s:[0,0], n:[0,0]}, missed = {};
+  const day = todayOf(readLog()), qs = day.q, byKey = {}, types = {b:[0,0], p:[0,0], s:[0,0], n:[0,0], k:[0,0]}, missed = {};
   let correct = 0;
   for(const e of qs){
     correct += e.ok;
@@ -2261,6 +2291,7 @@ function renderAssignment(){
   box.querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
     const keys = (list[+b.dataset.use].a.keys || []).filter(k => SCALES[k]);
     S.selected = new Set(keys); if(S.mode === 'nova') setChoice('mode', 'practice');
+    if(S.ks && keys.some(k => typeOf(k) !== 'major')){ S.ks = false; store.set('ks', false); renderKeyRows(); }
     if(S.deg && keys.some(k => typeOf(k) !== 'major')){ S.deg = false; store.set('deg', false); renderKeyRows(); }   // the assignment has minors or modes: build them
     SFX.click(); updateCarts(); renderAssignment();
   });
@@ -2308,7 +2339,13 @@ function applyFocusFromUrl() {
   q.delete('focus'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
   try { if (teacherSettings) applyFocusAfterSettings(f, teacherSettings); else applyFocus(f); } catch (e) { console.warn('focus link:', e); }
 }
+function setKs(on){
+  S.ks = on; store.set('ks', on);
+  if(on){ if(S.deg){ S.deg = false; store.set('deg', false); S.degFocus = 0; } S.cat = 'major'; S.selected = new Set([...S.selected].filter(k => typeOf(k) === 'major')); if(!S.selected.size) S.selected = new Set(['C', 'G', 'D', 'F', 'Bb']); }
+  toggleSelMenu(false); renderKeyRows(); renderAssignment(); syncQuick();
+}
 function setDeg(on){
+  if(on && S.ks){ S.ks = false; store.set('ks', false); }
   S.deg = on; store.set('deg', on);
   if(on){ S.cat = 'major'; S.selected = new Set([...S.selected].filter(k => typeOf(k) === 'major')); }
   else S.degFocus = 0;
@@ -2317,6 +2354,7 @@ function setDeg(on){
 // Practice set up on one scale (also the end screen's PRACTICE NEXT button). deg keeps Scale Degrees on.
 function focusScale(id, deg=false){
   if(S.mode !== 'practice') setChoice('mode', 'practice');
+  if(S.ks) setKs(false);
   if(S.deg && !deg) setDeg(false);
   S.selected = new Set([id]);
   const t = typeOf(id); S.cat = t === 'major' ? 'major' : MINOR_FORMS.includes(t) ? 'minor' : 'modes';
@@ -2324,6 +2362,12 @@ function focusScale(id, deg=false){
   renderKeyRows(); renderAssignment(); syncQuick();
 }
 function applyFocus(label){
+  if(String(label).toLowerCase() === 'key signatures'){
+    if(S.mode === 'nova') setChoice('mode', 'practice');
+    setChoice('scales', 'ks');
+    focusToast('🎯 Practice set up: <b>Key signatures</b>. Press <b>START</b> when you\'re ready!');
+    return;
+  }
   if(S.mode === 'nova') setChoice('mode', 'practice');   // a focus link sets up practice, never SUPERNOVA
   const dn = +Object.keys(DEG_NAME).find(n => DEG_NAME[n].toLowerCase() === String(label).toLowerCase());
   if(dn){
@@ -2473,11 +2517,12 @@ function setPlaying(on){
 }
 function startRun(mode){
   closeOverlay();
-  if(mode === 'nova' && S.deg) return;
-  const keys = mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!S.deg || typeOf(k) === 'major')); if(!keys.length) return;
+  if(mode === 'nova' && (S.deg || S.ks)) return;
+  const keys = mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major')); if(!keys.length) return;
   S.awaitNext = null;
   S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives: mode === 'nova' ? NOVA_HEARTS : 3, misses: [],
-           stats:{}, pts:{base:0, speed:0, streak:0}, bonusKeys: mode === 'chaos' ? bonusKeys(keys) : [], lastInstr:null, lastKey:null, lastType:null, lastDeg:{}, q:null, ended:false, deg: S.deg && mode !== 'nova'};
+           stats:{}, pts:{base:0, speed:0, streak:0}, bonusKeys: mode === 'chaos' ? bonusKeys(keys) : [], lastInstr:null, lastKey:null, lastType:null, lastDeg:{}, q:null, ended:false, deg: S.deg && mode !== 'nova', ks: S.ks && mode !== 'nova', ksMix: S.ksMix && !S.deg && !S.ks,
+           ksAt: mode === 'nova' ? new Set([...Array(16).keys()].map(i => i + 3).sort(() => Math.random() - .5).slice(0, 3)) : null};
   setPlaying(true); updateHUD();
   $('#timer').hidden = !isTimed(mode);
   $('#app').classList.toggle('novaRun', mode === 'nova');
@@ -2523,12 +2568,18 @@ const nameQ = q => q.type === 'dstaff' || q.type === 'dpiano';
 function nextQuestion(){
   const r = S.run; let key, type;
   if(r.deg) return degQuestion();
+  if(r.ks) return ksQuestion();
   if(r.mode === 'practice'){
     if(r.qInKey >= S.qpk) return keyCleared();
     key = r.keys[r.keyIdx];
+    // KEY SIG QUESTIONS: the last question for each scale names its key signature
+    if(r.ksMix && S.qpk >= 3 && r.qInKey === S.qpk - 1 && stdSig(key)) return ksQuestion(key, 'ksname');
     type = r.qInKey === 0 ? 'build' : (r.qInKey % 2 === 1 ? 'staff' : 'piano');
   } else {
     if(r.total >= CHAOS_LEN) return endRun('complete');
+    // SUPERNOVA: exactly 3 key signature questions; CHAOS: about 1 in 6
+    if(r.mode === 'nova' && r.ksAt.has(r.total)) return ksQuestion(pick(r.keys.filter(stdSig)), 'ksname');
+    if(r.mode === 'chaos' && r.ksMix && Math.random() < 1/6){ const ok = r.keys.filter(stdSig); if(ok.length) return ksQuestion(pick(ok), 'ksname'); }
     key = pick(r.keys.length > 1 ? r.keys.filter(k => k !== r.lastKey) : r.keys);
     const instr = r.lastInstr === 'piano' ? 'staff' : r.lastInstr === 'staff' ? 'piano' : pick(['piano','staff']);
     type = instr === 'staff' ? 'staff' : (Math.random() < .25 ? 'build' : 'piano');
@@ -2562,7 +2613,8 @@ function renderQuestion(){
   updateHUD();
   const tag = $('#qTag');
   const dq = `What is the <em>${q.dn ? DEG_NAME[q.degree].toUpperCase() : ''}</em> of ${K}?`;
-  if(nameQ(q)){
+  if(ksQ(q)) ksRenderText(q, tag);
+  else if(nameQ(q)){
     tag.textContent = q.type === 'dstaff' ? 'STAFF · NAME IT' : 'PIANO · NAME IT'; tag.className = 'qtag' + (q.type === 'dstaff' ? ' staff' : '');
     $('#qText').innerHTML = q.type === 'dstaff' ? `${K}: what scale degree is this note?` : `This key is in ${K}. What scale degree is it?`;
     $('#qHelp').textContent = 'Pick the scale degree name, then SUBMIT.';
@@ -2606,6 +2658,9 @@ function renderQuestion(){
     $('#sigMini').innerHTML = miniSig(q.key); PK[q.m].classList.add('shown');
     setTimeout(() => playMidi(q.m, .9), 150);
   }
+  $('#noteG').style.display = ksQ(q) ? 'none' : '';
+  $('#staffWrap').classList.toggle('ksbuild', q.type === 'ksbuild');
+  if(ksQ(q)) ksRenderBody(q);
   $('#submitBtn').disabled = false;
   timerStart();
 }
@@ -2613,7 +2668,10 @@ function renderQuestion(){
 function submit(){
   const r = S.run; if(!r || !r.q || S.busy || S.overlay) return;
   const q = r.q; let correct;
-  if(nameQ(q)){
+  if(ksQ(q)){
+    if(q.type === 'ksbuild'){ if(!S.ksPlaced.length) return say('Place the sharps or flats on the staff first.', 'hint'); correct = ksBuildOk(q); }
+    else { if(!S.ksSel) return say('Pick an answer first.', 'hint'); correct = S.ksSel === q.ans; }
+  } else if(nameQ(q)){
     if(!S.degSel) return say('Pick a scale degree first.', 'hint');
     correct = S.degSel === q.degree;
   } else if(q.type === 'build'){
@@ -2644,7 +2702,10 @@ function onCorrect(){
   if(speed) setTimeout(() => popup(`SPEED +${speed} · ${elapsed().toFixed(1)}s`, 'speed'), 120);
   if(bonus){ SFX.streak(); setTimeout(() => popup(`STREAK x${r.streak}! +${bonus}`, 'streak'), 250); }
   const praise = pick(['NICE!','PERFECT!','GREAT!','YES!','NAILED IT!']);
-  if(nameQ(q)){
+  if(ksQ(q)){
+    const b = $(`#degBtns [data-k="${q.ans}"]`); if(b) b.classList.add('ok');
+    say(`${praise} ${ksFact(q)}`, 'ok');
+  } else if(nameQ(q)){
     $(`#degBtns [data-d="${q.degree}"]`).classList.add('ok');
     if(q.type === 'dpiano'){ PK[q.m].classList.remove('shown'); PK[q.m].classList.add('ok'); label(q.m, q.answer); } else $('#noteG').classList.add('good');
     say(`${praise} ${fmt(q.answer)} is the ${dw(q, q.degree)} of ${q.name}.`, 'ok');
@@ -2781,10 +2842,11 @@ function onWrong(){
   flash('bad'); SFX.buzz();
   // SUPERNOVA: the miss goes on the end-screen list too, then the right answer shows like practice.
   if(r.mode === 'nova'){
-    r.misses.push(q.type === 'build' ? `Build ${q.name}: ${notesLine(q).split(': ')[1]}` : whyWrong(q)[0]);
+    r.misses.push(ksQ(q) ? ksFact(q) : q.type === 'build' ? `Build ${q.name}: ${notesLine(q).split(': ')[1]}` : whyWrong(q)[0]);
     popup(r.lives > 0 ? `MISSED! ${r.lives} HEART LEFT` : 'OUT OF HEARTS');
   }
-  if(nameQ(q)){
+  if(ksQ(q)) ksWrong(q);
+  else if(nameQ(q)){
     $(`#degBtns [data-d="${S.degSel}"]`).classList.add('bad'); $(`#degBtns [data-d="${q.degree}"]`).classList.add('ok');
     if(q.type === 'dpiano') label(q.m, q.answer); else $('#noteG').classList.add('bad');
     explain(`You picked ${dw(q, S.degSel)}. This note is ${fmt(q.answer)}, the ${dw(q, q.degree)} of ${q.name}.`, scaleChips(q.key, 'COUNT UP', [q.degree - 1], S.degSel - 1));
@@ -2915,16 +2977,17 @@ function endRun(reason){
   const post = p.querySelector('#postBtn');
   const doPost = async () => {
     const me = getProfile(), name = displayName(me), area = p.querySelector('#postArea');
-    const lk = r.deg ? 'ranked_deg' : 'ranked', list = store.get(lk, []);
+    const lk = r.ks ? 'ranked_ks' : r.deg ? 'ranked_deg' : 'ranked', list = store.get(lk, []);
     list.push({n: name, s: final, b: r.best, k: Math.min(15, r.keys.length)});
     list.sort((a,b) => b.s - a.s); store.set(lk, list.slice(0, 30));
     SFX.coin();
     if(!Cloud.on){ area.innerHTML = `<p class="weak" style="color:var(--yel)">SAVED FOR ${esc(name.toUpperCase())}!</p>`; return; }
     area.innerHTML = '<p class="weak" style="color:var(--yel)">POSTING...</p>';
     try{
-      await Cloud.submit({name, classCode: me.classCode || '', classCodes: classesOf(me).map(c => c.code), score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: Math.min(15, Math.max(1, r.bonusKeys.length)), keyList: (r.bonusKeys.length ? r.bonusKeys : r.keys).join(' ').slice(0, 60), col: r.deg ? 'degree_scores' : null});
-      const [w, c] = r.deg
-        ? await Promise.all([Cloud.worldRank(final, 'degree_scores'), me.classCode ? Cloud.degBoard(me.classCode).then(l => l.findIndex(x => x.name === name) + 1) : 0])
+      await Cloud.submit({name, classCode: me.classCode || '', classCodes: classesOf(me).map(c => c.code), score: final, points: r.score, streak: r.best, accuracy: acc, questions: total, keyCount: Math.min(15, Math.max(1, r.bonusKeys.length)), keyList: (r.bonusKeys.length ? r.bonusKeys : r.keys).join(' ').slice(0, 60), col: r.ks ? 'key_scores' : r.deg ? 'degree_scores' : null});
+      const col = r.ks ? 'key_scores' : 'degree_scores';
+      const [w, c] = r.deg || r.ks
+        ? await Promise.all([Cloud.worldRank(final, col), me.classCode ? Cloud.degBoard(me.classCode, col).then(l => l.findIndex(x => x.name === name) + 1) : 0])
         : await Promise.all([Cloud.worldRank(final), me.classCode ? Cloud.classRank(me.classCode, name, final) : 0]);
       const bits = [c ? `#${c} IN ${esc(String(me.className).toUpperCase())}` : '', `#${w} IN THE WORLD`].filter(Boolean);
       area.innerHTML = `<p class="weak" style="color:var(--yel)">POSTED! ${bits.join(' · ')}</p>`;
@@ -3022,7 +3085,7 @@ function renderBoard(){
 }
 function boardPanel(){
   const pr = getProfile(), cls = classesOf(pr);   // one class tab per class, main class first
-  const tabs = Cloud.on ? [...cls.map(c => ['class:' + c.code, String(c.name).toUpperCase()]), ['world', 'WORLD TOP 10'], ['deg', 'DEGREES'], ['nova', '★ SUPERNOVA'], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
+  const tabs = Cloud.on ? [...cls.map(c => ['class:' + c.code, String(c.name).toUpperCase()]), ['world', 'WORLD TOP 10'], ['deg', 'DEGREES'], ['ks', 'KEY SIGS'], ['nova', '★ SUPERNOVA'], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
   const p = openOverlay(`
     <h2 class="otitle">LEADERBOARD</h2>
     ${tabs.length > 1 ? `<div class="otabs" role="group" aria-label="Which scores">${tabs.map(([k,l]) => `<button type="button" data-tab="${k}" aria-pressed="false">${esc(l)}</button>`).join('')}</div>` : ''}
@@ -3031,7 +3094,7 @@ function boardPanel(){
     <div class="obtns"><button class="btn obtn alt" id="bpRefresh" type="button">REFRESH</button><button class="btn obtn" id="bpClose" type="button" data-focus>CLOSE</button></div>`);
   let tab = tabs[0][0];
   const tabClass = () => cls.find(c => 'class:' + c.code === tab);
-  const NOTES = {world: 'The 10 best CHAOS runs from everyone who plays.', nova: 'Finished runs (star) first, then SURVIVORS who reached question 10.', deg: 'Best SCALE DEGREES CHAOS runs.', device: 'Scores saved on this computer.'};
+  const NOTES = {world: 'The 10 best CHAOS runs from everyone who plays.', nova: 'Finished runs (star) first, then SURVIVORS who reached question 10.', deg: 'Best SCALE DEGREES CHAOS runs.', ks: 'Best KEY SIGNATURES CHAOS runs.', device: 'Scores saved on this computer.'};
   // DEGREES and SUPERNOVA show a top 5 for each of the student's classes, then the World.
   const head = c => `<h3 class="slabel" style="margin:6px 0">${esc(String(c.name).toUpperCase())}</h3>`, worldHead = '<h3 class="slabel" style="margin:12px 0 6px">WORLD</h3>';
   const show = () => {
@@ -3040,8 +3103,9 @@ function boardPanel(){
     p.querySelector('#bpNote').textContent = tc ? `Each student's best CHAOS run in ${tc.name}.` : NOTES[tab];
     if(tab === 'device'){ el.innerHTML = boardTable(markMe(localTop(10))); return; }
     el.innerHTML = '<p class="dim">LOADING...</p>';
-    if(tab === 'deg'){
-      Promise.all([Promise.all(cls.map(c => Cloud.degBoard(c.code))), Cloud.degBoard(null)])
+    if(tab === 'deg' || tab === 'ks'){
+      const bcol = tab === 'ks' ? 'key_scores' : 'degree_scores';
+      Promise.all([Promise.all(cls.map(c => Cloud.degBoard(c.code, bcol))), Cloud.degBoard(null, bcol)])
         .then(([mine, world]) => { if(tab === want) el.innerHTML = mine.map((l, i) => head(cls[i]) + (l.length ? boardTable(markMe(l.slice(0, 5))) : '<p class="dim">No runs yet.</p>')).join('') + (mine.length ? worldHead : '') + (world.length ? boardTable(markMe(world.slice(0, 10))) : '<p class="dim">No runs yet. Be the first!</p>'); })
         .catch(() => { if(tab === want) el.innerHTML = '<p class="dim">Couldn\'t reach the leaderboard. Check your internet and press REFRESH.</p>'; });
       return;
@@ -3062,11 +3126,11 @@ function boardPanel(){
   show();
 }
 function chaosPicker(){
-  const keys = PLAY_ORDER.filter(k => S.selected.has(k) && (!S.deg || typeOf(k) === 'major'));
+  const keys = PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major'));
   const bk = bonusKeys(keys);
   const p = openOverlay(`
-    <h2 class="otitle" style="color:var(--mag)">${S.deg ? 'CHAOS: SCALE DEGREES' : 'CHAOS MODE'}</h2>
-    <p class="osub">${CHAOS_LEN} random ${S.deg ? 'scale-degree ' : ''}questions from: ${keys.map(shortName).join(' · ')}</p>
+    <h2 class="otitle" style="color:var(--mag)">${S.ks ? 'CHAOS: KEY SIGNATURES' : S.deg ? 'CHAOS: SCALE DEGREES' : 'CHAOS MODE'}</h2>
+    <p class="osub">${CHAOS_LEN} random ${S.ks ? 'key signature ' : S.deg ? 'scale-degree ' : ''}questions from: ${keys.map(shortName).join(' · ')}</p>
     <div class="bigstats">
       <div><small>QUESTIONS</small><strong>${CHAOS_LEN}</strong></div>
       <div><small>SCALES</small><strong>${keys.length}</strong></div>
@@ -3087,7 +3151,7 @@ const toneOf = x => x >= 0.85 ? 'hi' : x >= 0.65 ? 'mid' : 'lo';
 const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return dayKey(d); };
 const fmtClock = t => new Date(t).toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'});
 const relTime = t => { const m = Math.round((Date.now() - t) / 60000); return m < 2 ? 'Active now' : m < 60 ? `${m} min ago` : fmtClock(t); };
-const TYPE_NAME = {b: 'Build the scale', p: 'Piano notes', s: 'Staff notes', n: 'Name the degree'};
+const TYPE_NAME = {b: 'Build the scale', p: 'Piano notes', s: 'Staff notes', n: 'Name the degree', k: 'Key signatures'};
 const missLabel = id => { const [k, d] = id.split('|'); return d === 'b' ? `Build ${scaleName(k)}` : `${ORD[+d]} of ${scaleName(k)}`; };
 const tdClass = () => TD.classes.find(c => c.code === TD.code);
 
@@ -3448,7 +3512,7 @@ document.addEventListener('keydown', e => {
 const MIDI = {inputs: 0};
 function midiNote(m){
   const q = S.run && S.run.q;
-  if(!q || S.busy || S.overlay || S.awaitNext || nameQ(q)) return;
+  if(!q || S.busy || S.overlay || S.awaitNext || nameQ(q) || ksQ(q)) return;
   if(q.type === 'staff'){
     const idx = [0,2,4,5,7,9,11].indexOf(m % 12);
     if(idx < 0){ playMidi(m, .7); return say('Black keys have two names. Play the white key for the letter, then pick ♯ or ♭.', 'hint'); }
@@ -3504,6 +3568,142 @@ if(navigator.requestMIDIAccess){
   if(store.get('midi', false) && navigator.permissions)
     navigator.permissions.query({name: 'midi'}).then(p => { if(p.state === 'granted') midiConnect(true); }).catch(() => {});
 } else { $('#midiBtn2').hidden = true; $('#midiNo').hidden = false; }
+
+/* ---------- KEY SIGNATURES: name it, count it, write it ----------
+   The KEY SIGS tab asks all three about the checked major keys (and their relative minors with + MINOR KEYS).
+   Regular practice and CHAOS mix in "name it" questions (KEY SIG QUESTIONS), and SUPERNOVA asks exactly 3. */
+const ksQ = q => !!q && typeof q.type === 'string' && q.type.startsWith('ks');
+const relMinor = maj => SCALES[maj][5];   // C → A
+const KS_COUNTS = ['0', '1#', '2#', '3#', '4#', '5#', '6#', '7#', '1b', '2b', '3b', '4b', '5b', '6b', '7b'];
+const countOf = id => { const c = sigCount(id); return c ? c + (isFlatKey(id) ? 'b' : '#') : '0'; };
+const countTxt = v => v === '0' ? '0' : v[0] + (v[1] === '#' ? '♯' : '♭');
+function ksLabel(q, v){
+  if(!v) return '';
+  if(q.type === 'kscount') return countTxt(v);
+  return q.minor ? fmt(v) + ' minor' : fmt(v) + ' major';
+}
+// sigKey: the key whose key signature is shown (a major id, or any scale in the regular modes)
+function ksQuestion(sigKey, forceType){
+  const r = S.run;
+  let key = sigKey, type = forceType;
+  if(!forceType){
+    const KINDS = ['ksname', 'kscount', 'ksbuild'];
+    if(r.mode === 'practice'){
+      if(r.qInKey >= S.qpk) return keyCleared();
+      key = r.keys[r.keyIdx]; type = KINDS[r.qInKey % 3];
+    } else {
+      if(r.total >= CHAOS_LEN) return endRun('complete');
+      key = pick(r.keys.length > 1 ? r.keys.filter(k => k !== r.lastKey) : r.keys);
+      type = pick(KINDS.filter(t => t !== r.lastType));
+    }
+    if(type === 'ksbuild' && !sigCount(key)) type = 'kscount';   // C major has nothing to write
+    r.lastKey = key; r.lastType = type;
+  }
+  const t = typeOf(key), minorScale = MINOR_FORMS.includes(t);
+  // In the KEY SIGS tab, + MINOR KEYS asks for the relative minor 40% of the time.
+  const minor = r.ks ? (S.ksMinor && Math.random() < .4) : minorScale;
+  const maj = t === 'major' ? key : parentTonic(key);
+  const ans = type === 'kscount' ? countOf(key) : type === 'ksbuild' ? '' : minor ? (r.ks ? relMinor(maj) : tonicOf(key)) : maj;
+  r.q = {key, type, minor, maj, ans, lks: true, name: minor ? fmt(r.ks ? relMinor(maj) : tonicOf(key)) + ' minor' : fmt(maj) + ' major', tries: 0, t0: Date.now()};
+  renderQuestion();
+}
+function ksRenderText(q, tag){
+  const r = S.run;
+  tag.className = 'qtag staff';
+  if(q.type === 'ksname'){
+    tag.textContent = 'KEY SIGNATURE · NAME IT';
+    $('#qText').innerHTML = `What <em>${q.minor ? 'MINOR' : 'MAJOR'}</em> key has this key signature?`;
+    $('#qHelp').textContent = r.ks || r.mode === 'practice' ? (isFlatKey(q.key) ? 'Tip: the second-to-last flat names the major key.' : sigCount(q.key) ? 'Tip: go up a half step from the last sharp for the major key.' : 'No sharps or flats at all.') + (q.minor ? ' The minor key is 3 half steps below it.' : '') : 'Pick the key, then SUBMIT.';
+  } else if(q.type === 'kscount'){
+    tag.textContent = 'KEY SIGNATURE · COUNT IT';
+    $('#qText').innerHTML = `How many sharps or flats are in <b>${q.name}</b>?`;
+    $('#qHelp').textContent = 'Pick the number, then SUBMIT.';
+  } else {
+    tag.textContent = 'KEY SIGNATURE · WRITE IT';
+    $('#qText').innerHTML = `Write the key signature for <b>${q.name}</b>`;
+    $('#qHelp').textContent = 'Pick ♯ or ♭, then click the staff where each one goes, in order. SUBMIT when done.';
+  }
+}
+function ksRenderBody(q){
+  S.ksSel = ''; S.ksPlaced = []; S.ksAcc = isFlatKey(q.key) && q.type === 'ksbuild' ? 'b' : '#';
+  $('#pianoWrap').hidden = true; $('#sigMini').hidden = true;
+  $('#staffWrap').hidden = q.type === 'kscount'; $('#staffWrap .staffctl').hidden = true; $('#staffWrap').classList.add('nameit');
+  $('#ledgers').innerHTML = ''; $('#ghost').innerHTML = '';
+  $('#ksig').innerHTML = q.type === 'ksname' ? sigMarkup(q.key) : '';
+  $('#degCard').hidden = true;
+  const B = $('#degBtns'); B.hidden = false; B.className = 'degbtns many';
+  if(q.type === 'ksname'){
+    const list = q.minor ? MINOR_ORDER : MAJOR_ORDER;
+    B.innerHTML = list.map(k => `<button type="button" data-k="${k}" aria-pressed="false">${fmt(k)}${q.minor ? 'm' : ''}</button>`).join('');
+  } else if(q.type === 'kscount'){
+    B.innerHTML = KS_COUNTS.map(v => `<button type="button" data-k="${v}" aria-pressed="false">${countTxt(v)}</button>`).join('');
+  } else {
+    B.className = 'degbtns tools';
+    B.innerHTML = `<button type="button" data-kb="#" aria-pressed="${S.ksAcc === '#'}">♯ SHARP</button><button type="button" data-kb="b" aria-pressed="${S.ksAcc === 'b'}">♭ FLAT</button><button type="button" data-kb="undo">UNDO</button><button type="button" data-kb="clear">CLEAR</button>`;
+  }
+  $('#keyHint').textContent = 'ENTER = SUBMIT';
+}
+function ksDrawPlaced(){
+  $('#ksig').innerHTML = S.ksPlaced.map((x, i) => accSvg(x.acc, 96 + i * 16, yOf(x.pos), .9)).join('');
+}
+// The right answer: sharps F C G D A E B / flats B E A D G C F on their usual lines and spaces.
+function ksWant(q){ const n = sigCount(q.key), flat = isFlatKey(q.key), P = flat ? FLAT_SIG_POS : SHARP_SIG_POS; return P.slice(0, n).map(pos => ({acc: flat ? 'b' : '#', pos})); }
+function ksBuildOk(q){ const w = ksWant(q), g = S.ksPlaced; return w.length === g.length && w.every((x, i) => x.acc === g[i].acc && x.pos === g[i].pos); }
+function ksFact(q){
+  const k = q.key, c = sigCount(k), list = sigList(k).map(fmt);
+  const cw = c ? `${c} ${isFlatKey(k) ? 'flat' : 'sharp'}${c > 1 ? 's' : ''} (${list.join(', ')})` : 'no sharps or flats';
+  const who = q.minor ? `${q.name} (relative of ${fmt(q.maj)} major)` : MINOR_FORMS.includes(typeOf(k)) || MODE_TYPES.includes(typeOf(k)) ? `${scaleName(k)} (${fmt(q.maj)} major's key signature)` : q.name;
+  return `${who}: ${cw}.`;
+}
+// A small circle of fifths with the key lit, for the explanation.
+function ksCof(q){
+  const tmp = document.createElement('div'); tmp.id = 'lvCof';
+  const real = document.getElementById('lvCof'); if(real) real.id = 'lvCofReal';
+  const note = document.getElementById('lvCofNote'); if(note) note.id = 'lvCofNoteReal';
+  const fakeNote = document.createElement('p'); fakeNote.id = 'lvCofNote';
+  document.body.append(tmp, fakeNote);
+  learnCof(q.minor ? (q.ans || relMinor(q.maj)) + ':nat' : q.maj);
+  const svg = '<span class="lv-cof kscofw">' + tmp.innerHTML.replace('<svg ', '<svg class="kscof" ') + '</span>';
+  tmp.remove(); fakeNote.remove();
+  if(real) real.id = 'lvCof'; if(note) note.id = 'lvCofNote';
+  return svg;
+}
+function ksWrong(q){
+  if(q.type === 'ksbuild'){
+    const w = ksWant(q);
+    $('#ksig').innerHTML = S.ksPlaced.map((x, i) => accSvg(x.acc, 96 + i * 16, yOf(x.pos), .9)).join('')
+      + `<g class="ghost">${w.map((x, i) => accSvg(x.acc, 300 + i * 18, yOf(x.pos), .9)).join('')}</g>`;
+  } else {
+    const b = $(`#degBtns [data-k="${S.ksSel}"]`); if(b) b.classList.add('bad');
+    const g = $(`#degBtns [data-k="${q.ans}"]`); if(g) g.classList.add('ok');
+  }
+  const rule = isFlatKey(q.key) ? 'Flats always go B E A D G C F.' : 'Sharps always go F C G D A E B.';
+  const picked = q.type === 'ksbuild' ? (S.ksPlaced.length ? 'Your key signature (left) vs. the right one (green). ' : '') : `You picked ${ksLabel(q, S.ksSel)}. `;
+  explain(`${picked}${ksFact(q)} ${sigCount(q.key) ? rule : ''}`, S.run.mode === 'practice' ? ksCof(q) : '');
+}
+$('#degBtns').addEventListener('click', e => {
+  const q = S.run && S.run.q; if(!ksQ(q) || S.busy || S.overlay) return;
+  const k = e.target.closest('[data-k]'), kb = e.target.closest('[data-kb]');
+  if(k){ SFX.click(); S.ksSel = k.dataset.k; say('', ''); document.querySelectorAll('#degBtns [data-k]').forEach(b => b.setAttribute('aria-pressed', b === k)); return; }
+  if(kb){
+    SFX.click(); const v = kb.dataset.kb;
+    if(v === '#' || v === 'b'){ S.ksAcc = v; document.querySelectorAll('#degBtns [data-kb]').forEach(b => b.setAttribute('aria-pressed', b.dataset.kb === v)); }
+    else if(v === 'undo') S.ksPlaced.pop();
+    else S.ksPlaced = [];
+    ksDrawPlaced();
+  }
+});
+// WRITE IT: click the staff to place the chosen sharp or flat on that line or space.
+$('#staffSvg').addEventListener('pointerdown', e => {
+  const q = S.run && S.run.q; if(!q || q.type !== 'ksbuild' || S.busy || S.overlay) return;
+  const svg = $('#staffSvg'), pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const y = pt.matrixTransform(svg.getScreenCTM().inverse()).y, pos = Math.max(0, Math.min(12, Math.round((BASE_Y - y) / STEP)));
+  if(S.ksPlaced.length >= 7) return say('A key signature has at most 7.', 'hint');
+  S.ksPlaced.push({acc: S.ksAcc, pos}); ksDrawPlaced(); say('', '');
+  playMidi(12 * (5 + Math.floor(pos / 7)) + NAT[LETTERS[pos % 7]] + (S.ksAcc === '#' ? 1 : -1), .5);
+});
+$('#ksMinor').onchange = e => { S.ksMinor = e.target.checked; store.set('ksMinor', S.ksMinor); syncQuick(); };
+$('#ksMix').onchange = e => { S.ksMix = e.target.checked; store.set('ksMix', S.ksMix); };
 
 /* ---------- LEARN: see and hear any scale, with its key signature and the circle of fifths (no score) ---------- */
 const LV = {id: 'C', list: [], miss: {}, done: new Set(), cat: 'major', form: 'nat', mode: 'dor', seq: [], timer: 0, playing: false, onBack: null};
