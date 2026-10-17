@@ -3847,17 +3847,17 @@ function learnPiano(seq){
   if(F) seq.forEach(e => { const m = onPiano(e.midi); if(!fk[m]) fk[m] = [F.rh[e.deg - 1], F.lh[e.deg - 1]]; });
   // RH numbers in a row above the keys, LH numbers in a row below, each over its key
   let rows = '';
-  // black-key numbers sit one step farther out, so neighbours like G and A♭ don't run together
-  const nums = (m, cx, black) => { if(fk[m]) rows += `<text class="kf rh${black ? ' bk' : ''}" x="${cx}" y="${black ? -36 : -10}">${fk[m][0]}</text><text class="kf lh${black ? ' bk' : ''}" x="${cx}" y="${black ? H + 50 : H + 26}">${fk[m][1]}</text>`; return ''; };
+  // one straight row each: RH above the keys, LH below
+  const nums = (m, cx) => { if(fk[m]) rows += `<text class="kf rh" x="${cx}" y="-12">${fk[m][0]}</text><text class="kf lh" x="${cx}" y="${H + 28}">${fk[m][1]}</text>`; return ''; };
   let wi = 0, whites = '', blacks = '';
   for(let m = PIANO_LO; m <= PIANO_HI; m++){
     const black = [1, 3, 6, 8, 10].includes(m % 12), cls = `lk ${black ? 'black' : 'white'}${ins.has(m) ? ' insc' : ''}`;
-    if(!black){ const x = wi * W; whites += `<g class="${cls}" data-m="${m}"><rect x="${x + 1}" y="1" width="${W - 2}" height="${H - 2}" rx="4"/>${nums(m, x + W / 2, false)}${roots.has(m) ? `<circle class="rt" cx="${x + W / 2}" cy="${H - 14}" r="6"/>` : ''}</g>`; wi++; }
-    else { const x = wi * W - BW / 2; blacks += `<g class="${cls}" data-m="${m}"><rect x="${x}" y="1" width="${BW}" height="${BH}" rx="3"/>${nums(m, x + BW / 2, true)}${roots.has(m) ? `<circle class="rt" cx="${x + BW / 2}" cy="${BH - 10}" r="5"/>` : ''}</g>`; }
+    if(!black){ const x = wi * W; whites += `<g class="${cls}" data-m="${m}"><rect x="${x + 1}" y="1" width="${W - 2}" height="${H - 2}" rx="4"/>${nums(m, x + W / 2)}${roots.has(m) ? `<circle class="rt" cx="${x + W / 2}" cy="${H - 14}" r="6"/>` : ''}</g>`; wi++; }
+    else { const x = wi * W - BW / 2; blacks += `<g class="${cls}" data-m="${m}"><rect x="${x}" y="1" width="${BW}" height="${BH}" rx="3"/>${nums(m, x + BW / 2)}${roots.has(m) ? `<circle class="rt" cx="${x + BW / 2}" cy="${BH - 10}" r="5"/>` : ''}</g>`; }
   }
-  const lab = F ? `<text class="kfl rh" x="-8" y="-20">RH</text><text class="kfl lh" x="-8" y="${H + 36}">LH</text>` : '';
+  const lab = F ? `<text class="kfl rh" x="-8" y="-14">RH</text><text class="kfl lh" x="-8" y="${H + 26}">LH</text>` : '';
   $('#lvPiano').innerHTML = F
-    ? `<svg viewBox="-40 -60 ${wi * W + 48} ${H + 120}" role="img" aria-label="Piano with the scale's keys shaded, right-hand fingers above and left-hand fingers below">${whites}${blacks}${rows}${lab}</svg>`
+    ? `<svg viewBox="-40 -38 ${wi * W + 48} ${H + 76}" role="img" aria-label="Piano with the scale's keys shaded, right-hand fingers above and left-hand fingers below">${whites}${blacks}${rows}${lab}</svg>`
     : `<svg viewBox="0 0 ${wi * W} ${H}" role="img" aria-label="Piano with the scale's keys shaded">${whites}${blacks}</svg>`;
 }
 function learnSigBox(id){
