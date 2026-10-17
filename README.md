@@ -25,6 +25,8 @@ The **📖 LEARN** button (top bar) opens a no-score reference for any of the 15
 - **▶ PLAY** plays the scale; each note lights up on the staff and the piano at the same time. Tempo, up and down, and loop. Click any note or key to hear it.
 - **Key signature** box: the signature on a small staff, in plain words, with where it comes from (relative major for minor, parent major for modes). Theoretical keys (like G♯ major) say why there's no real signature and link to the same-sounding key. A checkbox writes the scale on the big staff with its key signature.
 - **Circle of fifths**: majors outside, relative minors inside; the current key lights up (modes light their parent major). Click any key to learn it.
+- **Piano fingering** (FINGERING checkbox, on by default): RH and LH finger numbers under every note, and the right-hand finger shows on each key as it plays. Majors use the standard method-book fingerings; minors use [UVU Piano's harmonic minor fingering sheet](https://www.uvu.edu/music/docs/uvu_harmonic_minor_scale_fingerings.pdf) (natural and melodic minor use the same fingering). Modes have no standard fingering, so LEARN says so. The fingerings live in `FING_MAJ` / `FING_MIN` in `index.html` if you want to change any.
+- **Hover cards**: point at a key on the circle (its key signature, sharps or flats, relative key), a note on the staff (degree, name, fingers) or a W/H step (what it means).
 - **Learn what you missed**: every end screen (practice, CHAOS, SUPERNOVA, tests) with mistakes has a button that opens LEARN with just the missed scales and what was missed, then **PRACTICE THESE SCALES ▶**.
 - Link straight to a scale with `?learn=G` (or `?learn=D:dor`).
 
