@@ -3726,7 +3726,7 @@ const STEP_TIP = {1: '<b>H = half step</b><br>The very next key, with nothing in
 function cofTip(id){
   const t = typeOf(id), maj = t === 'major' ? id : parentTonic(id), c = sigCount(maj), list = sigList(maj).map(fmt);
   const rel = t === 'major' ? `${fmt(relMinor(id))} minor` : `${fmt(maj)} major`;
-  return `<b style="font-size:20px">${esc(scaleName(id))}</b><svg viewBox="0 22 230 176" width="150" style="display:block;margin:6px auto;background:var(--paper);border-radius:8px">${[2, 4, 6, 8, 10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('')}<text class="clef" x="12" y="${yOf(2) + 17}" font-size="104">𝄞</text>${sigMarkup(maj)}</svg>${c ? `${c} ${isFlatKey(maj) ? 'flat' : 'sharp'}${c > 1 ? 's' : ''}: <b>${list.join(' ')}</b>` : 'No sharps or flats'}<br>Relative ${t === 'major' ? 'minor' : 'major'}: <b>${rel}</b><br><small>Click to learn it</small>`;
+  return `<b style="font-size:20px">${esc(scaleName(id))}</b><svg viewBox="0 10 230 204" width="150" style="display:block;margin:6px auto;background:var(--paper);border-radius:8px">${[2, 4, 6, 8, 10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('')}<text class="clef" x="12" y="${yOf(2) + 17}" font-size="104">𝄞</text>${sigMarkup(maj)}</svg>${c ? `${c} ${isFlatKey(maj) ? 'flat' : 'sharp'}${c > 1 ? 's' : ''}: <b>${list.join(' ')}</b>` : 'No sharps or flats'}<br>Relative ${t === 'major' ? 'minor' : 'major'}: <b>${rel}</b><br><small>Click to learn it</small>`;
 }
 // Scale mistakes for LEARN WHAT YOU MISSED: what was missed, per scale.
 function learnNote(r, q){
@@ -3812,7 +3812,11 @@ function fingering(id){
 }
 function learnStaff(id, seq){
   const sigOn = $('#lvSigOn').checked && stdSig(id), sig = sigOn ? sigMarkup(id) : '';
-  const x0 = sigOn ? 104 + sigCount(id) * 16 + 26 : 120, dx = seq.length > 8 ? 46 : 64, W = x0 + seq.length * dx + 10;
+  const x0 = sigOn ? 104 + sigCount(id) * 16 + 20 : 110, half = seq.length > 8 ? 22 : 30;
+  const shownOf = e => { const a = accOf(e.note); return sigOn ? (a !== accOf(sigNotes(id).find(m => m[0] === e.note[0]) || e.note[0]) ? ACC_KEY[a] : null) : (a ? ACC_KEY[a] : null); };
+  const xs = []; let cur = x0;
+  seq.forEach(e => { const sh = shownOf(e); if(sh) cur += sh === 'bb' ? 34 : 24; const x = cur + half; xs.push(x); cur = x + half; });
+  const W = cur + 14;
   const lines = [2, 4, 6, 8, 10].map(i => `<line class="staff-line" x1="8" x2="${W - 8}" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('');
   const names = S.deg && typeOf(id) === 'major' && seq.length <= 8;
   const F = $('#lvFing').checked ? fingering(id) : null;
@@ -3820,16 +3824,15 @@ function learnStaff(id, seq){
   const fOf = (hand, e) => F ? F[hand][e.deg - 1] : '';
   let notes = '', steps = '';
   seq.forEach((e, i) => {
-    const x = x0 + i * dx + dx / 2, a = accOf(e.note);
-    const shown = sigOn ? (a !== accOf(sigNotes(id).find(m => m[0] === e.note[0]) || e.note[0]) ? ACC_KEY[a] : null) : (a ? ACC_KEY[a] : null);
+    const x = xs[i], shown = shownOf(e);
     const tip = `<b>${fmt(e.note)}</b> · ${ORDN[e.deg === 8 ? 1 : e.deg] || ''}${e.deg === 8 ? ' (octave)' : ''}${typeOf(id) === 'major' ? ' · ' + DEG_NAME[e.deg === 8 ? 1 : e.deg] : ''}${F ? ` · <span style="color:#74c0fc">RH ${fOf('rh', e)}</span> · <span style="color:#faa2c1">LH ${fOf('lh', e)}</span>` : ''}<br><small>Click to hear it</small>`;
     notes += `<g class="ln" data-i="${i}" data-tip="${esc(tip)}">${ledgerLines(e.pos, x)}${accSvg(shown, x - 30, yOf(e.pos))}<ellipse class="nh" cx="${x}" cy="${yOf(e.pos)}" rx="12.5" ry="8.6"/><ellipse cx="${x}" cy="${yOf(e.pos)}" rx="4.4" ry="7" transform="rotate(-50 ${x} ${yOf(e.pos)})" fill="var(--paper)"/>`
       + `<text x="${x}" y="222" font-size="22">${fmt(e.note)}</text><text x="${x}" y="242" font-size="${names ? 11 : 17}">${names ? DEG_NAME[e.deg === 8 ? 1 : e.deg].toUpperCase() : e.deg}</text>`
       + (F ? `<text class="fg rh" x="${x}" y="286">${fOf('rh', e)}</text><text class="fg lh" x="${x}" y="306">${fOf('lh', e)}</text>` : '') + `</g>`;
-    if(i){ const d = Math.abs(e.midi - seq[i - 1].midi); steps += `<text class="stp${d === 3 ? ' aug' : ''}" x="${x - dx / 2}" y="262" data-tip="${esc(STEP_TIP[d] || '')}">${stepName(d)}</text>`; }
+    if(i){ const d = Math.abs(e.midi - seq[i - 1].midi); steps += `<text class="stp${d === 3 ? ' aug' : ''}" x="${(x + xs[i - 1]) / 2}" y="262" data-tip="${esc(STEP_TIP[d] || '')}">${stepName(d)}</text>`; }
   });
   const down = seq.findIndex(e => e.down);
-  const dirs = down > 0 ? `<text class="dir" x="${x0 + 4}" y="34">GOING UP</text><text class="dir" x="${x0 + down * dx + 4}" y="34">${typeOf(id) === 'mel' ? 'COMING DOWN (NATURAL MINOR)' : 'COMING DOWN'}</text>` : '';
+  const dirs = down > 0 ? `<text class="dir" x="${x0 + 4}" y="34">GOING UP</text><text class="dir" x="${xs[down] - half}" y="34">${typeOf(id) === 'mel' ? 'COMING DOWN (NATURAL MINOR)' : 'COMING DOWN'}</text>` : '';
   const fl = F ? `<text class="fgl rh" x="14" y="286">RH</text><text class="fgl lh" x="14" y="306">LH</text>` : '';
   $('#lvStaff').innerHTML = `<svg viewBox="0 18 ${W} ${F ? 296 : 252}" role="img" aria-label="${esc(scaleName(id))} on the treble staff">${lines}<line class="staff-line" x1="8" x2="8" y1="${yOf(10)}" y2="${yOf(2)}"/><text class="clef" x="14" y="${yOf(2) + 17}" font-size="104" style="text-anchor:start">𝄞</text>${sig}${dirs}${notes}${steps}${fl}</svg>`;
   const fn = $('#lvFingNote'); if(fn) fn.textContent = !$('#lvFing').checked ? '' : F ? 'Fingering: RH = right hand, LH = left hand. 1 = thumb … 5 = pinky. Thumbs stay on white keys.' + (typeOf(id) === 'mel' ? ' Melodic minor uses the same fingering going up and coming down.' : '')
@@ -3857,7 +3860,7 @@ function learnSigBox(id){
     txt = `<b>${name}</b> uses ${fmt(tonicOf(id))} natural minor's key signature (relative major ${P}): ${cw}. The raised ${t === 'harm' ? '7th' : '6th and 7th'} (${raised}) ${t === 'harm' ? 'is an accidental' : 'are accidentals'}, not part of the key signature.`;
   } else txt = `<b>${name}</b> uses ${P}'s key signature (its parent major): ${cw}.`;
   if(!std && t !== 'major') txt += ' That needs more than 7 sharps or flats (or a double), so it isn\'t a real key signature.';
-  $('#lvSig').innerHTML = `<svg viewBox="0 22 230 176" role="img" aria-label="${esc(name)} key signature"><line class="staff-line" x1="6" x2="224" y1="${yOf(2)}" y2="${yOf(2)}"/>${[4, 6, 8, 10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('')}<text class="clef" x="12" y="${yOf(2) + 17}" font-size="104">𝄞</text>${std ? sigMarkup(id) : `<text x="150" y="${yOf(6) + 6}" font-size="18" fill="var(--paperink)" text-anchor="middle">${c > 7 || !std ? 'NONE' : ''}</text>`}</svg>`;
+  $('#lvSig').innerHTML = `<svg viewBox="0 10 230 204" role="img" aria-label="${esc(name)} key signature"><line class="staff-line" x1="6" x2="224" y1="${yOf(2)}" y2="${yOf(2)}"/>${[4, 6, 8, 10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('')}<text class="clef" x="12" y="${yOf(2) + 17}" font-size="104">𝄞</text>${std ? sigMarkup(id) : `<text x="150" y="${yOf(6) + 6}" font-size="18" fill="var(--paperink)" text-anchor="middle">${c > 7 || !std ? 'NONE' : ''}</text>`}</svg>`;
   $('#lvSigText').innerHTML = txt;
   const enh = std ? null : PLAY_ORDER.find(k => k !== id && typeOf(k) === t && pcOf(tonicOf(k)) === pcOf(tonicOf(id)) && stdSig(k));
   $('#lvEnh').innerHTML = enh ? `<p class="lv-rule">Musicians write it as <b>${esc(scaleName(enh))}</b> instead (same sound).</p><button class="btn lv-enh" type="button" data-lgo="${enh}">LEARN ${esc(scaleName(enh)).toUpperCase()} ▶</button>` : '';
