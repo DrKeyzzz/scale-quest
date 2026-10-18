@@ -652,6 +652,106 @@ service cloud.firestore {
     }
 
 
+    // ================= Teacher messages (added 2026-10-18) =================
+    // One private conversation per teacher with the admin. teacher_threads/<teacher's email> is the summary (last line,
+    // unread counts); its messages subcollection holds the messages. Only the admin and that teacher can read them.
+    // Each side writes only its own side: a teacher sends as 'teacher' (unread_admin goes up by 1) and clears its own
+    // unread_teacher; the admin is the mirror image. Only the admin can delete a message or a whole conversation.
+    function isThreadTeacher(email) {
+      return isTeacher() && request.auth.token.email == email;
+    }
+    function threadOk(email, d) {
+      return d.keys().hasOnly(['email', 'name', 'school', 'last_at', 'last_text', 'last_from', 'unread_admin', 'unread_teacher'])
+        && d.keys().hasAll(['email', 'name', 'school', 'last_at', 'last_text', 'last_from', 'unread_admin', 'unread_teacher'])
+        && d.email == email
+        && d.name is string && d.name.size() <= 60 && d.school is string && d.school.size() <= 80
+        && d.last_at is timestamp && d.last_text is string && d.last_text.size() <= 120
+        && d.last_from in ['admin', 'teacher']
+        && d.unread_admin is int && d.unread_admin >= 0 && d.unread_admin <= 999
+        && d.unread_teacher is int && d.unread_teacher >= 0 && d.unread_teacher <= 999;
+    }
+    // What one side (me = 'admin' or 'teacher') may change: its own unread count only drops to 0; the other side's count
+    // stays or goes up by 1, and only together with a new last line (last_at = now, last_from = me). The admin may also
+    // change last_text alone (after deleting a message).
+    function threadSide(n, o, me, mine, theirs) {
+      return (n[mine] == o[mine] || n[mine] == 0)
+        && (n[theirs] == o[theirs] || (n[theirs] == o[theirs] + 1 && n.last_at == request.time))
+        && (n.last_at == o.last_at || (n.last_at == request.time && n.last_from == me))
+        && (n.last_from == o.last_from || n.last_from == me)
+        && (n.last_text == o.last_text || n.last_at == request.time || me == 'admin');
+    }
+    match /teacher_threads/{email} {
+      allow read: if isAdmin() || isThreadTeacher(email);
+      allow create: if threadOk(email, request.resource.data) && request.resource.data.last_at == request.time
+        && ((isAdmin() && request.resource.data.last_from == 'admin'
+              && request.resource.data.unread_admin == 0 && request.resource.data.unread_teacher <= 1)
+          || (isThreadTeacher(email) && request.resource.data.last_from == 'teacher'
+              && request.resource.data.unread_teacher == 0 && request.resource.data.unread_admin <= 1));
+      allow update: if threadOk(email, request.resource.data)
+        && ((isAdmin() && threadSide(request.resource.data, resource.data, 'admin', 'unread_admin', 'unread_teacher'))
+          || (isThreadTeacher(email) && threadSide(request.resource.data, resource.data, 'teacher', 'unread_teacher', 'unread_admin')));
+      allow delete: if isAdmin();
+
+      match /messages/{msgId} {
+        allow read: if isAdmin() || isThreadTeacher(email);
+        allow create: if request.resource.data.keys().hasOnly(['from', 'text', 'at'])
+          && request.resource.data.keys().hasAll(['from', 'text', 'at'])
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 1000
+          && request.resource.data.at == request.time
+          && ((request.resource.data.from == 'admin' && isAdmin())
+            || (request.resource.data.from == 'teacher' && isThreadTeacher(email)));
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
+    }
+
+
+    // ================= Teacher Board (added 2026-10-18) =================
+    // Every approved teacher (and the admin) can read and post. Posts and replies are plain text, 1-1000 characters,
+    // signed with the poster's own email. Only the admin can pin a post or make it an announcement. Nobody edits text.
+    // Anyone may bump a post's last_at/reply_count by exactly one reply (+1 with a new reply, -1 when one is deleted).
+    // The author or the admin deletes a post or a reply; a post's author may also delete its replies (to delete the post).
+    function boardAuthorOk(d) {
+      return d.author_email == request.auth.token.email
+        && d.author_name is string && d.author_name.size() >= 1 && d.author_name.size() <= 60
+        && d.author_school is string && d.author_school.size() <= 80
+        && d.text is string && d.text.size() >= 1 && d.text.size() <= 1000;
+    }
+    match /teacher_board/{postId} {
+      allow read: if isTeacher();
+      allow create: if isTeacher() && boardAuthorOk(request.resource.data)
+        && request.resource.data.keys().hasOnly(['author_email', 'author_name', 'author_school', 'text', 'pinned', 'announce', 'created_at', 'last_at', 'reply_count'])
+        && request.resource.data.keys().hasAll(['author_email', 'author_name', 'author_school', 'text', 'pinned', 'announce', 'created_at', 'last_at', 'reply_count'])
+        && request.resource.data.pinned is bool && request.resource.data.announce is bool
+        && (isAdmin() || (request.resource.data.pinned == false && request.resource.data.announce == false))
+        && request.resource.data.created_at == request.time && request.resource.data.last_at == request.time
+        && request.resource.data.reply_count == 0;
+      allow update: if isTeacher()
+        && ((request.resource.data.diff(resource.data).affectedKeys().hasOnly(['last_at', 'reply_count'])
+              && request.resource.data.reply_count == resource.data.reply_count + 1
+              && request.resource.data.last_at == request.time)
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reply_count'])
+              && request.resource.data.reply_count == resource.data.reply_count - 1
+              && request.resource.data.reply_count >= 0)
+          || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pinned', 'announce'])
+              && request.resource.data.pinned is bool && request.resource.data.announce is bool));
+      allow delete: if isAdmin() || (isTeacher() && resource.data.author_email == request.auth.token.email);
+
+      match /replies/{replyId} {
+        allow read: if isTeacher();
+        allow create: if isTeacher() && boardAuthorOk(request.resource.data)
+          && request.resource.data.keys().hasOnly(['author_email', 'author_name', 'author_school', 'text', 'at'])
+          && request.resource.data.keys().hasAll(['author_email', 'author_name', 'author_school', 'text', 'at'])
+          && request.resource.data.at == request.time
+          && exists(/databases/$(database)/documents/teacher_board/$(postId));
+        allow update: if false;
+        allow delete: if isAdmin() || (isTeacher() && (resource.data.author_email == request.auth.token.email
+          || get(/databases/$(database)/documents/teacher_board/$(postId)).data.author_email == request.auth.token.email));
+      }
+    }
+
+
     // ================= Tests =================
     // A teacher publishes a test for a class (a game, its settings, how it is graded, how many tries).
     // Anyone can read a test (students need it to start). Only the teacher who owns the class can create, change or delete it.

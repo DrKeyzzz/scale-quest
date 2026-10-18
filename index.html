@@ -652,6 +652,9 @@ button{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* "✉ Messages" link to the All games dashboard (added 2026-10-18) */
+.mtg-msgn{display:inline-block;min-width:18px;margin-left:6px;padding:1px 5px 0;border-radius:999px;background:#c0392b;color:#fff;font:700 11px/1.4 system-ui,sans-serif;letter-spacing:0;text-align:center;vertical-align:middle}
 </style>
 <style>
 /* ---------- skins (2026-10): html[data-skin] = clean (default) | day | classic ----------
@@ -1080,6 +1083,7 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
       <h2>TEACHER DASHBOARD</h2>
       <select id="tdClass" aria-label="Class"></select>
       <span class="td-who" id="tdWho"></span>
+      <button class="btn tbtn" id="tdMsgs" type="button" hidden title="Messages with Mr. Milnes (opens the All games dashboard)" onclick="window.open('https://drkeyzzz.github.io/teacher/all/#messages', '_blank', 'noopener')">✉ MESSAGES<span class="mtg-msgn" id="tdMsgN" hidden></span></button>
       <button class="btn tbtn" id="tdBack" type="button">BACK TO GAME</button>
       <button class="btn tbtn" id="tdSignOut" type="button">SIGN OUT</button>
     </div>
@@ -3222,7 +3226,20 @@ async function openTeacherView(){
   $('#app').classList.add('teacher'); $('#teacherView').hidden = false; window.scrollTo({top: 0});
   $('#tdWho').textContent = `Signed in as ${TD.email}`;
   $('#tdAdminTab').hidden = !ADMIN_EMAILS.includes(TD.email);
+  tdMsgCount();
   await tdLoadClasses(); tdRender();
+}
+// "✉ Messages" opens the All games dashboard's Messages tab; the red number is this teacher's unread messages from
+// Mr. Milnes (one read of teacher_threads/<email>; the admin: one query of teacher_threads). Added 2026-10-18.
+async function tdMsgCount() {
+  const a = $('#tdMsgs'), n0 = $('#tdMsgN'); if (!a) return; a.hidden = false; let n = 0;
+  try {
+    n = await Cloud.run.bind(Cloud)(async ({ fs, db }) => ADMIN_EMAILS.includes(TD.email)
+      ? (await fs.getDocs(fs.collection(db, 'teacher_threads'))).docs.reduce((s, d) => s + (+d.data().unread_admin || 0), 0)
+      : +(((await fs.getDoc(fs.doc(db, 'teacher_threads', TD.email))).data() || {}).unread_teacher) || 0);
+  } catch (e) { n = 0; }
+  n0.textContent = n > 99 ? '99+' : String(n); n0.hidden = !n;
+  a.setAttribute('aria-label', n ? `Messages, ${n} unread` : 'Messages with Mr. Milnes (opens the All games dashboard)');
 }
 function closeTeacherView(){ clearInterval(TD.timer); $('#app').classList.remove('teacher'); $('#teacherView').hidden = true; refreshClassInfo(); renderBoard(); }
 async function tdLoadClasses(){
