@@ -318,7 +318,7 @@ service cloud.firestore {
         && d.name is string && d.name.size() >= 2 && d.name.size() <= 24
         && d.get('class_code', '') is string
         && (d.get('class_code', '') == '' || exists(/databases/$(database)/documents/classes/$(d.class_code)))
-        && d.game in ['filter', 'peak', 'eq', 'gain', 'comp', 'pan', 'space', 'beat']
+        && d.game in ['filter', 'peak', 'eq', 'gain', 'comp', 'pan', 'space', 'tone', 'beat']
         && d.score is int && d.score >= 0 && d.score <= 100000
         && d.acc is int && d.acc >= 0 && d.acc <= 100
         && d.level is int && d.level >= 1 && d.level <= 20
