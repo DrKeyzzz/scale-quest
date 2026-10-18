@@ -3240,6 +3240,36 @@ async function tdMsgCount() {
   } catch (e) { n = 0; }
   n0.textContent = n > 99 ? '99+' : String(n); n0.hidden = !n;
   a.setAttribute('aria-label', n ? `Messages, ${n} unread` : 'Messages with Mr. Milnes (opens the All games dashboard)');
+  tdBoardCount(f => Cloud.run.bind(Cloud)(f), n);
+}
+
+// New Teacher Board posts/replies since this teacher last opened the Board (same marker as the All games dashboard),
+// shown as a second "Board" button next to Messages; both pulse while something is new. Rechecked every 3 minutes.
+async function tdBoardCount(runner, msgCount) {
+  const m = document.getElementById('tdMsgs'), mn = document.getElementById('tdMsgN'); if (!m) return;
+  if (!document.getElementById('mtg-new-css')) document.head.insertAdjacentHTML('beforeend', '<style id="mtg-new-css">.mtg-pulse{animation:mtgpulse 1.4s ease-in-out infinite}@keyframes mtgpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,181,71,.85)}50%{box-shadow:0 0 0 8px rgba(255,181,71,0)}}@media (prefers-reduced-motion:reduce){.mtg-pulse{animation:none}}</style>');
+  let b = document.getElementById('mtgBoardBtn');
+  if (!b) {
+    b = m.cloneNode(false); b.id = 'mtgBoardBtn'; b.removeAttribute('onclick'); b.title = 'The Teacher Board: posts from all the teachers (opens the All games dashboard)';
+    b.onclick = () => window.open('https://drkeyzzz.github.io/teacher/all/#board', '_blank', 'noopener');
+    const up = /MESSAGES/.test(m.textContent);
+    b.innerHTML = (up ? '📌 BOARD' : '📌 Board') + `<span class="${mn ? mn.className : ''}" id="mtgBoardN" hidden></span>`;
+    m.after(b);
+    new MutationObserver(() => { b.hidden = m.hidden; }).observe(m, { attributes: true, attributeFilter: ['hidden'] });
+    setInterval(() => { if (!document.hidden && !m.hidden) tdMsgCount(); }, 180000);
+  }
+  b.hidden = m.hidden;
+  let n = 0;
+  try {
+    const me = String(TD.email || '').toLowerCase();
+    let seen = 0; try { seen = +localStorage.getItem('mtg_board_seen_v1:' + me) || 0; } catch (e) {}
+    if (!seen) seen = Date.now() - 7 * 86400000;   // never opened the Board: the last week counts as new
+    n = await runner(async ({ fs, db }) => (await fs.getDocs(fs.query(fs.collection(db, 'teacher_board'), fs.orderBy('last_at', 'desc'), fs.limit(10)))).docs
+      .filter(d => { const x = d.data(), t = x.last_at && x.last_at.toMillis ? x.last_at.toMillis() : 0; return t > seen && String(x.author_email || '').toLowerCase() !== me; }).length);
+  } catch (e) { n = 0; }
+  const bn = document.getElementById('mtgBoardN'); bn.textContent = n >= 10 ? '10+' : String(n); bn.hidden = !n;
+  b.setAttribute('aria-label', n ? `Teacher Board, ${n} new` : 'Teacher Board');
+  b.classList.toggle('mtg-pulse', n > 0); m.classList.toggle('mtg-pulse', msgCount > 0);
 }
 function closeTeacherView(){ clearInterval(TD.timer); $('#app').classList.remove('teacher'); $('#teacherView').hidden = true; refreshClassInfo(); renderBoard(); }
 async function tdLoadClasses(){
