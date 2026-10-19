@@ -595,6 +595,10 @@ button{font:inherit;color:inherit}
 .td-err:empty{display:none}
 .td-sub{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .tbtn.sm{font-size:8px;padding:8px 10px}
+.instr-game{display:inline-flex;align-items:center;gap:4px;padding:6px 8px}
+.instr{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-family:var(--px);font-size:9px;color:var(--yel)}
+.instr-game select,.instr select{font:600 14px system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink);background:var(--bg,#111);border:2px solid var(--line);border-radius:4px;padding:4px 6px;max-width:170px}
+html:not([data-skin="classic"]) .instr{font-size:12px;font-weight:600}
 .td-live{font-family:var(--px);font-size:8px;color:var(--ok)}
 .td-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .td-tiles div{border:3px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:6px}
@@ -947,6 +951,89 @@ html[data-skin="day"] .mtg-hint { box-shadow: 0 8px 20px -8px rgba(20,40,80,.35)
 .mtg-hint { --hint-bg: var(--panel); --hint-ink: var(--ink); --hint-edge: var(--line); }
 html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
 </style>
+<!-- MTG_SOUND start: identical in every game. Master copy: Music Games/shared/mtg-sound.snippet.js (install with apply-sound.py) -->
+<script id="mtg-sound">
+/* MTG_SOUND: the shared instrument sound engine (identical in every game; master: Music Games/shared/mtg-sound.snippet.js,
+   install with shared/apply-sound.py). window.MTGSound:
+     list() -> [{key,name}]   get() / set(key) (localStorage mtg_sound_v1, fires 'mtgsound' on window)
+     ctx(audioContext)  out(node)  preload(lo, hi) -> Promise  note(midi, when, dur, vel = 90, dest)
+   Recordings: Salamander Grand + tonejs-instruments (CC BY 3.0), vibraphone from VCSL (CC0, hosted on drkeyzzz.github.io/sounds). */
+(function () {
+  var KEY = 'mtg_sound_v1', SAL = 'https://tonejs.github.io/audio/salamander/', TJI = 'https://nbrosowsky.github.io/tonejs-instruments/samples/';
+  var VIB = location.hostname === 'localhost' ? '/hub/sounds/vibes/' : 'https://drkeyzzz.github.io/sounds/vibes/';
+  var NIX = { C: 0, Cs: 1, D: 2, Ds: 3, E: 4, F: 5, Fs: 6, G: 7, Gs: 8, A: 9, As: 10, B: 11 };
+  function toMidi(n) { var p = n.match(/^([A-G]s?)(\d)$/); return 12 * (+p[2] + 1) + NIX[p[1]]; }
+  function SET(base, names) { return names.split(' ').map(function (n) { return { m: toMidi(n), url: base + n + '.mp3' }; }); }
+  var SOUNDS = [
+    { key: 'epiano', name: 'Soft electric piano' },
+    { key: 'piano', name: 'Grand piano', samples: SET(SAL, 'A1 C2 Ds2 Fs2 A2 C3 Ds3 Fs3 A3 C4 Ds4 Fs4 A4 C5 Ds5 Fs5 A5 C6'), decay: 1.2 },
+    { key: 'strings', name: 'Strings', samples: SET(TJI + 'cello/', 'C2 D2 E2 F2 G2 A2 B2 C3 D3 E3 F3 G3').concat(SET(TJI + 'violin/', 'A3 C4 E4 G4 A4 C5 E5 G5 A5 C6')), attack: .09, release: .45, gain: 1.7 },
+    { key: 'flute', name: 'Flute', samples: SET(TJI + 'flute/', 'C4 E4 A4 C5 E5 A5 C6 E6 A6'), attack: .05, release: .3, gain: 1.6 },
+    { key: 'vibes', name: 'Vibraphone', samples: SET(VIB, 'F2 A2 C3 E3 B3 D4 A4 C5 E5'), decay: 1.2, gain: 1.3 }
+  ];
+  var BY = {}; SOUNDS.forEach(function (s) { BY[s.key] = s; });
+  var A = null, OUT = null, bus = null, BUFS = {}, LOADING = {}, NORM = {};
+  function ac() {
+    if (!A) A = new (window.AudioContext || window.webkitAudioContext)();
+    if (!bus) {   // dry + a small room reverb, into the game's output (or the speakers)
+      bus = A.createGain(); var wet = A.createGain(), rev = A.createConvolver(), len = Math.floor(A.sampleRate * 1.6), ir = A.createBuffer(2, len, A.sampleRate);
+      for (var ch = 0; ch < 2; ch++) { var d = ir.getChannelData(ch), lp = 0; for (var i = 0; i < len; i++) { var k = i / len; lp = lp * (.2 + .75 * k) + (Math.random() * 2 - 1) * (1 - (.2 + .75 * k)); d[i] = lp * Math.pow(1 - k, 2.2); } }
+      rev.buffer = ir; wet.gain.value = .18; bus.connect(OUT || A.destination); bus.connect(rev); rev.connect(wet); wet.connect(OUT || A.destination);
+      bus._wet = wet;
+    }
+    if (A.state === 'suspended') A.resume();
+    return A;
+  }
+  function cur() { var k = null; try { k = localStorage.getItem(KEY); } catch (e) {} return BY[k] ? k : 'epiano'; }
+  function load(s) {
+    var c = ac();
+    return BUFS[s.url] ? Promise.resolve() : LOADING[s.url] || (LOADING[s.url] = fetch(s.url).then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(function (b) { return new Promise(function (ok, no) { c.decodeAudioData(b, ok, no); }); })
+      .then(function (buf) { var d = buf.getChannelData(0), p = 0; for (var i = 0; i < d.length; i += 16) p = Math.max(p, Math.abs(d[i])); NORM[s.url] = .6 / Math.max(p, .05); BUFS[s.url] = buf; })
+      .catch(function () { delete LOADING[s.url]; }));
+  }
+  function nearest(S, m, loadedOnly) { var b = null; S.samples.forEach(function (s) { if (loadedOnly && !BUFS[s.url]) return; if (!b || Math.abs(s.m - m) < Math.abs(b.m - m)) b = s; }); return b; }
+  function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function epiano(c, m, t, dur, peak, lp) {   // the built-in soft electric piano (2-operator FM)
+    var g = c.createGain(), car = c.createOscillator(), mod = c.createOscillator(), mg = c.createGain(); lp.connect(g);
+    car.frequency.value = hz(m); mod.frequency.value = hz(m) * 2;
+    mg.gain.setValueAtTime(hz(m) * 1.2, t); mg.gain.exponentialRampToValueAtTime(hz(m) * .05, t + 1.2); mod.connect(mg); mg.connect(car.frequency); car.connect(lp);
+    g.gain.setValueAtTime(peak * .55, t); g.gain.exponentialRampToValueAtTime(peak * .2, t + .5); g.gain.setValueAtTime(peak * .2, t + dur); g.gain.exponentialRampToValueAtTime(.0005, t + dur + .5);
+    car.start(t); mod.start(t); car.stop(t + dur + .55); mod.stop(t + dur + .55); return g;
+  }
+  window.MTGSound = {
+    list: function () { return SOUNDS.map(function (s) { return { key: s.key, name: s.name }; }); },
+    get: cur,
+    set: function (k) { if (!BY[k]) return; try { localStorage.setItem(KEY, k); } catch (e) {} try { window.dispatchEvent(new CustomEvent('mtgsound', { detail: k })); } catch (e) {} },
+    ctx: function (c) { if (c && c !== A) { A = c; bus = null; } return ac(); },
+    out: function (node) { OUT = node || null; bus = null; },
+    preload: function (lo, hi) {
+      var S = BY[cur()]; if (!S.samples) return Promise.resolve();
+      lo = lo == null ? 48 : lo; hi = hi == null ? 84 : hi;
+      var want = S.samples.filter(function (s) { return s.m >= lo - 5 && s.m <= hi + 17; });
+      [lo, hi].forEach(function (m) { var n = nearest(S, m); if (want.indexOf(n) < 0) want.push(n); });
+      return Promise.all(want.map(load));
+    },
+    note: function (midi, when, dur, vel, dest) {
+      var c = ac(), S = BY[cur()], v = (vel == null ? 90 : vel) / 127, peak = .9 * v * v, t = Math.max(when || 0, c.currentTime);
+      var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = .5; lp.frequency.value = 900 + Math.pow(Math.min(v, 1), 1.6) * 11000;
+      var s = S.samples && nearest(S, midi, true);
+      if (S.samples && (!s || Math.abs(s.m - midi) > 7)) { var n = nearest(S, midi); if (!BUFS[n.url]) load(n); s = null; }
+      var g;
+      if (!s) g = epiano(c, midi, t, dur, peak, lp);   // built-in, or samples not here yet: never silent
+      else {
+        g = c.createGain(); lp.connect(g);
+        var src = c.createBufferSource(); src.buffer = BUFS[s.url]; src.playbackRate.value = Math.pow(2, (midi - s.m) / 12); src.connect(lp);
+        var pk = peak * NORM[s.url] * (S.gain || 1);
+        if (S.decay) { g.gain.setValueAtTime(pk, t); g.gain.setValueAtTime(pk, t + dur); g.gain.exponentialRampToValueAtTime(.0005, t + dur + S.decay); src.start(t); src.stop(t + dur + S.decay + .05); }
+        else { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(pk, t + S.attack); g.gain.setValueAtTime(pk, t + dur); g.gain.exponentialRampToValueAtTime(.0005, t + dur + S.release); src.start(t); src.stop(t + dur + S.release + .05); }
+      }
+      g.connect(dest || bus);
+    }
+  };
+})();
+</script>
+<!-- MTG_SOUND end -->
 </head>
 <body>
 <div class="crt" aria-hidden="true"></div>
@@ -970,6 +1057,7 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
       <button class="btn tbtn who" id="whoBtn" type="button">👤 SIGN IN</button>
       <button class="btn tbtn" id="learnTopBtn" type="button">📖 LEARN</button>
       <button class="btn tbtn" id="boardBtn" type="button">LEADERBOARD</button>
+      <label class="btn tbtn instr-game" title="Change the instrument the notes play on">🎵 <select id="instr-game" aria-label="Instrument"></select></label>
       <button class="btn tbtn" id="muteBtn" type="button">SOUND: ON</button>
       <button class="btn tbtn quit" id="quitBtn" type="button" hidden>QUIT</button>
       <button class="btn tbtn" id="teacherTopBtn" type="button">TEACHER DASHBOARD</button>
@@ -1105,7 +1193,7 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
     <div class="panel more" id="more" hidden>
       <div class="mtabs" role="tablist" aria-label="More options">
         <button type="button" role="tab" data-tab="scales" aria-selected="true">PICK SCALES</button>
-        <button type="button" role="tab" data-tab="midi" aria-selected="false">MIDI KEYBOARD</button>
+        <button type="button" role="tab" data-tab="midi" aria-selected="false">INSTRUMENT &amp; MIDI</button>
       </div>
       <div class="mpanel" data-panel="scales" role="tabpanel">
         <section class="panel keyselect" id="keySelect" aria-label="Choose scales">
@@ -1127,6 +1215,7 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
         </section>
       </div>
       <div class="mpanel" data-panel="midi" role="tabpanel" hidden>
+        <label class="instr"><span>INSTRUMENT</span> <select id="instr"></select></label>
         <p class="mnote">Have a MIDI keyboard? Plug it in with a USB cable and connect it here. Its keys pick the piano keys (or move the staff note); you still press SUBMIT.</p>
         <button class="midibtn big" id="midiBtn2" type="button">🎹 CONNECT MIDI KEYBOARD</button>
         <p class="mnote" id="midiNo" hidden>This browser can't use MIDI keyboards (Chrome and Edge can). The mouse, touch screen and keyboard all work.</p>
@@ -1597,7 +1686,7 @@ let AC = null, master = null;
 function audio(){
   if(!AC){
     const C = window.AudioContext || window.webkitAudioContext; if(!C) return null;
-    AC = new C(); master = AC.createGain(); master.gain.value = S.muted ? 0 : .6; master.connect(AC.destination);
+    AC = new C(); master = AC.createGain(); master.gain.value = S.muted ? 0 : .6; master.connect(AC.destination); MTGSound.ctx(AC); MTGSound.out(master);
   }
   if(AC.state === 'suspended') AC.resume();
   return AC;
@@ -1612,12 +1701,12 @@ function tone(freq, {type='square', dur=.15, vol=.1, at=0, slide=null, attack=.0
   g.gain.exponentialRampToValueAtTime(.0001, t+dur);
   o.connect(g).connect(master); o.start(t); o.stop(t+dur+.05);
 }
+// Musical notes go through the shared instrument engine (MTGSound, More options > Instrument & MIDI); effect sounds stay synth.
 function playMidi(m, dur=1.2){
-  const f = 440 * Math.pow(2, (m-69)/12);
-  tone(f,   {type:'triangle', dur, vol:.32, attack:.006});
-  tone(f*2, {type:'sine', dur:dur*.55, vol:.08});
-  tone(f*3, {type:'sine', dur:dur*.25, vol:.03});
+  const a = audio(); if(!a || S.muted) return;
+  MTGSound.note(m, a.currentTime, dur * .75, 110);
 }
+function preloadSound(){ return audio() ? MTGSound.preload(PIANO_LO, PIANO_HI) : Promise.resolve(); }
 const SFX = {
   click: () => tone(880, {dur:.04, vol:.05}),
   coin:  () => { tone(988, {dur:.08, vol:.09}); tone(1319, {dur:.3, vol:.09, at:.08}); },
@@ -2531,7 +2620,7 @@ function setPlaying(on){
   $('#teacherTopBtn').hidden = on; $('#learnTopBtn').hidden = on;
 }
 function startRun(mode){
-  closeOverlay();
+  closeOverlay(); preloadSound();
   if(mode === 'nova' && (S.deg || S.ks)) return;
   const keys = mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major')); if(!keys.length) return;
   S.awaitNext = null;
@@ -3547,6 +3636,10 @@ $('#quitBtn').onclick = () => {
 };
 $('#teacherTopBtn').onclick = () => { if(!S.overlay) teacherLogin(); };
 $('#boardBtn').onclick = () => { if(!S.overlay) boardPanel(); };
+['instr', 'instr-game'].forEach(id => { const el = document.getElementById(id); el.innerHTML = MTGSound.list().map(o => `<option value="${o.key}">${o.name}</option>`).join('');
+  el.value = MTGSound.get();
+  el.addEventListener('change', () => MTGSound.set(el.value)); });   // one picker in More options, one in the top bar
+window.addEventListener('mtgsound', () => { document.getElementById('instr').value = document.getElementById('instr-game').value = MTGSound.get(); preloadSound().then(() => playMidi(60, 1)); });
 function renderMute(){ $('#muteBtn').textContent = S.muted ? 'SOUND: OFF' : 'SOUND: ON'; }
 $('#muteBtn').onclick = () => {
   S.muted = !S.muted; store.set('muted', S.muted); renderMute();
