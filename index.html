@@ -2088,7 +2088,7 @@ const yOf = i => BASE_Y - i*STEP;
    sits from treble's, learn = the Learn view's starting position for C, max = the highest position, start = where a placed note starts.
    Grand staff: positions run up from the bass staff (0 = E2) through middle C (12, drawn under the treble staff) to the treble staff
    (24 = A5). Positions 12 and up are drawn on the treble staff, the rest on the bass staff GRAND_DY lower. */
-const GRAND_DY = 140;
+const GRAND_DY = 160;   // 4 staff spaces between the staves, so the treble clef's tail clears the bass staff
 const CLEFS = {
   treble: {name: 'Treble', tag: 'TREBLE CLEF', D: 28, sig: 0, learn: 0, max: 12, start: 6},    // position 0 = C4, bottom line E4
   bass:   {name: 'Bass', tag: 'BASS CLEF', D: 16, sig: -2, learn: 5, max: 12, start: 6},       // position 0 = E2, bottom line G2, F3 on the 4th line
