@@ -1215,7 +1215,7 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
         </section>
       </div>
       <div class="mpanel" data-panel="midi" role="tabpanel" hidden>
-        <label class="instr"><span>CLEF</span> <select id="clefSel"><option value="treble">Treble</option><option value="bass">Bass</option><option value="alto">Alto</option></select></label>
+        <label class="instr"><span>CLEF</span> <select id="clefSel"><option value="treble">Treble</option><option value="bass">Bass</option><option value="alto">Alto</option><option value="grand">Grand staff</option></select></label>
         <label class="instr"><span>INSTRUMENT</span> <select id="instr"></select></label>
         <p class="mnote">Have a MIDI keyboard? Plug it in with a USB cable and connect it here. Its keys pick the piano keys (or move the staff note); you still press SUBMIT.</p>
         <button class="midibtn big" id="midiBtn2" type="button">🎹 CONNECT MIDI KEYBOARD</button>
@@ -1692,7 +1692,7 @@ const S = {
   deg: store.get('deg', false) === true, degSel: 0, degFocus: 0,
   ks: store.get('ks', false) === true, ksMinor: store.get('ksMinor', false) === true, ksMix: store.get('ksMix', true) !== false, ksSel: '', ksAcc: '#', ksPlaced: [],
   muted: store.get('muted', false),
-  clef: ['treble', 'bass', 'alto'].includes(store.get('clef')) ? store.get('clef') : 'treble',   // More options > Clef; a teacher's test or link can set it
+  clef: ['treble', 'bass', 'alto', 'grand'].includes(store.get('clef')) ? store.get('clef') : 'treble',   // More options > Clef; a teacher's test or link can set it
   run: null, busy: false, overlay: false,
   sel: new Set(), lock: new Set(), pos: 6, accSel: null,
 };
@@ -1931,7 +1931,7 @@ function syncQuick(){
   const what = nova ? 'ALL 150 SCALES' : !sel.length ? 'NO SCALES PICKED' : S.ks ? 'KEY SIGNATURES' + (S.ksMinor ? ' + MINOR' : '') + ' · ' + (sel.length === 1 ? scaleName(sel[0]).toUpperCase() : selSummary(sel)) : S.deg ? 'SCALE DEGREES' + (S.degFocus ? ` (+${DEG_NAME[S.degFocus].toUpperCase()})` : '') + ' · ' + (sel.length === 1 ? scaleName(sel[0]).toUpperCase() : selSummary(sel))
     : scalesValue() !== 'pick' || sel.length === 1 ? scalesTitle().toUpperCase() : selSummary(sel);
   const how = nova ? `SUPERNOVA · ${NOVA_HEARTS} HEARTS` : S.mode === 'chaos' ? `CHAOS · ${CHAOS_LEN} TIMED QUESTIONS` : `PRACTICE · ${S.qpk} PER SCALE`;
-  $('#playSum').innerHTML = `<b>${esc(what)}</b> · ${how}${S.clef !== 'treble' ? ' · ' + CL().name.toUpperCase() + ' CLEF' : ''}`;
+  $('#playSum').innerHTML = `<b>${esc(what)}</b> · ${how}${S.clef !== 'treble' ? ' · ' + CL().tag : ''}`;
   ctaPiano(nova ? null : sel[0]);
 }
 // The little piano on the stage lights up the first scale you'll play.
@@ -2083,38 +2083,61 @@ $('#pianoWrap').addEventListener('pointerdown', e => {
 /* ---------- staff ---------- */
 const STEP = 10, BASE_Y = 170, NOTE_X = 330;
 const yOf = i => BASE_Y - i*STEP;
-/* Clef (2026-10): on screen a note sits at position 0-12 (2 = bottom line, 10 = top line); the clef decides which note that is.
-   D = the note number (C0 = 0, one per letter) at position 0, sig = how far the key signature sits below treble's,
-   learn = the Learn view's starting position for C. */
+/* Clef (2026-10): a note's position counts lines and spaces up from position 0 (on one staff 2 = bottom line, 10 = top line);
+   the clef decides which note that is. D = the note number (C0 = 0, one per letter) at position 0, sig = how far the key signature
+   sits from treble's, learn = the Learn view's starting position for C, max = the highest position, start = where a placed note starts.
+   Grand staff: positions run up from the bass staff (0 = E2) through middle C (12, drawn under the treble staff) to the treble staff
+   (24 = A5). Positions 12 and up are drawn on the treble staff, the rest on the bass staff GRAND_DY lower. */
+const GRAND_DY = 140;
 const CLEFS = {
-  treble: {name: 'Treble', D: 28, sig: 0, learn: 0},    // position 0 = C4, bottom line E4
-  bass:   {name: 'Bass', D: 16, sig: -2, learn: 5},     // position 0 = E2, bottom line G2, F3 on the 4th line
-  alto:   {name: 'Alto', D: 22, sig: -1, learn: 6},     // position 0 = D3, middle line C4
+  treble: {name: 'Treble', tag: 'TREBLE CLEF', D: 28, sig: 0, learn: 0, max: 12, start: 6},    // position 0 = C4, bottom line E4
+  bass:   {name: 'Bass', tag: 'BASS CLEF', D: 16, sig: -2, learn: 5, max: 12, start: 6},       // position 0 = E2, bottom line G2, F3 on the 4th line
+  alto:   {name: 'Alto', tag: 'ALTO CLEF', D: 22, sig: -1, learn: 6, max: 12, start: 6},       // position 0 = D3, middle line C4
+  grand:  {name: 'Grand staff', tag: 'GRAND STAFF', D: 16, sig: 12, learn: 12, max: 24, start: 12, grand: true},   // E2 to A5, starts on middle C
 };
 const CL = () => CLEFS[S.clef] || CLEFS.treble;
+const isGrand = () => !!CL().grand;
 const letterAt = pos => LETTERS[((pos + CL().D) % 7 + 7) % 7];
 const octAt = pos => Math.floor((pos + CL().D) / 7);
 const posMidi = (pos, acc = 0) => 12 * (octAt(pos) + 1) + NAT[letterAt(pos)] + acc;
+// Key signature positions to grade against (on the grand staff: the treble staff's).
 const sigPos = flat => (flat ? FLAT_SIG_POS : SHARP_SIG_POS).map(p => p + CL().sig);
+// The staves to draw, top to bottom: the grand staff is treble over bass.
+const staves = () => isGrand() ? [{clef: 'treble', dy: 0}, {clef: 'bass', dy: GRAND_DY}] : [{clef: S.clef, dy: 0}];
+// Which staff a position is drawn on: p = its position on that staff, dy = how far down that staff sits.
+const onStaff = pos => !isGrand() ? {p: pos, dy: 0} : pos >= 12 ? {p: pos - 12, dy: 0} : {p: pos, dy: GRAND_DY};
+const yPos = pos => { const o = onStaff(pos); return yOf(o.p) + o.dy; };
+// Every staff picture gets taller (EXTRA_H) and starts further left (VX, room for the brace) on the grand staff.
+const EXTRA_H = () => isGrand() ? GRAND_DY : 0, VX = () => isGrand() ? -22 : 0;
 // The clef sign at x (Noto Music glyphs, sized to the 20-unit staff space).
-function clefSvg(x, style = ''){
-  const c = S.clef, st = style ? ` style="${style}"` : '';
-  if(c === 'bass') return `<text class="clef" x="${x}" y="${yOf(2) + 1}" font-size="92"${st}>𝄢</text>`;   // top line to just under the 2nd line
-  if(c === 'alto') return `<text class="clef" x="${x}" y="${yOf(2) + 1}" font-size="82"${st}>𝄡</text>`;   // top line to bottom line
-  return `<text class="clef" x="${x}" y="${yOf(2)+17}" font-size="104"${st}>𝄞</text>`;
+function clefSvg(x, style = '', c = S.clef, dy = 0){
+  const st = style ? ` style="${style}"` : '';
+  if(c === 'bass') return `<text class="clef" x="${x}" y="${yOf(2) + 1 + dy}" font-size="92"${st}>𝄢</text>`;   // top line to just under the 2nd line
+  if(c === 'alto') return `<text class="clef" x="${x}" y="${yOf(2) + 1 + dy}" font-size="82"${st}>𝄡</text>`;   // top line to bottom line
+  return `<text class="clef" x="${x}" y="${yOf(2)+17+dy}" font-size="104"${st}>𝄞</text>`;
 }
-const clefLabel = () => CL().name + ' clef';
+// Staff lines from x1 to x2 with their clef signs at clefX; bar = the line down the left edge (always there on the grand staff, with its brace).
+function staffLines(x1, x2, clefX, {bar = false, style = ''} = {}){
+  const st = staves(), top = yOf(10), bot = yOf(2) + st[st.length - 1].dy;
+  let out = st.map(v => [2,4,6,8,10].map(i => `<line class="staff-line" x1="${x1}" x2="${x2}" y1="${yOf(i)+v.dy}" y2="${yOf(i)+v.dy}"/>`).join('') + clefSvg(clefX, style, v.clef, v.dy)).join('');
+  if(bar || isGrand()) out += `<line class="staff-line" x1="${x1}" x2="${x1}" y1="${top}" y2="${bot}"/>`;
+  if(isGrand()){
+    const xr = x1 - 6, xl = x1 - 18, m = (top + bot) / 2, h = bot - top;
+    out += `<path class="brace" d="M${xr} ${top}C${xl - 2} ${top + h * .06} ${xr + 3} ${m - h * .1} ${xl} ${m}C${xr + 3} ${m + h * .1} ${xl - 2} ${bot - h * .06} ${xr} ${bot}" fill="none" stroke="var(--paperink)" stroke-width="3.6" stroke-linecap="round"/>`;
+  }
+  return out;
+}
+const clefLabel = () => isGrand() ? 'Grand staff' : CL().name + ' clef';
 function noteMarkup(){
   return `<g id="accSlot"></g>
     <ellipse class="nh-outer" cx="${NOTE_X}" cy="0" rx="12.5" ry="8.6"/>
     <ellipse class="nh-inner" cx="${NOTE_X}" cy="0" rx="4.4" ry="7" transform="rotate(-50 ${NOTE_X} 0)"/>`;
 }
 function buildStaff(){
-  const lines = [2,4,6,8,10].map(i => `<line class="staff-line" x1="8" x2="512" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('');
-  $('#staffSvg').setAttribute('aria-label', clefLabel() + ' staff');
-  $('#staffSvg').innerHTML = `${lines}
-    <line class="staff-line" x1="8" x2="8" y1="${yOf(10)}" y2="${yOf(2)}"/>
-    ${clefSvg(14)}
+  const svg = $('#staffSvg');
+  svg.setAttribute('aria-label', isGrand() ? 'Grand staff' : clefLabel() + ' staff');
+  svg.setAttribute('viewBox', `${VX()} 22 ${520 - VX()} ${176 + EXTRA_H()}`);
+  svg.innerHTML = `${staffLines(8, 512, 14, {bar: true})}
     <g id="ksig"></g><g id="ghost" class="ghost"></g><g id="ledgers"></g>
     <g id="noteG">${noteMarkup()}</g>`;
 }
@@ -2136,6 +2159,8 @@ function ledgerLines(pos, x){
   if(pos >= 12) for(let i = 12; i <= pos; i += 2) out.push(i);
   return out.map(i => `<line class="ledger" x1="${x-20}" x2="${x+20}" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('');
 }
+// Ledger lines for a position in this clef (on the grand staff, on whichever staff it is drawn).
+function ledgersAt(pos, x){ const o = onStaff(pos), l = ledgerLines(o.p, x); return o.dy && l ? `<g transform="translate(0 ${o.dy})">${l}</g>` : l; }
 function effAcc(letter){
   if(S.accSel) return {'##': 2, '#': 1, n: 0, b: -1, bb: -2}[S.accSel];
   if(sigOn()) return sigAccOf(S.run.q.key, letter);
@@ -2146,50 +2171,44 @@ function staffMidi(){
 }
 function drawNote(){
   const g = $('#noteG');
-  g.style.transform = `translateY(${yOf(S.pos)}px)`;
+  g.style.transform = `translateY(${yPos(S.pos)}px)`;
   $('#accSlot').innerHTML = accSvg(S.accSel, NOTE_X-30);
-  $('#ledgers').innerHTML = ledgerLines(S.pos, NOTE_X);
+  $('#ledgers').innerHTML = ledgersAt(S.pos, NOTE_X);
   document.querySelectorAll('#accs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.acc === S.accSel));
 }
 function drawKeySig(key){
-  let out = '';
-  if(S.keySig && key && stdSig(key)){
-    const n = sigCount(key), flat = isFlatKey(key), P = sigPos(flat);
-    for(let i = 0; i < n; i++){
-      out += accSvg(flat ? 'b' : '#', 80+i*17, yOf(P[i]), .9);
-    }
-  }
-  $('#ksig').innerHTML = out;
+  $('#ksig').innerHTML = S.keySig && key && stdSig(key) ? sigMarkup(key, 80, 17) : '';
 }
-function sigMarkup(key){
-  const n = sigCount(key), flat = isFlatKey(key), P = sigPos(flat);
-  let out = ''; for(let i = 0; i < n; i++) out += accSvg(flat ? 'b' : '#', 96+i*16, yOf(P[i]), .9);
+// The key signature on every staff (each staff's own clef places it).
+function sigMarkup(key, x0 = 96, dx = 16){
+  const n = sigCount(key), flat = isFlatKey(key), P = flat ? FLAT_SIG_POS : SHARP_SIG_POS;
+  let out = '';
+  staves().forEach(v => { for(let i = 0; i < n; i++) out += accSvg(flat ? 'b' : '#', x0+i*dx, yOf(P[i] + CLEFS[v.clef].sig) + v.dy, .9); });
   return out;
 }
 // Just the clef and key signature, shown above the piano on "name this key" questions.
 function miniSig(key){
-  const lines = [2,4,6,8,10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('');
-  return `<svg viewBox="0 22 230 176" role="img" aria-label="${esc(scaleName(key))} key signature">${lines}${clefSvg(12)}${sigMarkup(key)}</svg>`;
+  return `<svg viewBox="${VX()} 22 ${230 - VX()} ${176 + EXTRA_H()}" role="img" aria-label="${esc(scaleName(key))} key signature">${staffLines(6, 224, 12)}${sigMarkup(key)}</svg>`;
 }
 function drawGhost(answer){
   if(!answer){ $('#ghost').innerHTML = ''; return; }
-  const cands = []; for(let i = 0; i <= 12; i++) if(letterAt(i) === answer[0]) cands.push(i);
+  const cands = []; for(let i = 0; i <= CL().max; i++) if(letterAt(i) === answer[0]) cands.push(i);
   const pos = cands.reduce((a,b) => Math.abs(b-S.pos) < Math.abs(a-S.pos) ? b : a);
   // write the accidental unless the key signature already gives it (a natural shows when it cancels the signature)
   const x = NOTE_X + 88, a = accOf(answer), sigA = sigOn() ? sigAccOf(S.run.q.key, answer[0]) : 0;
   const acc = a !== sigA ? ACC_KEY[a] : null, showAcc = !!acc;
-  $('#ghost').innerHTML = `${ledgerLines(pos, x)}
-    <g transform="translate(${x-NOTE_X} ${yOf(pos)})">
+  $('#ghost').innerHTML = `${ledgersAt(pos, x)}
+    <g transform="translate(${x-NOTE_X} ${yPos(pos)})">
       ${showAcc ? accSvg(acc, NOTE_X-30) : ''}
       <ellipse class="nh-outer" cx="${NOTE_X}" cy="0" rx="12.5" ry="8.6"/>
       <ellipse class="nh-inner" cx="${NOTE_X}" cy="0" rx="4.4" ry="7" transform="rotate(-50 ${NOTE_X} 0)"/>
     </g>
-    <text class="glabel" x="${x}" y="${pos >= 7 ? yOf(pos)+34 : yOf(pos)-22}">${fmt(answer)}</text>`;
+    <text class="glabel" x="${x}" y="${onStaff(pos).p >= 7 ? yPos(pos)+34 : yPos(pos)-22}">${fmt(answer)}</text>`;
   playMidi(posMidi(pos, a));
 }
 function moveNote(d){
   const q = S.run && S.run.q; if(!q || q.type !== 'staff' || S.busy || S.overlay) return;
-  const np = Math.max(0, Math.min(12, S.pos + d)); if(np === S.pos) return;
+  const np = Math.max(0, Math.min(CL().max, S.pos + d)); if(np === S.pos) return;
   S.pos = np; drawNote(); playMidi(staffMidi(), .7); say('', '');
 }
 function pickDeg(d){
@@ -2537,7 +2556,7 @@ function applyFocusAfterSettings(label, t){
 // ---------- teacher settings from the Assign page: ?settings=<base64url JSON> ----------
 // keys = scale ids (same as scale_assignment.keys), mode = practice | chaos (SUPERNOVA stays the student's own unlock),
 // qpk = 3 | 5 | 8 | 10, deg = Scale Degrees on/off, degFocus = 0 (none) or 1-7 (extra questions on that degree),
-// clef = treble | bass | alto (a test with no clef is treble).
+// clef = treble | bass | alto | grand (a test with no clef is treble).
 function decodeSettings(s){
   s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while(s.length % 4) s += '=';
   const bin = atob(s), bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
@@ -2703,7 +2722,7 @@ function degQuestion(){
   r.lastDeg[key] = d;
   const answer = SCALES[key][d-1];
   r.q = {key, type, degree: d, dn: true, dir: null, sk: key, name: scaleName(key), answer, tries: 0, t0: Date.now()};
-  if(type === 'dstaff'){ const c = []; for(let i = 1; i <= 11; i++) if(letterAt(i) === answer[0]) c.push(i); r.q.pos = pick(c); }
+  if(type === 'dstaff'){ const c = []; for(let i = 1; i < CL().max; i++) if(letterAt(i) === answer[0]) c.push(i); r.q.pos = pick(c); }
   if(type === 'dpiano') r.q.m = pick(keysOfPc(pcOf(answer)));
   renderQuestion();
 }
@@ -2783,7 +2802,7 @@ function renderQuestion(){
   $('#staffWrap .staffctl').hidden = q.type === 'dstaff'; $('#staffWrap').classList.toggle('nameit', q.type === 'dstaff');
   $('#keyHint').textContent = nameQ(q) ? 'KEYS 1–7 PICK · ENTER = SUBMIT' : staff ? '▲ ▼ ARROW KEYS MOVE · ENTER = SUBMIT' : 'ENTER = SUBMIT';
   clearPiano();
-  S.pos = 6; S.accSel = null; S.midiShift = null; S.degSel = 0;
+  S.pos = CL().start; S.accSel = null; S.midiShift = null; S.degSel = 0;
   const ng = $('#noteG'); ng.classList.remove('good','bad');
   drawKeySig(q.key); drawGhost(null); drawNote();
   // Scale Degrees: the reference card (practice only), the key signature and the answer buttons
@@ -3716,7 +3735,7 @@ function midiNote(m){
     if(idx < 0){ playMidi(m, .7); return say('Black keys have two names. Play the white key for the letter, then pick ♯ or ♭.', 'hint'); }
     let pos = (Math.floor(m / 12) - 1) * 7 + idx - CL().D;   // the note's line or space in this clef
     while(pos < 0) pos += 7;
-    while(pos > 12) pos -= 7;
+    while(pos > CL().max) pos -= 7;
     S.pos = pos; S.accSel = null; drawNote(); playMidi(staffMidi(), .7); say('', '');
     return;
   }
@@ -3841,8 +3860,12 @@ function ksRenderBody(q){
   }
   $('#keyHint').textContent = 'ENTER = SUBMIT';
 }
+// Sharps or flats in a row (on the grand staff they are placed on the treble staff and copied onto the bass staff).
+function ksAccs(list, x0, dx){
+  return list.map((x, i) => accSvg(x.acc, x0 + i * dx, yPos(x.pos), .9) + (isGrand() ? accSvg(x.acc, x0 + i * dx, yPos(x.pos - 14), .9) : '')).join('');
+}
 function ksDrawPlaced(){
-  $('#ksig').innerHTML = S.ksPlaced.map((x, i) => accSvg(x.acc, 96 + i * 16, yOf(x.pos), .9)).join('');
+  $('#ksig').innerHTML = ksAccs(S.ksPlaced, 96, 16);
 }
 // The right answer: sharps F C G D A E B / flats B E A D G C F on their usual lines and spaces.
 function ksWant(q){ const n = sigCount(q.key), flat = isFlatKey(q.key), P = sigPos(flat); return P.slice(0, n).map(pos => ({acc: flat ? 'b' : '#', pos})); }
@@ -3869,8 +3892,7 @@ function ksCof(q){
 function ksWrong(q){
   if(q.type === 'ksbuild'){
     const w = ksWant(q);
-    $('#ksig').innerHTML = S.ksPlaced.map((x, i) => accSvg(x.acc, 96 + i * 16, yOf(x.pos), .9)).join('')
-      + `<g class="ghost">${w.map((x, i) => accSvg(x.acc, 300 + i * 18, yOf(x.pos), .9)).join('')}</g>`;
+    $('#ksig').innerHTML = ksAccs(S.ksPlaced, 96, 16) + `<g class="ghost">${ksAccs(w, 300, 18)}</g>`;
   } else {
     const b = $(`#degBtns [data-k="${S.ksSel}"]`); if(b) b.classList.add('bad');
     const g = $(`#degBtns [data-k="${q.ans}"]`); if(g) g.classList.add('ok');
@@ -3895,7 +3917,9 @@ $('#degBtns').addEventListener('click', e => {
 $('#staffSvg').addEventListener('pointerdown', e => {
   const q = S.run && S.run.q; if(!q || q.type !== 'ksbuild' || S.busy || S.overlay) return;
   const svg = $('#staffSvg'), pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-  const y = pt.matrixTransform(svg.getScreenCTM().inverse()).y, pos = Math.max(0, Math.min(12, Math.round((BASE_Y - y) / STEP)));
+  const y = pt.matrixTransform(svg.getScreenCTM().inverse()).y, at = dy => Math.max(0, Math.min(12, Math.round((BASE_Y + dy - y) / STEP)));
+  // grand staff: a click on the bass staff counts as the same sharp or flat on the treble staff (the bass one sits 2 lower)
+  const pos = !isGrand() ? at(0) : y > BASE_Y + 15 ? Math.min(12, at(GRAND_DY) + 2) + 12 : at(0) + 12;
   if(S.ksPlaced.length >= 7) return say('A key signature has at most 7.', 'hint');
   S.ksPlaced.push({acc: S.ksAcc, pos}); ksDrawPlaced(); say('', '');
   playMidi(posMidi(pos, S.ksAcc === '#' ? 1 : -1), .5);
@@ -3915,7 +3939,7 @@ const STEP_TIP = {1: '<b>H = half step</b><br>The very next key, with nothing in
 function cofTip(id){
   const t = typeOf(id), maj = t === 'major' ? id : parentTonic(id), c = sigCount(maj), list = sigList(maj).map(fmt);
   const rel = t === 'major' ? `${fmt(relMinor(id))} minor` : `${fmt(maj)} major`;
-  return `<b style="font-size:20px">${esc(scaleName(id))}</b><svg viewBox="0 10 230 204" width="150" style="display:block;margin:6px auto;background:var(--paper);border-radius:8px">${[2, 4, 6, 8, 10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('')}${clefSvg(12)}${sigMarkup(maj)}</svg>${c ? `${c} ${isFlatKey(maj) ? 'flat' : 'sharp'}${c > 1 ? 's' : ''}: <b>${list.join(' ')}</b>` : 'No sharps or flats'}<br>Relative ${t === 'major' ? 'minor' : 'major'}: <b>${rel}</b><br><small>Click to learn it</small>`;
+  return `<b style="font-size:20px">${esc(scaleName(id))}</b><svg viewBox="${VX()} 10 ${230 - VX()} ${204 + EXTRA_H()}" width="150" style="display:block;margin:6px auto;background:var(--paper);border-radius:8px">${staffLines(6, 224, 12)}${sigMarkup(maj)}</svg>${c ? `${c} ${isFlatKey(maj) ? 'flat' : 'sharp'}${c > 1 ? 's' : ''}: <b>${list.join(' ')}</b>` : 'No sharps or flats'}<br>Relative ${t === 'major' ? 'minor' : 'major'}: <b>${rel}</b><br><small>Click to learn it</small>`;
 }
 // Scale mistakes for LEARN WHAT YOU MISSED: what was missed, per scale.
 function learnNote(r, q){
@@ -3972,7 +3996,7 @@ function learnList(){
 // Notes in play order: up one octave (and back down when asked; melodic minor always comes down as natural minor).
 function learnSeq(id){
   const n = SCALES[id], st = stepsOf(id), t = typeOf(id);
-  let li = LETTERS.indexOf(n[0][0]) + CL().learn; if(li + 7 > 13) li -= 7;   // C to C fits from the clef's start; higher tonics drop an octave
+  let li = LETTERS.indexOf(n[0][0]) + CL().learn; if(li + 7 > CL().max + 1) li -= 7;   // C to C fits from the clef's start; higher tonics drop an octave
   const root = posMidi(li, accOf(n[0]));
   const seq = n.map((x, i) => ({note: x, pos: li + i, midi: root + st[i], deg: i + 1}));
   seq.push({note: n[0], pos: li + 7, midi: root + 12, deg: 8});
@@ -4008,7 +4032,7 @@ function learnStaff(id, seq){
   const xs = []; let cur = x0;
   seq.forEach(e => { const sh = shownOf(e); if(sh) cur += sh === 'bb' ? 34 : 24; const x = cur + half; xs.push(x); cur = x + half; });
   const W = cur + 14;
-  const lines = [2, 4, 6, 8, 10].map(i => `<line class="staff-line" x1="8" x2="${W - 8}" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('');
+  const EH = EXTRA_H();   // the grand staff pushes the rows of names, degrees and fingering down
   const names = S.deg && typeOf(id) === 'major' && seq.length <= 8;
   const F = $('#lvFing').checked ? fingering(id) : null;
   // finger for a note: going up use degree 1-8; coming down reuse the same finger for that degree
@@ -4017,15 +4041,17 @@ function learnStaff(id, seq){
   seq.forEach((e, i) => {
     const x = xs[i], shown = shownOf(e);
     const tip = `<b>${fmt(e.note)}</b> · ${ORDN[e.deg === 8 ? 1 : e.deg] || ''}${e.deg === 8 ? ' (octave)' : ''}${typeOf(id) === 'major' ? ' · ' + DEG_NAME[e.deg === 8 ? 1 : e.deg] : ''}${F ? ` · <span style="color:#74c0fc">RH ${fOf('rh', e)}</span> · <span style="color:#faa2c1">LH ${fOf('lh', e)}</span>` : ''}<br><small>Click to hear it</small>`;
-    notes += `<g class="ln" data-i="${i}" data-tip="${esc(tip)}">${ledgerLines(e.pos, x)}${accSvg(shown, x - 30, yOf(e.pos))}<ellipse class="nh" cx="${x}" cy="${yOf(e.pos)}" rx="12.5" ry="8.6"/><ellipse cx="${x}" cy="${yOf(e.pos)}" rx="4.4" ry="7" transform="rotate(-50 ${x} ${yOf(e.pos)})" fill="var(--paper)"/>`
-      + `<text x="${x}" y="222" font-size="22">${fmt(e.note)}</text><text x="${x}" y="242" font-size="${names ? 11 : 17}">${names ? DEG_NAME[e.deg === 8 ? 1 : e.deg].toUpperCase() : e.deg}</text>`
-      + (F ? `<text class="fg rh" x="${x}" y="286">${fOf('rh', e)}</text><text class="fg lh" x="${x}" y="306">${fOf('lh', e)}</text>` : '') + `</g>`;
-    if(i){ const d = Math.abs(e.midi - seq[i - 1].midi); steps += `<text class="stp${d === 3 ? ' aug' : ''}" x="${(x + xs[i - 1]) / 2}" y="262" data-tip="${esc(STEP_TIP[d] || '')}">${stepName(d)}</text>`; }
+    // grand staff: right hand on the treble staff, left hand an octave lower on the bass staff
+    const head = pos => `${ledgersAt(pos, x)}${accSvg(shown, x - 30, yPos(pos))}<ellipse class="nh" cx="${x}" cy="${yPos(pos)}" rx="12.5" ry="8.6"/><ellipse cx="${x}" cy="${yPos(pos)}" rx="4.4" ry="7" transform="rotate(-50 ${x} ${yPos(pos)})" fill="var(--paper)"/>`;
+    notes += `<g class="ln" data-i="${i}" data-tip="${esc(tip)}">${head(e.pos)}${isGrand() ? head(e.pos - 7) : ''}`
+      + `<text x="${x}" y="${222 + EH}" font-size="22">${fmt(e.note)}</text><text x="${x}" y="${242 + EH}" font-size="${names ? 11 : 17}">${names ? DEG_NAME[e.deg === 8 ? 1 : e.deg].toUpperCase() : e.deg}</text>`
+      + (F ? `<text class="fg rh" x="${x}" y="${286 + EH}">${fOf('rh', e)}</text><text class="fg lh" x="${x}" y="${306 + EH}">${fOf('lh', e)}</text>` : '') + `</g>`;
+    if(i){ const d = Math.abs(e.midi - seq[i - 1].midi); steps += `<text class="stp${d === 3 ? ' aug' : ''}" x="${(x + xs[i - 1]) / 2}" y="${262 + EH}" data-tip="${esc(STEP_TIP[d] || '')}">${stepName(d)}</text>`; }
   });
   const down = seq.findIndex(e => e.down);
   const dirs = down > 0 ? `<text class="dir" x="${x0 + 4}" y="34">GOING UP</text><text class="dir" x="${xs[down] - half}" y="34">${typeOf(id) === 'mel' ? 'COMING DOWN (NATURAL MINOR)' : 'COMING DOWN'}</text>` : '';
-  const fl = F ? `<text class="fgl rh" x="14" y="286">RH</text><text class="fgl lh" x="14" y="306">LH</text>` : '';
-  $('#lvStaff').innerHTML = `<svg viewBox="0 18 ${W} ${F ? 296 : 252}" role="img" aria-label="${esc(scaleName(id))} on the ${CL().name.toLowerCase()} staff">${lines}<line class="staff-line" x1="8" x2="8" y1="${yOf(10)}" y2="${yOf(2)}"/>${clefSvg(14, 'text-anchor:start')}${sig}${dirs}${notes}${steps}${fl}</svg>`;
+  const fl = F ? `<text class="fgl rh" x="14" y="${286 + EH}">RH</text><text class="fgl lh" x="14" y="${306 + EH}">LH</text>` : '';
+  $('#lvStaff').innerHTML = `<svg viewBox="${VX()} 18 ${W - VX()} ${(F ? 296 : 252) + EH}" role="img" aria-label="${esc(scaleName(id))} on the ${isGrand() ? 'grand' : CL().name.toLowerCase()} staff">${staffLines(8, W - 8, 14, {bar: true, style: 'text-anchor:start'})}${sig}${dirs}${notes}${steps}${fl}</svg>`;
   const fn = $('#lvFingNote'); if(fn) fn.textContent = !$('#lvFing').checked ? '' : F ? 'Fingering: RH (blue) = right hand, LH (pink) = left hand. On the piano, RH numbers are above the keys and LH numbers are below. 1 = thumb … 5 = pinky.' + (typeOf(id) === 'mel' ? ' Melodic minor uses the same fingering going up and coming down.' : '')
     : 'Modes have no standard fingering. Try the fingering of the major scale that shares its key signature, starting on this note.';
 }
@@ -4061,7 +4087,7 @@ function learnSigBox(id){
     txt = `<b>${name}</b> uses ${fmt(tonicOf(id))} natural minor's key signature (relative major ${P}): ${cw}. The raised ${t === 'harm' ? '7th' : '6th and 7th'} (${raised}) ${t === 'harm' ? 'is an accidental' : 'are accidentals'}, not part of the key signature.`;
   } else txt = `<b>${name}</b> uses ${P}'s key signature (its parent major): ${cw}.`;
   if(!std && t !== 'major') txt += ' That needs more than 7 sharps or flats (or a double), so it isn\'t a real key signature.';
-  $('#lvSig').innerHTML = `<svg viewBox="0 10 230 204" role="img" aria-label="${esc(name)} key signature"><line class="staff-line" x1="6" x2="224" y1="${yOf(2)}" y2="${yOf(2)}"/>${[4, 6, 8, 10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('')}${clefSvg(12)}${std ? sigMarkup(id) : `<text x="150" y="${yOf(6) + 6}" font-size="18" fill="var(--paperink)" text-anchor="middle">${c > 7 || !std ? 'NONE' : ''}</text>`}</svg>`;
+  $('#lvSig').innerHTML = `<svg viewBox="${VX()} 10 ${230 - VX()} ${204 + EXTRA_H()}" role="img" aria-label="${esc(name)} key signature">${staffLines(6, 224, 12)}${std ? sigMarkup(id) : `<text x="150" y="${yOf(6) + 6}" font-size="18" fill="var(--paperink)" text-anchor="middle">${c > 7 || !std ? 'NONE' : ''}</text>`}</svg>`;
   $('#lvSigText').innerHTML = txt;
   const enh = std ? null : PLAY_ORDER.find(k => k !== id && typeOf(k) === t && pcOf(tonicOf(k)) === pcOf(tonicOf(id)) && stdSig(k));
   $('#lvEnh').innerHTML = enh ? `<p class="lv-rule">Musicians write it as <b>${esc(scaleName(enh))}</b> instead (same sound).</p><button class="btn lv-enh" type="button" data-lgo="${enh}">LEARN ${esc(scaleName(enh)).toUpperCase()} ▶</button>` : '';

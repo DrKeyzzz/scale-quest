@@ -15,7 +15,7 @@
 </head>
 <body>
 <h1>Scale Quest: clef check</h1>
-<p>Loads the game in a hidden frame and checks the Treble, Bass and Alto clefs. Open it from the local server
+<p>Loads the game in a hidden frame and checks the Treble, Bass and Alto clefs and the grand staff. Open it from the local server
 (<code>http://localhost:8770/scale-quest/tests/clef-check.html</code>). Nothing is saved.</p>
 <p id="sum">Running…</p>
 <ol id="out"></ol>
@@ -32,7 +32,8 @@ function check(name, ok, detail = ''){
 const NAT = {C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11}, LET = 'CDEFGAB';
 const midiOf = (letter, oct, acc = 0) => 12 * (oct + 1) + NAT[letter] + acc;
 // Staff position 0-12 (2 = bottom line) in each clef: the note at position 0, then one letter per step.
-const START = {treble: ['C', 4], bass: ['E', 2], alto: ['D', 3]};
+const START = {treble: ['C', 4], bass: ['E', 2], alto: ['D', 3], grand: ['E', 2]};   // grand: one run of notes, bass staff up through middle C to the treble staff
+const MAX = {treble: 12, bass: 12, alto: 12, grand: 24};
 function noteAt(clef, pos){
   const [l, o] = START[clef], d = LET.indexOf(l) + o * 7 + pos;
   return [LET[d % 7], Math.floor(d / 7)];
@@ -43,8 +44,9 @@ const SIG = {
   bass:   {sharp: 'F3 C3 G3 D3 A2 E3 B2', flat: 'B2 E3 A2 D3 G2 C3 F2'},
   alto:   {sharp: 'F4 C4 G4 D4 A3 E4 B3', flat: 'B3 E4 A3 D4 G3 C4 F3'},
 };
+SIG.grand = SIG.treble;   // graded on the treble staff; the bass staff copy is checked separately
 const MAJORS = ['C','G','D','A','E','B','F#','C#','F','Bb','Eb','Ab','Db','Gb','Cb'];
-const CLEF_GLYPH = {treble: '𝄞', bass: '𝄢', alto: '𝄡'};
+const CLEF_GLYPH = {treble: '𝄞', bass: '𝄢', alto: '𝄡', grand: '𝄢'};
 
 document.getElementById('game').addEventListener('load', () => setTimeout(run, 600));
 function run(){
@@ -62,19 +64,19 @@ function run(){
     check('Treble: every staff spot gives the same note as before', !bad.length, 'positions ' + bad);
     check('Treble: the clef sign is drawn exactly as before', G("clefSvg(14)") === '<text class="clef" x="14" y="167" font-size="104">𝄞</text>', G("clefSvg(14)"));
 
-    for(const clef of ['treble', 'bass', 'alto']){
+    for(const clef of ['treble', 'bass', 'alto', 'grand']){
       G(`setClef('${clef}', false)`);
-      const C = clef[0].toUpperCase() + clef.slice(1);
+      const C = clef === 'grand' ? 'Grand staff' : clef[0].toUpperCase() + clef.slice(1), M = MAX[clef];
       // 2. Every staff spot: letter and pitch
       bad = [];
-      for(let p = 0; p <= 12; p++){
+      for(let p = 0; p <= M; p++){
         const [l, o] = noteAt(clef, p);
         if(G(`letterAt(${p})`) !== l || G(`posMidi(${p})`) !== midiOf(l, o)) bad.push(p + '=' + G(`letterAt(${p})`) + G(`octAt(${p})`));
       }
       check(`${C}: every staff spot gives the right note and pitch`, !bad.length, bad.join(', '));
       // the note the student moves on a staff question, with each accidental
       bad = [];
-      for(let p = 0; p <= 12; p++) for(const [acc, n] of [[null, 0], ['#', 1], ['b', -1], ['##', 2], ['bb', -2], ['n', 0]]){
+      for(let p = 0; p <= M; p++) for(const [acc, n] of [[null, 0], ['#', 1], ['b', -1], ['##', 2], ['bb', -2], ['n', 0]]){
         G(`S.pos = ${p}; S.accSel = ${acc ? `'${acc}'` : 'null'}`);
         const [l, o] = noteAt(clef, p);
         if(G('staffMidi()') !== midiOf(l, o, n)) bad.push(`${p}${acc || ''}`);
@@ -93,13 +95,13 @@ function run(){
         const drawn = (G(`sigMarkup('${k}')`).match(/class="accg"/g) || []).length;
         const want = G(`ksWant({key: '${k}'})`);
         const notes = want.map(x => noteAt(clef, x.pos)[0]);
-        if(drawn !== n || want.length !== n || notes.join('') !== list.map(x => x[0]).join('') || want.some(x => x.acc !== (flat ? 'b' : '#'))) bad.push(k);
+        if(drawn !== n * (clef === 'grand' ? 2 : 1) || want.length !== n || notes.join('') !== list.map(x => x[0]).join('') || want.some(x => x.acc !== (flat ? 'b' : '#'))) bad.push(k);
       }
       check(`${C}: all 15 major key signatures draw and grade on the right lines and spaces`, !bad.length, bad.join(', '));
 
       // 4. Name-it questions only put the note on a spot with the right letter
       bad = [];
-      for(const L of LET) for(let p = 1; p <= 11; p++) if(G(`letterAt(${p})`) === L && noteAt(clef, p)[0] !== L) bad.push(L + p);
+      for(const L of LET) for(let p = 1; p < M; p++) if(G(`letterAt(${p})`) === L && noteAt(clef, p)[0] !== L) bad.push(L + p);
       check(`${C}: name-it notes land on their own letter`, !bad.length, bad.join(', '));
 
       // 5. Learn: every scale fits the staff, notes sit on their letters, and play the written pitch
@@ -109,7 +111,7 @@ function run(){
         const seq = G(`learnSeq('${id}')`);
         for(const e of seq){
           const [l, o] = noteAt(clef, e.pos), acc = G(`accOf('${e.note}')`);
-          if(e.pos < 0 || e.pos > 13 || l !== e.note[0] || midiOf(l, o, acc) !== e.midi){ bad.push(id + ':' + e.note + '@' + e.pos); break; }
+          if(e.pos < 0 || e.pos > M + 1 || l !== e.note[0] || midiOf(l, o, acc) !== e.midi){ bad.push(id + ':' + e.note + '@' + e.pos); break; }
         }
       }
       check(`${C}: all ${ids.length} scales in Learn sit on the staff at the written pitch`, !bad.length, bad.slice(0, 6).join(', '));
@@ -121,7 +123,7 @@ function run(){
         if(![0, 2, 4, 5, 7, 9, 11].includes(m % 12)) continue;
         G(`midiNote(${m})`);
         const p = G('S.pos'), [l] = noteAt(clef, p);
-        if(p < 0 || p > 12 || l !== LET[[0, 2, 4, 5, 7, 9, 11].indexOf(m % 12)] || G('staffMidi()') % 12 !== m % 12) bad.push(m);
+        if(p < 0 || p > M || l !== LET[[0, 2, 4, 5, 7, 9, 11].indexOf(m % 12)] || G('staffMidi()') % 12 !== m % 12) bad.push(m);
       }
       G('S.run = null; S.pos = 6');
       check(`${C}: MIDI keys move the staff note to the right letter`, !bad.length, bad.join(', '));
@@ -129,11 +131,41 @@ function run(){
       // 7. Every staff picture shows this clef's sign
       G('buildStaff()');
       const staff = w.document.getElementById('staffSvg');
-      check(`${C}: the question staff shows the ${clef} clef`, staff.innerHTML.includes(CLEF_GLYPH[clef]) && staff.getAttribute('aria-label') === C + ' clef staff');
+      check(`${C}: the question staff shows the ${clef} clef`, staff.innerHTML.includes(CLEF_GLYPH[clef]) && staff.getAttribute('aria-label') === (clef === 'grand' ? 'Grand staff' : C + ' clef staff'));
       check(`${C}: the key signature card shows the ${clef} clef`, G("miniSig('D')").includes(CLEF_GLYPH[clef]));
     }
 
-    // 8. Teacher settings: links and tests set the clef, old tests are treble, nothing is saved as the student's own pick
+    // 8. Grand staff extras
+    G("setClef('grand', false)");
+    let gs = w.document.getElementById('staffSvg').innerHTML;
+    check('Grand staff: both clef signs, 10 staff lines and a brace', gs.includes('𝄞') && gs.includes('𝄢') && (gs.match(/class="staff-line"/g) || []).length === 11 && gs.includes('class="brace"'));
+    check('Grand staff: a placed note starts on middle C', G('CL().start') === 12 && G('posMidi(12)') === 60);
+    check('Grand staff: middle C is drawn just under the treble staff, B3 just over the bass staff', G('yPos(12)') === G('yOf(0)') && G('yPos(11)') === G('yOf(11) + GRAND_DY'));
+    // key signatures: same sharps or flats on both staves
+    bad = [];
+    for(const k of MAJORS){
+      const n = G(`sigCount('${k}')`), drawn = (G(`sigMarkup('${k}')`).match(/class="accg"/g) || []).length;
+      if(drawn !== 2 * n) bad.push(k);
+    }
+    check('Grand staff: every key signature is drawn on both staves', !bad.length, bad.join(', '));
+    // writing a key signature: the copy on the bass staff sits on the bass staff's own F, C, G… lines
+    bad = [];
+    for(const flat of [false, true]){
+      const list = G(`sigPos(${flat})`).map(pos => ({acc: flat ? 'b' : '#', pos}));
+      G(`S.ksPlaced = ${JSON.stringify(list)}`);
+      const want = SIG.bass[flat ? 'flat' : 'sharp'].split(' ');
+      const got = list.map(x => { const b = x.pos - 14; G('S.clef = "bass"'); const n = noteAt('bass', b).join(''); G('S.clef = "grand"'); return n; });
+      if(got.join(' ') !== want.join(' ')) bad.push(got.join(' '));
+      if((G('ksAccs(S.ksPlaced, 96, 16)').match(/class="accg"/g) || []).length !== 14) bad.push('count');
+    }
+    G('S.ksPlaced = []');
+    check('Grand staff: written sharps and flats are copied onto the bass staff in the right places', !bad.length, bad.join(' | '));
+    // Learn: left hand an octave below the right hand, on the bass staff
+    const seq = G("learnSeq('C')");
+    check('Grand staff: Learn starts the right hand on middle C', seq[0].pos === 12 && seq[0].midi === 60);
+    G("setClef('treble', false)");
+
+    // 9. Teacher settings: links and tests set the clef, old tests are treble, nothing is saved as the student's own pick
     G("setClef('treble', false)");
     G("applySettings({clef: 'bass'})");
     check('Settings link with clef "bass" opens in bass', G('S.clef') === 'bass' && w.document.getElementById('clefSel').value === 'bass');
@@ -148,6 +180,10 @@ function run(){
     check("Teacher settings don't change the student's own saved clef", w.localStorage.getItem('scalequest.clef') === storedBefore);
     G("setClef('bass', false)");
     check('The start screen says BASS CLEF', w.document.getElementById('playSum').textContent.includes('BASS CLEF'));
+    G("setClef('grand', false)");
+    check('The start screen says GRAND STAFF', w.document.getElementById('playSum').textContent.includes('GRAND STAFF'));
+    G("applySettings({clef: 'grand'})");
+    check('Settings link with clef "grand" opens the grand staff', G('S.clef') === 'grand');
     G("setClef('treble', false)");
     check('The start screen says nothing extra for treble', !w.document.getElementById('playSum').textContent.includes('CLEF'));
   } catch(e){
