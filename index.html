@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Press+Start+2P&family=VT323&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Music&text=%F0%9D%84%9E%F0%9D%84%AA%F0%9D%84%AB&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Music&text=%F0%9D%84%9E%F0%9D%84%A1%F0%9D%84%A2%F0%9D%84%AA%F0%9D%84%AB&display=swap">
 <script>
 /* Look (skin): 'clean' (default), 'day' or 'classic'. One choice for every game ('mtg_skin_v1'); ?skin=day previews and saves one. Set before the page draws. */
 (function(){ var s = null, ok = function(v){ return /^(clean|day|classic)$/.test(v || ''); };
@@ -1193,7 +1193,7 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
     <div class="panel more" id="more" hidden>
       <div class="mtabs" role="tablist" aria-label="More options">
         <button type="button" role="tab" data-tab="scales" aria-selected="true">PICK SCALES</button>
-        <button type="button" role="tab" data-tab="midi" aria-selected="false">INSTRUMENT &amp; MIDI</button>
+        <button type="button" role="tab" data-tab="midi" aria-selected="false">CLEF, INSTRUMENT &amp; MIDI</button>
       </div>
       <div class="mpanel" data-panel="scales" role="tabpanel">
         <section class="panel keyselect" id="keySelect" aria-label="Choose scales">
@@ -1215,6 +1215,7 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
         </section>
       </div>
       <div class="mpanel" data-panel="midi" role="tabpanel" hidden>
+        <label class="instr"><span>CLEF</span> <select id="clefSel"><option value="treble">Treble</option><option value="bass">Bass</option><option value="alto">Alto</option></select></label>
         <label class="instr"><span>INSTRUMENT</span> <select id="instr"></select></label>
         <p class="mnote">Have a MIDI keyboard? Plug it in with a USB cable and connect it here. Its keys pick the piano keys (or move the staff note); you still press SUBMIT.</p>
         <button class="midibtn big" id="midiBtn2" type="button">🎹 CONNECT MIDI KEYBOARD</button>
@@ -1677,6 +1678,7 @@ const S = {
   deg: store.get('deg', false) === true, degSel: 0, degFocus: 0,
   ks: store.get('ks', false) === true, ksMinor: store.get('ksMinor', false) === true, ksMix: store.get('ksMix', true) !== false, ksSel: '', ksAcc: '#', ksPlaced: [],
   muted: store.get('muted', false),
+  clef: ['treble', 'bass', 'alto'].includes(store.get('clef')) ? store.get('clef') : 'treble',   // More options > Clef; a teacher's test or link can set it
   run: null, busy: false, overlay: false,
   sel: new Set(), lock: new Set(), pos: 6, accSel: null,
 };
@@ -1915,7 +1917,7 @@ function syncQuick(){
   const what = nova ? 'ALL 150 SCALES' : !sel.length ? 'NO SCALES PICKED' : S.ks ? 'KEY SIGNATURES' + (S.ksMinor ? ' + MINOR' : '') + ' · ' + (sel.length === 1 ? scaleName(sel[0]).toUpperCase() : selSummary(sel)) : S.deg ? 'SCALE DEGREES' + (S.degFocus ? ` (+${DEG_NAME[S.degFocus].toUpperCase()})` : '') + ' · ' + (sel.length === 1 ? scaleName(sel[0]).toUpperCase() : selSummary(sel))
     : scalesValue() !== 'pick' || sel.length === 1 ? scalesTitle().toUpperCase() : selSummary(sel);
   const how = nova ? `SUPERNOVA · ${NOVA_HEARTS} HEARTS` : S.mode === 'chaos' ? `CHAOS · ${CHAOS_LEN} TIMED QUESTIONS` : `PRACTICE · ${S.qpk} PER SCALE`;
-  $('#playSum').innerHTML = `<b>${esc(what)}</b> · ${how}`;
+  $('#playSum').innerHTML = `<b>${esc(what)}</b> · ${how}${S.clef !== 'treble' ? ' · ' + CL().name.toUpperCase() + ' CLEF' : ''}`;
   ctaPiano(nova ? null : sel[0]);
 }
 // The little piano on the stage lights up the first scale you'll play.
@@ -2067,6 +2069,27 @@ $('#pianoWrap').addEventListener('pointerdown', e => {
 /* ---------- staff ---------- */
 const STEP = 10, BASE_Y = 170, NOTE_X = 330;
 const yOf = i => BASE_Y - i*STEP;
+/* Clef (2026-10): on screen a note sits at position 0-12 (2 = bottom line, 10 = top line); the clef decides which note that is.
+   D = the note number (C0 = 0, one per letter) at position 0, sig = how far the key signature sits below treble's,
+   learn = the Learn view's starting position for C. */
+const CLEFS = {
+  treble: {name: 'Treble', D: 28, sig: 0, learn: 0},    // position 0 = C4, bottom line E4
+  bass:   {name: 'Bass', D: 16, sig: -2, learn: 5},     // position 0 = E2, bottom line G2, F3 on the 4th line
+  alto:   {name: 'Alto', D: 22, sig: -1, learn: 6},     // position 0 = D3, middle line C4
+};
+const CL = () => CLEFS[S.clef] || CLEFS.treble;
+const letterAt = pos => LETTERS[((pos + CL().D) % 7 + 7) % 7];
+const octAt = pos => Math.floor((pos + CL().D) / 7);
+const posMidi = (pos, acc = 0) => 12 * (octAt(pos) + 1) + NAT[letterAt(pos)] + acc;
+const sigPos = flat => (flat ? FLAT_SIG_POS : SHARP_SIG_POS).map(p => p + CL().sig);
+// The clef sign at x (Noto Music glyphs, sized to the 20-unit staff space).
+function clefSvg(x, style = ''){
+  const c = S.clef, st = style ? ` style="${style}"` : '';
+  if(c === 'bass') return `<text class="clef" x="${x}" y="${yOf(2) + 1}" font-size="92"${st}>𝄢</text>`;   // top line to just under the 2nd line
+  if(c === 'alto') return `<text class="clef" x="${x}" y="${yOf(2) + 1}" font-size="82"${st}>𝄡</text>`;   // top line to bottom line
+  return `<text class="clef" x="${x}" y="${yOf(2)+17}" font-size="104"${st}>𝄞</text>`;
+}
+const clefLabel = () => CL().name + ' clef';
 function noteMarkup(){
   return `<g id="accSlot"></g>
     <ellipse class="nh-outer" cx="${NOTE_X}" cy="0" rx="12.5" ry="8.6"/>
@@ -2074,9 +2097,10 @@ function noteMarkup(){
 }
 function buildStaff(){
   const lines = [2,4,6,8,10].map(i => `<line class="staff-line" x1="8" x2="512" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('');
+  $('#staffSvg').setAttribute('aria-label', clefLabel() + ' staff');
   $('#staffSvg').innerHTML = `${lines}
     <line class="staff-line" x1="8" x2="8" y1="${yOf(10)}" y2="${yOf(2)}"/>
-    <text class="clef" x="14" y="${yOf(2)+17}" font-size="104">𝄞</text>
+    ${clefSvg(14)}
     <g id="ksig"></g><g id="ghost" class="ghost"></g><g id="ledgers"></g>
     <g id="noteG">${noteMarkup()}</g>`;
 }
@@ -2104,8 +2128,7 @@ function effAcc(letter){
   return 0;
 }
 function staffMidi(){
-  const letter = LETTERS[S.pos % 7], oct = 4 + Math.floor(S.pos / 7);
-  return 12*(oct+1) + NAT[letter] + effAcc(letter);
+  return posMidi(S.pos, effAcc(letterAt(S.pos)));
 }
 function drawNote(){
   const g = $('#noteG');
@@ -2117,7 +2140,7 @@ function drawNote(){
 function drawKeySig(key){
   let out = '';
   if(S.keySig && key && stdSig(key)){
-    const n = sigCount(key), flat = isFlatKey(key), P = flat ? FLAT_SIG_POS : SHARP_SIG_POS;
+    const n = sigCount(key), flat = isFlatKey(key), P = sigPos(flat);
     for(let i = 0; i < n; i++){
       out += accSvg(flat ? 'b' : '#', 80+i*17, yOf(P[i]), .9);
     }
@@ -2125,18 +2148,18 @@ function drawKeySig(key){
   $('#ksig').innerHTML = out;
 }
 function sigMarkup(key){
-  const n = sigCount(key), flat = isFlatKey(key), P = flat ? FLAT_SIG_POS : SHARP_SIG_POS;
+  const n = sigCount(key), flat = isFlatKey(key), P = sigPos(flat);
   let out = ''; for(let i = 0; i < n; i++) out += accSvg(flat ? 'b' : '#', 96+i*16, yOf(P[i]), .9);
   return out;
 }
 // Just the clef and key signature, shown above the piano on "name this key" questions.
 function miniSig(key){
   const lines = [2,4,6,8,10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('');
-  return `<svg viewBox="0 22 230 176" role="img" aria-label="${esc(scaleName(key))} key signature">${lines}<text class="clef" x="12" y="${yOf(2)+17}" font-size="104">𝄞</text>${sigMarkup(key)}</svg>`;
+  return `<svg viewBox="0 22 230 176" role="img" aria-label="${esc(scaleName(key))} key signature">${lines}${clefSvg(12)}${sigMarkup(key)}</svg>`;
 }
 function drawGhost(answer){
   if(!answer){ $('#ghost').innerHTML = ''; return; }
-  const cands = []; for(let i = 0; i <= 12; i++) if(LETTERS[i%7] === answer[0]) cands.push(i);
+  const cands = []; for(let i = 0; i <= 12; i++) if(letterAt(i) === answer[0]) cands.push(i);
   const pos = cands.reduce((a,b) => Math.abs(b-S.pos) < Math.abs(a-S.pos) ? b : a);
   // write the accidental unless the key signature already gives it (a natural shows when it cancels the signature)
   const x = NOTE_X + 88, a = accOf(answer), sigA = sigOn() ? sigAccOf(S.run.q.key, answer[0]) : 0;
@@ -2148,8 +2171,7 @@ function drawGhost(answer){
       <ellipse class="nh-inner" cx="${NOTE_X}" cy="0" rx="4.4" ry="7" transform="rotate(-50 ${NOTE_X} 0)"/>
     </g>
     <text class="glabel" x="${x}" y="${pos >= 7 ? yOf(pos)+34 : yOf(pos)-22}">${fmt(answer)}</text>`;
-  const oct = 4 + Math.floor(pos/7);
-  playMidi(12*(oct+1) + NAT[answer[0]] + a);
+  playMidi(posMidi(pos, a));
 }
 function moveNote(d){
   const q = S.run && S.run.q; if(!q || q.type !== 'staff' || S.busy || S.overlay) return;
@@ -2284,7 +2306,7 @@ function pickOf(q){
   if(nameQ(q)) return S.degSel ? DEG_NAME[S.degSel] : '';
   if(q.type === 'build') return '';
   if(q.type === 'piano'){ const m = [...S.sel][0]; if(m == null) return ''; const i = scaleIdxOfPc(q.sk, m % 12); return i >= 0 ? SCALES[q.sk][i] : PC_NAMES[m % 12]; }
-  const letter = LETTERS[S.pos % 7], a = effAcc(letter);
+  const letter = letterAt(S.pos), a = effAcc(letter);
   return letter + ({2: '##', 1: '#', '-1': 'b', '-2': 'bb'}[a] || '');
 }
 function logAnswer(q, ok){
@@ -2500,7 +2522,8 @@ function applyFocusAfterSettings(label, t){
 }
 // ---------- teacher settings from the Assign page: ?settings=<base64url JSON> ----------
 // keys = scale ids (same as scale_assignment.keys), mode = practice | chaos (SUPERNOVA stays the student's own unlock),
-// qpk = 3 | 5 | 8 | 10, deg = Scale Degrees on/off, degFocus = 0 (none) or 1-7 (extra questions on that degree).
+// qpk = 3 | 5 | 8 | 10, deg = Scale Degrees on/off, degFocus = 0 (none) or 1-7 (extra questions on that degree),
+// clef = treble | bass | alto (a test with no clef is treble).
 function decodeSettings(s){
   s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while(s.length % 4) s += '=';
   const bin = atob(s), bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
@@ -2514,6 +2537,7 @@ function applySettings(o){
   if([3, 5, 8, 10].includes(+o.qpk)) t.qpk = +o.qpk;
   if(typeof o.deg === 'boolean') t.deg = o.deg;
   if(Number.isInteger(o.degFocus) && o.degFocus >= 0 && o.degFocus <= 7) t.degFocus = o.degFocus;
+  if(CLEFS[o.clef]) t.clef = o.clef;
   if(!Object.keys(t).length) return null;
   if(t.keys){   // like a ready-made set: show the first scale's family in the key grid
     S.selected = new Set(t.keys);
@@ -2527,6 +2551,7 @@ function applySettings(o){
   if(S.deg && 'degFocus' in t) S.degFocus = t.degFocus;
   if(t.mode) setChoice('mode', t.mode); else if(S.mode === 'nova' && t.keys) setChoice('mode', 'practice');
   if(t.qpk) setChoice('qpk', String(t.qpk));
+  if(t.clef) setClef(t.clef, false);
   updateCarts(); renderAssignment();
   return t;
 }
@@ -2664,7 +2689,7 @@ function degQuestion(){
   r.lastDeg[key] = d;
   const answer = SCALES[key][d-1];
   r.q = {key, type, degree: d, dn: true, dir: null, sk: key, name: scaleName(key), answer, tries: 0, t0: Date.now()};
-  if(type === 'dstaff'){ const c = []; for(let i = 1; i <= 11; i++) if(LETTERS[i%7] === answer[0]) c.push(i); r.q.pos = pick(c); }
+  if(type === 'dstaff'){ const c = []; for(let i = 1; i <= 11; i++) if(letterAt(i) === answer[0]) c.push(i); r.q.pos = pick(c); }
   if(type === 'dpiano') r.q.m = pick(keysOfPc(pcOf(answer)));
   renderQuestion();
 }
@@ -2756,7 +2781,7 @@ function renderQuestion(){
   $('#sigMini').hidden = q.type !== 'dpiano'; $('#pianoWrap').classList.toggle('nameit', q.type === 'dpiano');
   if(q.type === 'dstaff'){
     $('#ksig').innerHTML = sigMarkup(q.key); S.pos = q.pos; drawNote();
-    setTimeout(() => playMidi(12*(5 + Math.floor(q.pos/7)) + NAT[q.answer[0]] + accOf(q.answer), .9), 150);
+    setTimeout(() => playMidi(posMidi(q.pos, accOf(q.answer)), .9), 150);
   }
   if(q.type === 'dpiano'){
     $('#sigMini').innerHTML = miniSig(q.key); PK[q.m].classList.add('shown');
@@ -2785,7 +2810,7 @@ function submit(){
     if(!S.sel.size) return say('Click a key first.', 'hint');
     correct = [...S.sel][0] % 12 === pcOf(q.answer);
   } else {
-    const letter = LETTERS[S.pos % 7];
+    const letter = letterAt(S.pos);
     correct = letter === q.answer[0] && effAcc(letter) === accOf(q.answer);
   }
   correct ? onCorrect() : onWrong();
@@ -2908,7 +2933,7 @@ function whyWrong(q){
       : `${PC_NAMES[pc]} isn't in ${K}. The ${deg} is ${ans}.`;
     return [text, scaleChips(q.sk, 'COUNT UP', [t], i)];
   }
-  const letter = LETTERS[S.pos % 7], a = effAcc(letter);
+  const letter = letterAt(S.pos), a = effAcc(letter);
   const placed = letter + ({2: '##', 1: '#', '-1': 'b', '-2': 'bb'}[a] || '');
   const i = SCALES[q.sk].findIndex(n => n[0] === letter), inKey = SCALES[q.sk][i];
   let text;
@@ -3634,6 +3659,14 @@ $('#quitBtn').onclick = () => {
   const r = S.run; if(!r) return;
   if(Object.keys(r.stats).length) endRun('quit'); else { r.ended = true; toMenu(); }
 };
+// Clef: every staff redraws (questions, key signatures, Learn). save = false for a teacher's test or link (the student's own pick stays stored).
+function setClef(c, save = true){
+  if(!CLEFS[c]) return;
+  S.clef = c; if(save) store.set('clef', c);
+  $('#clefSel').value = c; buildStaff(); syncQuick();
+}
+$('#clefSel').value = S.clef;
+$('#clefSel').addEventListener('change', e => setClef(e.target.value));
 $('#teacherTopBtn').onclick = () => { if(!S.overlay) teacherLogin(); };
 $('#boardBtn').onclick = () => { if(!S.overlay) boardPanel(); };
 ['instr', 'instr-game'].forEach(id => { const el = document.getElementById(id); el.innerHTML = MTGSound.list().map(o => `<option value="${o.key}">${o.name}</option>`).join('');
@@ -3667,7 +3700,7 @@ function midiNote(m){
   if(q.type === 'staff'){
     const idx = [0,2,4,5,7,9,11].indexOf(m % 12);
     if(idx < 0){ playMidi(m, .7); return say('Black keys have two names. Play the white key for the letter, then pick ♯ or ♭.', 'hint'); }
-    let pos = (Math.floor(m / 12) - 5) * 7 + idx;
+    let pos = (Math.floor(m / 12) - 1) * 7 + idx - CL().D;   // the note's line or space in this clef
     while(pos < 0) pos += 7;
     while(pos > 12) pos -= 7;
     S.pos = pos; S.accSel = null; drawNote(); playMidi(staffMidi(), .7); say('', '');
@@ -3798,7 +3831,7 @@ function ksDrawPlaced(){
   $('#ksig').innerHTML = S.ksPlaced.map((x, i) => accSvg(x.acc, 96 + i * 16, yOf(x.pos), .9)).join('');
 }
 // The right answer: sharps F C G D A E B / flats B E A D G C F on their usual lines and spaces.
-function ksWant(q){ const n = sigCount(q.key), flat = isFlatKey(q.key), P = flat ? FLAT_SIG_POS : SHARP_SIG_POS; return P.slice(0, n).map(pos => ({acc: flat ? 'b' : '#', pos})); }
+function ksWant(q){ const n = sigCount(q.key), flat = isFlatKey(q.key), P = sigPos(flat); return P.slice(0, n).map(pos => ({acc: flat ? 'b' : '#', pos})); }
 function ksBuildOk(q){ const w = ksWant(q), g = S.ksPlaced; return w.length === g.length && w.every((x, i) => x.acc === g[i].acc && x.pos === g[i].pos); }
 function ksFact(q){
   const k = q.key, c = sigCount(k), list = sigList(k).map(fmt);
@@ -3851,7 +3884,7 @@ $('#staffSvg').addEventListener('pointerdown', e => {
   const y = pt.matrixTransform(svg.getScreenCTM().inverse()).y, pos = Math.max(0, Math.min(12, Math.round((BASE_Y - y) / STEP)));
   if(S.ksPlaced.length >= 7) return say('A key signature has at most 7.', 'hint');
   S.ksPlaced.push({acc: S.ksAcc, pos}); ksDrawPlaced(); say('', '');
-  playMidi(12 * (5 + Math.floor(pos / 7)) + NAT[LETTERS[pos % 7]] + (S.ksAcc === '#' ? 1 : -1), .5);
+  playMidi(posMidi(pos, S.ksAcc === '#' ? 1 : -1), .5);
 });
 $('#ksMinor').onchange = e => { S.ksMinor = e.target.checked; store.set('ksMinor', S.ksMinor); syncQuick(); };
 $('#ksMix').onchange = e => { S.ksMix = e.target.checked; store.set('ksMix', S.ksMix); };
@@ -3868,7 +3901,7 @@ const STEP_TIP = {1: '<b>H = half step</b><br>The very next key, with nothing in
 function cofTip(id){
   const t = typeOf(id), maj = t === 'major' ? id : parentTonic(id), c = sigCount(maj), list = sigList(maj).map(fmt);
   const rel = t === 'major' ? `${fmt(relMinor(id))} minor` : `${fmt(maj)} major`;
-  return `<b style="font-size:20px">${esc(scaleName(id))}</b><svg viewBox="0 10 230 204" width="150" style="display:block;margin:6px auto;background:var(--paper);border-radius:8px">${[2, 4, 6, 8, 10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('')}<text class="clef" x="12" y="${yOf(2) + 17}" font-size="104">𝄞</text>${sigMarkup(maj)}</svg>${c ? `${c} ${isFlatKey(maj) ? 'flat' : 'sharp'}${c > 1 ? 's' : ''}: <b>${list.join(' ')}</b>` : 'No sharps or flats'}<br>Relative ${t === 'major' ? 'minor' : 'major'}: <b>${rel}</b><br><small>Click to learn it</small>`;
+  return `<b style="font-size:20px">${esc(scaleName(id))}</b><svg viewBox="0 10 230 204" width="150" style="display:block;margin:6px auto;background:var(--paper);border-radius:8px">${[2, 4, 6, 8, 10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('')}${clefSvg(12)}${sigMarkup(maj)}</svg>${c ? `${c} ${isFlatKey(maj) ? 'flat' : 'sharp'}${c > 1 ? 's' : ''}: <b>${list.join(' ')}</b>` : 'No sharps or flats'}<br>Relative ${t === 'major' ? 'minor' : 'major'}: <b>${rel}</b><br><small>Click to learn it</small>`;
 }
 // Scale mistakes for LEARN WHAT YOU MISSED: what was missed, per scale.
 function learnNote(r, q){
@@ -3924,7 +3957,9 @@ function learnList(){
 }
 // Notes in play order: up one octave (and back down when asked; melodic minor always comes down as natural minor).
 function learnSeq(id){
-  const n = SCALES[id], li = LETTERS.indexOf(n[0][0]), root = 60 + NAT[n[0][0]] + accOf(n[0]), st = stepsOf(id), t = typeOf(id);
+  const n = SCALES[id], st = stepsOf(id), t = typeOf(id);
+  let li = LETTERS.indexOf(n[0][0]) + CL().learn; if(li + 7 > 13) li -= 7;   // C to C fits from the clef's start; higher tonics drop an octave
+  const root = posMidi(li, accOf(n[0]));
   const seq = n.map((x, i) => ({note: x, pos: li + i, midi: root + st[i], deg: i + 1}));
   seq.push({note: n[0], pos: li + 7, midi: root + 12, deg: 8});
   if(t === 'mel' || $('#lvUpDown').checked){
@@ -3933,7 +3968,7 @@ function learnSeq(id){
   }
   return seq;
 }
-const onPiano = m => m < PIANO_LO ? m + 12 : m > PIANO_HI ? m - 12 : m;
+const onPiano = m => { while(m < PIANO_LO) m += 12; while(m > PIANO_HI) m -= 12; return m; };
 /* Piano fingering, one octave going up (tonic to octave), RH and LH, 1 = thumb.
    Majors: the standard method-book fingerings. Minors: UVU Piano's harmonic minor fingering sheet
    (natural and melodic minor use the same fingering in most method books). Modes have no standard fingering. */
@@ -3976,7 +4011,7 @@ function learnStaff(id, seq){
   const down = seq.findIndex(e => e.down);
   const dirs = down > 0 ? `<text class="dir" x="${x0 + 4}" y="34">GOING UP</text><text class="dir" x="${xs[down] - half}" y="34">${typeOf(id) === 'mel' ? 'COMING DOWN (NATURAL MINOR)' : 'COMING DOWN'}</text>` : '';
   const fl = F ? `<text class="fgl rh" x="14" y="286">RH</text><text class="fgl lh" x="14" y="306">LH</text>` : '';
-  $('#lvStaff').innerHTML = `<svg viewBox="0 18 ${W} ${F ? 296 : 252}" role="img" aria-label="${esc(scaleName(id))} on the treble staff">${lines}<line class="staff-line" x1="8" x2="8" y1="${yOf(10)}" y2="${yOf(2)}"/><text class="clef" x="14" y="${yOf(2) + 17}" font-size="104" style="text-anchor:start">𝄞</text>${sig}${dirs}${notes}${steps}${fl}</svg>`;
+  $('#lvStaff').innerHTML = `<svg viewBox="0 18 ${W} ${F ? 296 : 252}" role="img" aria-label="${esc(scaleName(id))} on the ${CL().name.toLowerCase()} staff">${lines}<line class="staff-line" x1="8" x2="8" y1="${yOf(10)}" y2="${yOf(2)}"/>${clefSvg(14, 'text-anchor:start')}${sig}${dirs}${notes}${steps}${fl}</svg>`;
   const fn = $('#lvFingNote'); if(fn) fn.textContent = !$('#lvFing').checked ? '' : F ? 'Fingering: RH (blue) = right hand, LH (pink) = left hand. On the piano, RH numbers are above the keys and LH numbers are below. 1 = thumb … 5 = pinky.' + (typeOf(id) === 'mel' ? ' Melodic minor uses the same fingering going up and coming down.' : '')
     : 'Modes have no standard fingering. Try the fingering of the major scale that shares its key signature, starting on this note.';
 }
@@ -4012,7 +4047,7 @@ function learnSigBox(id){
     txt = `<b>${name}</b> uses ${fmt(tonicOf(id))} natural minor's key signature (relative major ${P}): ${cw}. The raised ${t === 'harm' ? '7th' : '6th and 7th'} (${raised}) ${t === 'harm' ? 'is an accidental' : 'are accidentals'}, not part of the key signature.`;
   } else txt = `<b>${name}</b> uses ${P}'s key signature (its parent major): ${cw}.`;
   if(!std && t !== 'major') txt += ' That needs more than 7 sharps or flats (or a double), so it isn\'t a real key signature.';
-  $('#lvSig').innerHTML = `<svg viewBox="0 10 230 204" role="img" aria-label="${esc(name)} key signature"><line class="staff-line" x1="6" x2="224" y1="${yOf(2)}" y2="${yOf(2)}"/>${[4, 6, 8, 10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('')}<text class="clef" x="12" y="${yOf(2) + 17}" font-size="104">𝄞</text>${std ? sigMarkup(id) : `<text x="150" y="${yOf(6) + 6}" font-size="18" fill="var(--paperink)" text-anchor="middle">${c > 7 || !std ? 'NONE' : ''}</text>`}</svg>`;
+  $('#lvSig').innerHTML = `<svg viewBox="0 10 230 204" role="img" aria-label="${esc(name)} key signature"><line class="staff-line" x1="6" x2="224" y1="${yOf(2)}" y2="${yOf(2)}"/>${[4, 6, 8, 10].map(i => `<line class="staff-line" x1="6" x2="224" y1="${yOf(i)}" y2="${yOf(i)}"/>`).join('')}${clefSvg(12)}${std ? sigMarkup(id) : `<text x="150" y="${yOf(6) + 6}" font-size="18" fill="var(--paperink)" text-anchor="middle">${c > 7 || !std ? 'NONE' : ''}</text>`}</svg>`;
   $('#lvSigText').innerHTML = txt;
   const enh = std ? null : PLAY_ORDER.find(k => k !== id && typeOf(k) === t && pcOf(tonicOf(k)) === pcOf(tonicOf(id)) && stdSig(k));
   $('#lvEnh').innerHTML = enh ? `<p class="lv-rule">Musicians write it as <b>${esc(scaleName(enh))}</b> instead (same sound).</p><button class="btn lv-enh" type="button" data-lgo="${enh}">LEARN ${esc(scaleName(enh)).toUpperCase()} ▶</button>` : '';
@@ -4211,6 +4246,7 @@ function tsLobby(note){
     <div class="facts">
       <div class="fact"><small>Student</small><b style="font-size:22px">${esc(p ? displayName(p) : '')}</b></div>
       <div class="fact"><small>Tries</small><b style="font-size:22px">${esc(tsTries(t))}</b></div>
+      <div class="fact"><small>Clef</small><b style="font-size:22px">${esc(CL().name)}</b></div>
       <div class="fact"><small>Tries used</small><b>${used}${t.tries ? ' / ' + t.tries : ''}</b></div>
       <div class="fact"><small>Your best</small><b>${esc(best)}</b></div>
     </div>
@@ -4230,6 +4266,8 @@ function tsError(msg, home = true){
     <div><button class="go" type="button" id="tsHome" data-focus>Back to home</button></div>`);
   $('#tsplash #tsHome').onclick = () => { location.href = HUB_URL; };
 }
+// A test's settings; tests made before the Clef setting are treble.
+function tsApply(t){ if(t.settings) applySettings({clef: 'treble', ...t.settings}); else setClef('treble', false); }
 const tsRef = ({fs, db}) => fs.doc(db, 'test_results', S.test.id + '_' + sidOf(getProfile()));
 async function tsBegin(){
   const T = S.test, t = T.doc, p = getProfile(); if(!p || tsLeft() === 0) return;
@@ -4242,7 +4280,7 @@ async function tsBegin(){
     T.result = next;
   } catch(e){ return tsLobby("Couldn't start the test: " + (e.message || 'check your internet connection') + ' Try again.'); }
   tsHide();
-  if(t.settings) try{ applySettings(t.settings); }catch(e){}
+  try{ tsApply(t); }catch(e){}
   S.testRun = true;
   const mode = S.mode === 'nova' ? 'practice' : S.mode;
   startRun(mode);
@@ -4300,7 +4338,7 @@ async function initTest(){
     t.className = cl.name || cl.code;
     const rs = await Cloud.run(async f => f.fs.getDoc(tsRef(f)));
     S.test.result = rs.exists() ? rs.data() : null;
-    if(t.settings) applySettings(t.settings);
+    tsApply(t);
     tsLobby();
   } catch(e){ tsError(e.message || 'Something went wrong. Check your internet connection.'); }
 }
