@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scale Quest clef check</title>
+<style>
+  body{font:15px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;margin:16px;background:#f7f7f9;color:#1b1b24}
+  h1{font-size:20px;margin:0 0 4px}
+  #sum{font-weight:700;margin:8px 0 12px}
+  .pass{color:#1a7f37} .fail{color:#c62828}
+  li{margin:2px 0}
+  iframe{position:absolute;left:-9999px;width:1100px;height:800px}
+</style>
+</head>
+<body>
+<h1>Scale Quest: clef check</h1>
+<p>Loads the game in a hidden frame and checks the Treble, Bass and Alto clefs. Open it from the local server
+(<code>http://localhost:8770/scale-quest/tests/clef-check.html</code>). Nothing is saved.</p>
+<p id="sum">Running…</p>
+<ol id="out"></ol>
+<iframe id="game" src="../index.html"></iframe>
+<script>
+const out = document.getElementById('out'), results = [];
+function check(name, ok, detail = ''){
+  results.push(ok);
+  const li = document.createElement('li'); li.className = ok ? 'pass' : 'fail';
+  li.textContent = (ok ? 'PASS ' : 'FAIL ') + name + (ok || !detail ? '' : ' (' + detail + ')');
+  out.appendChild(li);
+}
+// Written note -> MIDI, worked out here without the game's code.
+const NAT = {C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11}, LET = 'CDEFGAB';
+const midiOf = (letter, oct, acc = 0) => 12 * (oct + 1) + NAT[letter] + acc;
+// Staff position 0-12 (2 = bottom line) in each clef: the note at position 0, then one letter per step.
+const START = {treble: ['C', 4], bass: ['E', 2], alto: ['D', 3]};
+function noteAt(clef, pos){
+  const [l, o] = START[clef], d = LET.indexOf(l) + o * 7 + pos;
+  return [LET[d % 7], Math.floor(d / 7)];
+}
+// Standard key signature placements, first to seventh.
+const SIG = {
+  treble: {sharp: 'F5 C5 G5 D5 A4 E5 B4', flat: 'B4 E5 A4 D5 G4 C5 F4'},
+  bass:   {sharp: 'F3 C3 G3 D3 A2 E3 B2', flat: 'B2 E3 A2 D3 G2 C3 F2'},
+  alto:   {sharp: 'F4 C4 G4 D4 A3 E4 B3', flat: 'B3 E4 A3 D4 G3 C4 F3'},
+};
+const MAJORS = ['C','G','D','A','E','B','F#','C#','F','Bb','Eb','Ab','Db','Gb','Cb'];
+const CLEF_GLYPH = {treble: '𝄞', bass: '𝄢', alto: '𝄡'};
+
+document.getElementById('game').addEventListener('load', () => setTimeout(run, 600));
+function run(){
+  const w = document.getElementById('game').contentWindow, G = code => w.eval(code);
+  const storedBefore = w.localStorage.getItem('scalequest.clef');
+  const was = G('S.clef');
+  try{
+    // 1. Treble is unchanged: the old formulas still give the same notes, and the treble sign is drawn as before.
+    G("setClef('treble', false)");
+    let bad = [];
+    for(let p = 0; p <= 12; p++){
+      const old = 12 * (5 + Math.floor(p / 7)) + NAT[LET[p % 7]];
+      if(G(`posMidi(${p})`) !== old || G(`letterAt(${p})`) !== LET[p % 7]) bad.push(p);
+    }
+    check('Treble: every staff spot gives the same note as before', !bad.length, 'positions ' + bad);
+    check('Treble: the clef sign is drawn exactly as before', G("clefSvg(14)") === '<text class="clef" x="14" y="167" font-size="104">𝄞</text>', G("clefSvg(14)"));
+
+    for(const clef of ['treble', 'bass', 'alto']){
+      G(`setClef('${clef}', false)`);
+      const C = clef[0].toUpperCase() + clef.slice(1);
+      // 2. Every staff spot: letter and pitch
+      bad = [];
+      for(let p = 0; p <= 12; p++){
+        const [l, o] = noteAt(clef, p);
+        if(G(`letterAt(${p})`) !== l || G(`posMidi(${p})`) !== midiOf(l, o)) bad.push(p + '=' + G(`letterAt(${p})`) + G(`octAt(${p})`));
+      }
+      check(`${C}: every staff spot gives the right note and pitch`, !bad.length, bad.join(', '));
+      // the note the student moves on a staff question, with each accidental
+      bad = [];
+      for(let p = 0; p <= 12; p++) for(const [acc, n] of [[null, 0], ['#', 1], ['b', -1], ['##', 2], ['bb', -2], ['n', 0]]){
+        G(`S.pos = ${p}; S.accSel = ${acc ? `'${acc}'` : 'null'}`);
+        const [l, o] = noteAt(clef, p);
+        if(G('staffMidi()') !== midiOf(l, o, n)) bad.push(`${p}${acc || ''}`);
+      }
+      G('S.pos = 6; S.accSel = null');
+      check(`${C}: the staff note plays the written pitch (with ♯ ♭ 𝄪 𝄫 ♮)`, !bad.length, bad.join(', '));
+
+      // 3. Key signatures: standard placement, and all 15 major keys draw and grade right
+      for(const kind of ['sharp', 'flat']){
+        const want = SIG[clef][kind].split(' '), got = G(`sigPos(${kind === 'flat'})`).map(p => noteAt(clef, p).join(''));
+        check(`${C}: ${kind}s sit on ${want.join(' ')}`, got.join(' ') === want.join(' '), got.join(' '));
+      }
+      bad = [];
+      for(const k of MAJORS){
+        const n = G(`sigCount('${k}')`), flat = G(`isFlatKey('${k}')`), list = G(`sigList('${k}')`);
+        const drawn = (G(`sigMarkup('${k}')`).match(/class="accg"/g) || []).length;
+        const want = G(`ksWant({key: '${k}'})`);
+        const notes = want.map(x => noteAt(clef, x.pos)[0]);
+        if(drawn !== n || want.length !== n || notes.join('') !== list.map(x => x[0]).join('') || want.some(x => x.acc !== (flat ? 'b' : '#'))) bad.push(k);
+      }
+      check(`${C}: all 15 major key signatures draw and grade on the right lines and spaces`, !bad.length, bad.join(', '));
+
+      // 4. Name-it questions only put the note on a spot with the right letter
+      bad = [];
+      for(const L of LET) for(let p = 1; p <= 11; p++) if(G(`letterAt(${p})`) === L && noteAt(clef, p)[0] !== L) bad.push(L + p);
+      check(`${C}: name-it notes land on their own letter`, !bad.length, bad.join(', '));
+
+      // 5. Learn: every scale fits the staff, notes sit on their letters, and play the written pitch
+      bad = [];
+      const ids = G('Object.keys(SCALES)');
+      for(const id of ids){
+        const seq = G(`learnSeq('${id}')`);
+        for(const e of seq){
+          const [l, o] = noteAt(clef, e.pos), acc = G(`accOf('${e.note}')`);
+          if(e.pos < 0 || e.pos > 13 || l !== e.note[0] || midiOf(l, o, acc) !== e.midi){ bad.push(id + ':' + e.note + '@' + e.pos); break; }
+        }
+      }
+      check(`${C}: all ${ids.length} scales in Learn sit on the staff at the written pitch`, !bad.length, bad.slice(0, 6).join(', '));
+
+      // 6. MIDI keyboard: a white key moves the staff note to that letter
+      G("S.run = {q: {type: 'staff'}, mode: 'practice'}; S.busy = false; S.overlay = false; S.awaitNext = false");
+      bad = [];
+      for(let m = 36; m <= 84; m++){
+        if(![0, 2, 4, 5, 7, 9, 11].includes(m % 12)) continue;
+        G(`midiNote(${m})`);
+        const p = G('S.pos'), [l] = noteAt(clef, p);
+        if(p < 0 || p > 12 || l !== LET[[0, 2, 4, 5, 7, 9, 11].indexOf(m % 12)] || G('staffMidi()') % 12 !== m % 12) bad.push(m);
+      }
+      G('S.run = null; S.pos = 6');
+      check(`${C}: MIDI keys move the staff note to the right letter`, !bad.length, bad.join(', '));
+
+      // 7. Every staff picture shows this clef's sign
+      G('buildStaff()');
+      const staff = w.document.getElementById('staffSvg');
+      check(`${C}: the question staff shows the ${clef} clef`, staff.innerHTML.includes(CLEF_GLYPH[clef]) && staff.getAttribute('aria-label') === C + ' clef staff');
+      check(`${C}: the key signature card shows the ${clef} clef`, G("miniSig('D')").includes(CLEF_GLYPH[clef]));
+    }
+
+    // 8. Teacher settings: links and tests set the clef, old tests are treble, nothing is saved as the student's own pick
+    G("setClef('treble', false)");
+    G("applySettings({clef: 'bass'})");
+    check('Settings link with clef "bass" opens in bass', G('S.clef') === 'bass' && w.document.getElementById('clefSel').value === 'bass');
+    G("applySettings({clef: 'tenor'})");
+    check('A clef the game does not know is ignored', G('S.clef') === 'bass');
+    G("tsApply({settings: {keys: ['C'], clef: 'alto'}})");
+    check('A test with Clef = Alto runs in alto', G('S.clef') === 'alto');
+    G("tsApply({settings: {keys: ['C']}})");
+    check('A test made before the Clef setting runs in treble', G('S.clef') === 'treble');
+    G("setClef('bass', false); tsApply({})");
+    check('A test with no settings at all runs in treble', G('S.clef') === 'treble');
+    check("Teacher settings don't change the student's own saved clef", w.localStorage.getItem('scalequest.clef') === storedBefore);
+    G("setClef('bass', false)");
+    check('The start screen says BASS CLEF', w.document.getElementById('playSum').textContent.includes('BASS CLEF'));
+    G("setClef('treble', false)");
+    check('The start screen says nothing extra for treble', !w.document.getElementById('playSum').textContent.includes('CLEF'));
+  } catch(e){
+    check('The checks ran without an error', false, e.message);
+  }
+  G(`setClef('${was}', false)`);
+  const n = results.length, f = results.filter(x => !x).length, sum = document.getElementById('sum');
+  sum.className = f ? 'fail' : 'pass';
+  sum.textContent = f ? `${f} of ${n} checks FAILED` : `All ${n} checks passed`;
+  document.title = (f ? 'FAIL ' : 'PASS ') + 'Scale Quest clef check';
+}
+</script>
+</body>
+</html>
