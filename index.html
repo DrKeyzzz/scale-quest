@@ -1406,7 +1406,10 @@ async function devPost(name, getAuth, signIn) {
 }
 // Every developer score in a collection (merged into class boards).
 async function devRows(fs, db, col, extra = []) {
-  try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra))).docs; } catch (e) { return []; }
+  // only the developer's 10 best (needs a dev + score index; until it exists, any 10 so a board never reads them all)
+  try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra, fs.orderBy('score', 'desc'), fs.limit(10)))).docs; }
+  catch (e) { if (e.code === 'failed-precondition') console.warn('[index needed]', e.message); }
+  try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra, fs.limit(10)))).docs; } catch (e) { return []; }
 }
 // Scores that also count for a class through class_codes (students in 2+ classes). No orderBy, so no new index.
 async function multiRows(fs, db, col, code) {
@@ -1414,6 +1417,7 @@ async function multiRows(fs, db, col, code) {
 }
 // Leaderboard read limits (keeps a busy school inside Firebase's free daily reads):
 const LB_N = 60;          // a class board reads at most its top 60 runs
+const NOVA_FIN_KEY = 'sq_nova_finishers_v1';
 const LB_CACHE = {};      // board results kept 60 s per query shape
 const LB_NOINDEX = {};    // query shapes whose composite index is missing (fall back to the simple query)
 const Cloud = {
@@ -1551,7 +1555,9 @@ const Cloud = {
   // SCALE DEGREES CHAOS board: a class (plus the developer's runs) or the World top 10, each player's best run.
   degBoard(code, name = 'degree_scores'){ return this.cached((name === 'degree_scores' ? 'deg|' : 'degks|') + (code || 'world'), () => this.run(async ({fs, db}) => {
     const col = fs.collection(db, name);
-    let rows = (await fs.getDocs(code ? fs.query(col, fs.where('class_code', '==', code)) : fs.query(col, fs.orderBy('score', 'desc'), fs.limit(30)))).docs.map(d => this.row(d));
+    let rows = (code ? await this.indexed(name + '|class', async () => (await fs.getDocs(fs.query(col, fs.where('class_code', '==', code), fs.orderBy('score', 'desc'), fs.limit(LB_N)))).docs,
+        async () => (await fs.getDocs(fs.query(col, fs.where('class_code', '==', code)))).docs)
+      : (await fs.getDocs(fs.query(col, fs.orderBy('score', 'desc'), fs.limit(30)))).docs).map(d => this.row(d));
     if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat([...await multiRows(fs, db, name, code), ...await devRows(fs, db, name)].map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
     return this.bestOf(rows);
   })); },
@@ -1594,20 +1600,28 @@ const Cloud = {
     if(dev) data.dev = true;
     await fs.addDoc(fs.collection(db, 'nova_scores'), data);
     Object.keys(LB_CACHE).filter(k => k.startsWith('nova')).forEach(k => delete LB_CACHE[k]);
+    if(data.finished) try{ localStorage.removeItem(NOVA_FIN_KEY); } catch(e){}
   }); },
   novaRow(d){ const x = d.data(); return {id: d.id, dev: !!x.dev, icon: x.icon || '', name: x.name, classCode: x.class_code || '', score: x.score, reached: x.reached, finished: !!x.finished}; },
   // Class (plus the developer's runs) or World: each player's best run, finished runs first.
   novaBoard(code){ return this.cached('nova|' + (code || 'world'), () => this.run(async ({fs, db}) => {
     const col = fs.collection(db, 'nova_scores');
-    let rows = (await fs.getDocs(code ? fs.query(col, fs.where('class_code', '==', code)) : fs.query(col, fs.orderBy('score', 'desc'), fs.limit(60)))).docs.map(d => this.novaRow(d));
+    let rows = (code ? await this.indexed('nova_scores|class', async () => (await fs.getDocs(fs.query(col, fs.where('class_code', '==', code), fs.orderBy('score', 'desc'), fs.limit(LB_N)))).docs,
+        async () => (await fs.getDocs(fs.query(col, fs.where('class_code', '==', code)))).docs)
+      : (await fs.getDocs(fs.query(col, fs.orderBy('score', 'desc'), fs.limit(60)))).docs).map(d => this.novaRow(d));
     if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat([...await multiRows(fs, db, 'nova_scores', code), ...await devRows(fs, db, 'nova_scores')].map(d => this.novaRow(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
     const best = {};
     for(const x of rows){ const b = best[x.name + '|' + x.classCode]; if(!b || (x.finished > b.finished) || (x.finished === b.finished && x.score > b.score)) best[x.name + '|' + x.classCode] = x; }
     return Object.values(best).sort((a,b) => (b.finished - a.finished) || (b.score - a.score));
   })); },
   // Everyone who has finished a SUPERNOVA ("name|class"), for the star next to their name on every board.
-  novaFinishers(){ return this.cached('nova|finishers', () => this.run(async ({fs, db}) =>
-    new Set((await fs.getDocs(fs.query(fs.collection(db, 'nova_scores'), fs.where('finished', '==', true)))).docs.map(d => `${d.data().name}|${d.data().class_code || ''}`)))); },
+  // Kept 6 hours on this device (it's on the start screen of every visit), and refreshed when this device finishes one.
+  novaFinishers(){ return this.cached('nova|finishers', async () => {
+    try{ const c = JSON.parse(localStorage.getItem(NOVA_FIN_KEY) || 'null'); if(c && Date.now() - c.t < 6 * 3600000 && Array.isArray(c.v)) return new Set(c.v); } catch(e){}
+    const v = await this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'nova_scores'), fs.where('finished', '==', true)))).docs.map(d => `${d.data().name}|${d.data().class_code || ''}`));
+    try{ localStorage.setItem(NOVA_FIN_KEY, JSON.stringify({t: Date.now(), v})); } catch(e){}
+    return new Set(v);
+  }); },
   worldAll(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(300)))).docs.map(d => this.row(d))); },
   deleteScore(id){ return this.run(({fs, db}) => fs.deleteDoc(fs.doc(db, 'scale_scores', id))); },
 };
@@ -3468,7 +3482,7 @@ async function tdProgress(keep){
       <input type="date" id="tdDate" value="${TD.date}" ${TD.range === 'date' ? '' : 'hidden'} aria-label="Date">
       <button class="btn tbtn sm" type="button" id="tdRefresh">REFRESH</button>
       <button class="btn tbtn sm" type="button" id="tdCsv" ${studs.length ? '' : 'disabled'}>EXPORT CSV</button>
-      ${TD.range === 'today' ? '<span class="td-live">● LIVE · UPDATES EVERY 30 SECONDS</span>' : ''}
+      ${TD.range === 'today' ? '<span class="td-live">● LIVE · UPDATES EVERY 2 MINUTES</span>' : ''}
     </div>
     ${a ? `<p class="dim" style="margin:0">Assignment: <b>${(a.keys || []).filter(k => SCALES[k]).map(shortName).join(' · ') || 'any scales'}</b>${a.goal ? ` · ${a.goal} questions` : ''}${a.minutes ? ` · ${a.minutes} min` : ''}</p>` : ''}
     <div class="td-tiles">
@@ -3502,7 +3516,7 @@ async function tdProgress(keep){
     o.querySelector('#dNo').onclick = closeOverlay;
     o.querySelector('#dYes').onclick = async () => { try{ await Cloud.deleteStudent(TD.code, st.sid); closeOverlay(); TD.open = null; tdProgress(); } catch(err){ o.querySelector('#dErr').textContent = errMsg(err); } };
   };
-  if(TD.range === 'today') TD.timer = setInterval(() => { if(!document.hidden && TD.tab === 'progress' && !$('#teacherView').hidden && !S.overlay) tdProgress(true); }, 30000);
+  if(TD.range === 'today') TD.timer = setInterval(() => { if(!document.hidden && TD.tab === 'progress' && !$('#teacherView').hidden && !S.overlay) tdProgress(true); }, 120000);
 }
 function tdStudentDetail(s){
   const keyRows = PLAY_ORDER.filter(k => s.byKey[k]).map(k => [scaleName(k), s.byKey[k]]);
