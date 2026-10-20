@@ -4004,6 +4004,11 @@ function learnSeq(id){
     const dk = t === 'mel' ? tonicOf(id) + ':nat' : id, dn = SCALES[dk], ds = stepsOf(dk);
     for(let i = 6; i >= 0; i--) seq.push({note: dn[i], pos: li + i, midi: root + ds[i], deg: i + 1, down: true});
   }
+  // Move the whole scale onto the on-screen piano by whole octaves (Cb4 = B3 sits below C4, B#5 = C6 above B5),
+  // so its keys stay in order instead of folding one note into the wrong octave.
+  const lo = Math.min(...seq.map(e => e.midi)), hi = Math.max(...seq.map(e => e.midi));
+  let sh = 0; while(lo + sh < PIANO_LO) sh += 12; while(hi + sh > PIANO_HI && lo + sh - 12 >= PIANO_LO) sh -= 12;
+  seq.forEach(e => e.key = onPiano(e.midi + sh));
   return seq;
 }
 const onPiano = m => { while(m < PIANO_LO) m += 12; while(m > PIANO_HI) m -= 12; return m; };
@@ -4056,10 +4061,10 @@ function learnStaff(id, seq){
     : 'Modes have no standard fingering. Try the fingering of the major scale that shares its key signature, starting on this note.';
 }
 function learnPiano(seq){
-  const W = 40, H = 190, BW = 24, BH = 118, ins = new Set(seq.map(e => onPiano(e.midi))), roots = new Set(seq.filter(e => e.deg === 1 || e.deg === 8).map(e => onPiano(e.midi)));
+  const W = 40, H = 190, BW = 24, BH = 118, ins = new Set(seq.map(e => e.key)), roots = new Set(seq.filter(e => e.deg === 1 || e.deg === 8).map(e => e.key));
   // FINGERING on: every key of the scale shows its right-hand (blue) and left-hand (pink) finger
   const F = $('#lvFing').checked && fingering(LV.id), fk = {};
-  if(F) seq.forEach(e => { const m = onPiano(e.midi); if(!fk[m]) fk[m] = [F.rh[e.deg - 1], F.lh[e.deg - 1]]; });
+  if(F) seq.forEach(e => { const m = e.key; if(!fk[m]) fk[m] = [F.rh[e.deg - 1], F.lh[e.deg - 1]]; });
   // RH numbers in a row above the keys, LH numbers in a row below, each over its key
   let rows = '';
   // one straight row each: RH above the keys, LH below
@@ -4132,7 +4137,7 @@ function learnLight(i){
   if(i < 0) return;
   const e = LV.seq[i]; if(!e) return;
   const g = document.querySelector(`#lvStaff .ln[data-i="${i}"]`); if(g) g.classList.add('lit');
-  const k = document.querySelector(`#lvPiano .lk[data-m="${onPiano(e.midi)}"]`); if(k) k.classList.add('lit');
+  const k = document.querySelector(`#lvPiano .lk[data-m="${e.key}"]`); if(k) k.classList.add('lit');
 
 }
 function learnStop(){ clearTimeout(LV.timer); LV.playing = false; const b = $('#lvPlay'); if(b) b.textContent = '▶ PLAY'; learnLight(-1); }
@@ -4190,7 +4195,7 @@ $('#learnView').addEventListener('click', e => {
   const n = e.target.closest('#lvStaff .ln');
   if(n){ const i = +n.dataset.i; audio(); learnLight(i); playMidi(LV.seq[i].midi, .9); return; }
   const k = e.target.closest('#lvPiano .lk');
-  if(k){ const m = +k.dataset.m, i = LV.seq.findIndex(x => onPiano(x.midi) === m); audio(); learnLight(i); if(i < 0) k.classList.add('lit'); playMidi(i >= 0 ? LV.seq[i].midi : m, .9); }
+  if(k){ const m = +k.dataset.m, i = LV.seq.findIndex(x => x.key === m); audio(); learnLight(i); if(i < 0) k.classList.add('lit'); playMidi(i >= 0 ? LV.seq[i].midi : m, .9); }
 });
 // ?learn=G (or a scale name) opens LEARN on that scale.
 function learnFromUrl(){
