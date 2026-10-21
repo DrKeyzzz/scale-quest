@@ -3710,7 +3710,19 @@ function renderMute(){ $('#muteBtn').textContent = S.muted ? 'SOUND: OFF' : 'SOU
 $('#muteBtn').onclick = () => {
   S.muted = !S.muted; store.set('muted', S.muted); renderMute();
   if(master) master.gain.value = S.muted ? 0 : .6;
+  if(S.muted && introAudio) introAudio.pause();
 };
+// The Scale Quest intro sound (medieval trumpets and a fanfare under his "Monty" voice-over; built in docs/sound/):
+// plays every time the page opens, or on the first click or key press if the browser blocks it. Never when muted or in a test.
+let introAudio = null, introDone = false;
+function playIntro(){
+  if(introDone || S.muted || new URLSearchParams(location.search).has('test')) return;
+  try {
+    introAudio = introAudio || new Audio('sounds/scalequest-intro.m4a'); introAudio.volume = .9;
+    const pr = introAudio.play(); if(pr) pr.then(() => { introDone = true; }).catch(() => {});
+  } catch(e){}
+}
+['pointerdown', 'keydown'].forEach(ev => addEventListener(ev, e => { if(!e.target.closest || !e.target.closest('#muteBtn')) playIntro(); }, true));
 document.addEventListener('keydown', e => {
   if(S.overlay || !S.run || !S.run.q) return;
   if(e.key === 'ArrowUp' || e.key === 'ArrowDown'){
@@ -4213,6 +4225,7 @@ $('#wAdd').onclick = () => { const i = addCodeBox(''); if(i) i.focus(); };
 $('#whoBtn').onclick = whoMenu;
 $('#wGuest').onclick = playAsGuest;
 renderKeyRows(); requestAnimationFrame(timerLoop); buildPiano(); buildStaff(); renderMute(); updateWho(); renderBoard(); updateCarts(); setPlaying(false);
+playIntro();   // the intro sound: try right away; if the browser says no, the first click or key press plays it
 if(!getProfile() && !isGuest()) showWelcome(false); else refreshClassInfo();
 /* ---------- TEST MODE: ?test=<id> from the home page's Tests card ----------
    The teacher's test (tests/<id>) carries the settings, how it is graded (acc | score) and the tries (0 = unlimited).
