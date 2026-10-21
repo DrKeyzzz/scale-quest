@@ -4498,7 +4498,18 @@ headerHints({
 <script id="mtg-assign" data-game="scale">
 (function () {
   var GAME = document.currentScript.getAttribute('data-game'), HOME = 'https://drkeyzzz.github.io/';
-  var NAMES = { scale: 'Scale Quest', tidal: 'Tidal Tones', rooftop: 'Rooftop Runner', rhythm: 'The Big Score', earshot: 'Earshot Saloon' };
+  var NAMES = { scale: 'Scale Quest', tidal: 'Tidal Tones', rooftop: 'Rooftop Runner', rhythm: 'The Big Score', earshot: 'Earshot Saloon', brainwaves: 'Brainwaves', listen: 'Critical Listening Lab' };
+  // Brainwaves saves each brain area under its own id; it counts as one game, and its skills are the area names (like the home page's foldBrainwaves)
+  var BW = { synapse: 'Sharp or Flat?', intervals: 'Intervals', chords: 'Chord Colors', progressions: 'Progressions', scales: 'Scales and modes', voice: 'Pick a Voice', tuner: 'Tuner' };
+  function gameDay(day) {
+    if (GAME !== 'brainwaves') return day[GAME];
+    var b = null;
+    Object.keys(BW).forEach(function (id) {
+      var x = day[id]; if (!x) return; b = b || { answers: 0, ms: 0, skills: {} };
+      b.answers += x.answers || 0; b.ms += x.ms || 0; b.skills[BW[id]] = [x.correct || 0, x.answers || 0];
+    });
+    return b;
+  }
   function load(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function prof() { try { if (sessionStorage.getItem('music_guest') === '1') return null; } catch (e) {} var p = load('rdt_profile_v1'); return p && p.first && p.init ? p : null; }
   function sidOf(p) { return (p.first + p.init).toLowerCase().replace(/[^a-z]/g, ''); }
@@ -4510,7 +4521,7 @@ headerHints({
     var n = 0, sk = skills(t);
     Object.keys(days).forEach(function (d) {
       if (d < a.start || d > a.end) return;
-      var g = days[d][GAME]; if (!g) return;
+      var g = gameDay(days[d]); if (!g) return;
       if (t.unit === 'minutes') n += g.ms || 0;
       else if (sk.length) sk.forEach(function (k) { n += ((g.skills || {})[k] || [0, 0])[1]; });
       else n += g.answers || 0;
