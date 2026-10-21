@@ -6,13 +6,17 @@
 <title>Scale Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Press+Start+2P&family=VT323&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Cinzel:wght@600;700;800&family=Cinzel+Decorative:wght@700&family=Alegreya+Sans:wght@500;700;800&family=Press+Start+2P&family=VT323&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Music&text=%F0%9D%84%9E%F0%9D%84%A1%F0%9D%84%A2%F0%9D%84%AA%F0%9D%84%AB&display=swap">
 <script>
-/* Look (skin): 'clean' (default), 'day' or 'classic'. One choice for every game ('mtg_skin_v1'); ?skin=day previews and saves one. Set before the page draws. */
-(function(){ var s = null, ok = function(v){ return /^(clean|day|classic)$/.test(v || ''); };
-  try{ s = new URLSearchParams(location.search).get('skin'); if(ok(s)) localStorage.setItem('mtg_skin_v1', s); else s = localStorage.getItem('mtg_skin_v1'); }catch(e){}
-  document.documentElement.dataset.skin = ok(s) ? s : 'clean'; })();
+/* Look (skin): 'clean' (default), 'day' or 'classic'. One choice for every game ('mtg_skin_v1'); ?skin=day previews and saves one. Set before the page draws.
+   Scale Quest also has 'medieval' (only here, and its default): 'sq_skin_v1' is 'medieval' (or missing) or 'shared' (use the every-game choice). */
+(function(){ var s = null, sq = null, ok = function(v){ return /^(clean|day|classic)$/.test(v || ''); };
+  try{ s = new URLSearchParams(location.search).get('skin');
+    if(s === 'medieval') localStorage.setItem('sq_skin_v1', 'medieval');
+    else if(ok(s)){ localStorage.setItem('mtg_skin_v1', s); localStorage.setItem('sq_skin_v1', 'shared'); }
+    sq = localStorage.getItem('sq_skin_v1'); s = localStorage.getItem('mtg_skin_v1'); }catch(e){}
+  document.documentElement.dataset.skin = sq !== 'shared' ? 'medieval' : ok(s) ? s : 'clean'; })();
 </script>
 <style>
 :root{
@@ -896,21 +900,21 @@ html:not([data-skin="classic"]) .opanel.mag{border-color:var(--mag);box-shadow:0
 html:not([data-skin="classic"]) .welcome{background:radial-gradient(ellipse at 50% 0%,var(--glow) 0%,var(--bg) 65%),var(--bg)}
 html:not([data-skin="classic"]) .wbox input:not([type]),html:not([data-skin="classic"]) .wbox input[id]{border-radius:10px}
 html:not([data-skin="classic"]) :is(.td-head select,.td-sub select,.td-sub input,.td-form input,.td-form select,.t-row input){border-radius:8px}
-html[data-skin="day"] .cart .cstars,html[data-skin="day"] .mlegend b{color:#a16207}
-html[data-skin="day"] .cart.on .cstars{color:var(--shadow)}
+html:is([data-skin="day"],[data-skin="medieval"]) .cart .cstars,html:is([data-skin="day"],[data-skin="medieval"]) .mlegend b{color:#a16207}
+html:is([data-skin="day"],[data-skin="medieval"]) .cart.on .cstars{color:var(--shadow)}
 /* Day: light page, so the few hard-coded light-gold texts (SUPERNOVA titles, scores) get a darker gold */
-html[data-skin="day"] .overlay [style*="color:#fff3b0"],html[data-skin="day"] .cert .who{color:#a15c00!important;text-shadow:none!important}
-html[data-skin="day"] .overlay [style*="color:#ffcf4a"]{color:#a15c00!important}
-html[data-skin="day"] .app.novaRun #hudKey{color:#a15c00}
-html[data-skin="day"] .cert{background:#fff8e6}
-html[data-skin="day"] .novatag{color:#a15c00;border-color:#e0a526}
-html[data-skin="day"] .star.badge .core{fill:#fbbf24} html[data-skin="day"] .star.badge .rays{fill:#d97706}
-html[data-skin="day"] .burst .big .core{fill:#fbbf24} html[data-skin="day"] .burst .big .rays{fill:#e08a00} html[data-skin="day"] .burst i{background:#f5a623}
-html[data-skin="day"] .overlay .btn[style*="#ffcf4a"]{color:#2a1600}
-html[data-skin="day"] .board td.k{color:var(--mag)}
-html[data-skin="day"] .icon-pick button{background:var(--panel);border-color:var(--line)}
-html[data-skin="day"] .icon-pick button .ic-svg{color:var(--ink)}
-html[data-skin="day"] .td-table tr[data-sid]:hover td{background:rgba(0,0,0,.04)}
+html:is([data-skin="day"],[data-skin="medieval"]) .overlay [style*="color:#fff3b0"],html:is([data-skin="day"],[data-skin="medieval"]) .cert .who{color:#a15c00!important;text-shadow:none!important}
+html:is([data-skin="day"],[data-skin="medieval"]) .overlay [style*="color:#ffcf4a"]{color:#a15c00!important}
+html:is([data-skin="day"],[data-skin="medieval"]) .app.novaRun #hudKey{color:#a15c00}
+html:is([data-skin="day"],[data-skin="medieval"]) .cert{background:#fff8e6}
+html:is([data-skin="day"],[data-skin="medieval"]) .novatag{color:#a15c00;border-color:#e0a526}
+html:is([data-skin="day"],[data-skin="medieval"]) .star.badge .core{fill:#fbbf24} html:is([data-skin="day"],[data-skin="medieval"]) .star.badge .rays{fill:#d97706}
+html:is([data-skin="day"],[data-skin="medieval"]) .burst .big .core{fill:#fbbf24} html:is([data-skin="day"],[data-skin="medieval"]) .burst .big .rays{fill:#e08a00} html:is([data-skin="day"],[data-skin="medieval"]) .burst i{background:#f5a623}
+html:is([data-skin="day"],[data-skin="medieval"]) .overlay .btn[style*="#ffcf4a"]{color:#2a1600}
+html:is([data-skin="day"],[data-skin="medieval"]) .board td.k{color:var(--mag)}
+html:is([data-skin="day"],[data-skin="medieval"]) .icon-pick button{background:var(--panel);border-color:var(--line)}
+html:is([data-skin="day"],[data-skin="medieval"]) .icon-pick button .ic-svg{color:var(--ink)}
+html:is([data-skin="day"],[data-skin="medieval"]) .td-table tr[data-sid]:hover td{background:rgba(0,0,0,.04)}
 /* SKINS menu (header): a popover with the skin swatches */
 .skin-menu{position:relative;display:flex}
 .skin-pop{position:absolute;z-index:40;top:calc(100% + 8px);right:0;width:max-content;max-width:calc(100vw - 16px);padding:10px;
@@ -945,11 +949,74 @@ header:has(> .mtg-home) { flex-wrap: wrap; }
 .mtg-hint.on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
 .mtg-hint::before { content: ''; position: absolute; left: var(--ax, 50%); top: -6px; width: 10px; height: 10px; margin-left: -6px; background: var(--hint-bg); border: 1px solid var(--hint-edge); border-width: 1px 0 0 1px; transform: rotate(45deg); }
 .mtg-hint.up::before { top: auto; bottom: -6px; border-width: 0 1px 1px 0; }
-html[data-skin="day"] .mtg-hint { box-shadow: 0 8px 20px -8px rgba(20,40,80,.35); }
+html:is([data-skin="day"],[data-skin="medieval"]) .mtg-hint { box-shadow: 0 8px 20px -8px rgba(20,40,80,.35); }
 [data-hint] { -webkit-touch-callout: none; }
 @media (prefers-reduced-motion: reduce) { .mtg-hint, .mtg-hint.up { transform: none; transition: none; } }
 .mtg-hint { --hint-bg: var(--panel); --hint-ink: var(--ink); --hint-edge: var(--line); }
 html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
+</style>
+<style>
+/* ---------- Medieval skin (Scale Quest only, its default; added 2026-10-21) ----------
+   Builds on Clean (every html:not([data-skin="classic"]) rule above applies): a dark wood page, parchment panels in a
+   wood-and-gold frame, Cinzel for titles, Alegreya Sans for everything you read or tap. The modes: Training (green),
+   The Tournament (red), The Dragon's Lair (blue). Light-text fixes are shared with Day (html:is([data-skin="day"],[data-skin="medieval"])). */
+html[data-skin="medieval"]{
+  color-scheme:light;
+  --bg:#1d1712; --bg2:#f1e3c4; --panel:#e8d6ae; --line:#b3925c;
+  --ink:#33241a; --dim:#6b5236; --cyan:#2c4a7a; --mag:#9e2a2b; --yel:#9a6a12;
+  --ok:#3d7a37; --bad:#b02a2a; --paper:#fbf3df; --paperink:#2a1d10; --shadow:#fbf3df;
+  --px:'Alegreya Sans','Noto Music',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --vt:'Alegreya Sans','Noto Music',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --title:'Cinzel','Times New Roman',serif;
+  --glow:#4a3826; --soft:0 6px 18px rgba(20,12,4,.35); --keybed:#4a3826; --blk:#2a1d10; --blkhov:#4a3826; --scrim:rgba(20,14,8,.8);
+  --wood:#2b2119; --gold:#c9972e; --gold2:#e9c46a;
+}
+html[data-skin="medieval"] body{font-size:18px;
+  background:radial-gradient(ellipse at 50% -10%,#4a3826 0,transparent 60%) fixed,repeating-linear-gradient(90deg,#211a14 0 70px,#1d1712 70px 140px) fixed,var(--bg)}
+/* parchment panels in a wood-and-gold frame */
+html[data-skin="medieval"] :is(.panel,.opanel,.wbox,.skin-pop,.selmenu,.dd-menu){border:1px solid #8a6a3f;border-radius:6px;
+  background:radial-gradient(ellipse at 15% 0%,#fff6dd 0,transparent 55%),radial-gradient(ellipse at 95% 100%,#dcc290 0,transparent 60%),var(--bg2);
+  box-shadow:0 0 0 4px var(--wood),0 0 0 6px var(--gold),0 14px 30px rgba(0,0,0,.55)}
+html[data-skin="medieval"] .hud{margin-bottom:8px}
+html[data-skin="medieval"] .app.novaRun :is(.hud,.stage){box-shadow:0 0 0 4px var(--wood),0 0 0 6px var(--gold2),0 0 30px rgba(233,196,106,.45)}
+/* titles in Cinzel; the logo in gold on the wood */
+html[data-skin="medieval"] .logo{font-family:'Cinzel Decorative',var(--title);font-weight:700;color:var(--gold2);text-shadow:0 2px 0 #000;letter-spacing:.04em}
+html[data-skin="medieval"] .logo :is(.a,.b){color:inherit}
+html[data-skin="medieval"] .logo small{font-family:var(--title);color:#cdb48a;letter-spacing:.3em}
+html[data-skin="medieval"] :is(.wbox,.opanel) .logo{color:#7a1f20;text-shadow:none}
+html[data-skin="medieval"] :is(.cta-title,.otitle,.lv-head h2,.chaos-intro p,.nova-intro p){font-family:var(--title);font-weight:800;letter-spacing:.03em}
+html[data-skin="medieval"] .cta-title{color:#7a1f20} html[data-skin="medieval"] .cta-title span{color:#7a1f20}
+html[data-skin="medieval"] .hlab{font-family:var(--title);letter-spacing:.12em}
+html[data-skin="medieval"] .qtext{font-weight:800}
+/* header: wood buttons with parchment text, pills to match */
+html[data-skin="medieval"] .topbar{color:var(--bg2)}
+html[data-skin="medieval"] :is(.tbtn,.quit){background:var(--wood);color:var(--bg2);border-color:#8a6a3f}
+html[data-skin="medieval"] .tbtn select{background:var(--wood);color:var(--bg2)}
+html[data-skin="medieval"] .who{border-color:var(--gold)}
+html[data-skin="medieval"] .quick{color:#e8d6ae}
+html[data-skin="medieval"] .quick .morebtn{color:var(--bg2);background:var(--wood);border-color:#8a6a3f}
+/* the big buttons: gold START, mode banners in green, red and blue */
+html[data-skin="medieval"] .btn{border-radius:8px}
+html[data-skin="medieval"] :is(.start,.playbig,.submit){font-family:var(--title);font-weight:800;letter-spacing:.05em;color:#fbf3df;
+  background:linear-gradient(#b8862b,#8a611c);border:2px solid #5c3f10;box-shadow:0 4px 0 #5c3f10}
+html[data-skin="medieval"] :is(.start,.playbig,.submit):active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 #5c3f10}
+html[data-skin="medieval"] :is(.chaos,.playbig.chaos){background:linear-gradient(#a8322f,#6e1b1c);border-color:#4a1010;box-shadow:0 4px 0 #4a1010;color:#fbf3df}
+html[data-skin="medieval"] :is(.nova,.playbig.nova){background:linear-gradient(#36598f,#1b2f52);border-color:#101d36;box-shadow:0 4px 0 #101d36;color:#fbf3df}
+html[data-skin="medieval"] .modetag{background:#3d6b3a;color:#fbf3df}
+html[data-skin="medieval"] .modetag.chaos{background:#9e2a2b;color:#fbf3df}
+html[data-skin="medieval"] .modetag.nova{background:#2c4a7a;color:#fbf3df}
+/* answer buttons: little parchment shields */
+html[data-skin="medieval"] .degbtns button{background:radial-gradient(circle at 40% 30%,#fff3d4,#e2c88f);border:2px solid #8a6a3f;border-radius:10px 10px 50% 50%/10px 10px 38% 38%;box-shadow:0 3px 0 #8a6a3f}
+html[data-skin="medieval"] .paper{border-color:#8a6a3f;background:var(--paper)}
+html[data-skin="medieval"] .pianowrap{box-shadow:0 0 0 2px var(--gold),var(--soft)}
+/* the two big moments */
+html[data-skin="medieval"] .chaos-intro{background:radial-gradient(ellipse at 50% 120%,#d9480f 0,#7a1f20 40%,rgba(20,12,6,.96) 80%)}
+html[data-skin="medieval"] .chaos-intro p{color:#ffd8a8}
+html[data-skin="medieval"] .chaos-intro p small{color:var(--gold2);font-family:'Alegreya Sans',sans-serif}
+html[data-skin="medieval"] .nova-intro{background:radial-gradient(circle at 50% 40%,rgba(54,89,143,.95) 0,rgba(16,24,44,.97) 70%)}
+html[data-skin="medieval"] .nova-intro p{color:var(--gold2)}
+html[data-skin="medieval"] .crt{display:none}
+@media (max-width:760px){ html[data-skin="medieval"] .logo{font-size:24px} }
 </style>
 <!-- MTG_SOUND start: identical in every game. Master copy: Music Games/shared/mtg-sound.snippet.js (install with apply-sound.py) -->
 <script id="mtg-sound">
@@ -1047,11 +1114,12 @@ html[data-skin="classic"] .mtg-hint { --hint-edge: var(--cyan); }
         <button class="btn tbtn" id="skinBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="skinPop">🎨 SKINS</button>
         <div class="skin-pop" id="skinPop" role="dialog" aria-label="Skins" hidden>
           <div class="skinpick" id="skinPick" role="group" aria-label="Skins">
+            <button type="button" data-look="medieval" aria-pressed="false"><span class="sw" aria-hidden="true"><i style="background:#2b2119"></i><i style="background:#f1e3c4"></i><i style="background:#9e2a2b"></i></span><b>Medieval</b></button>
             <button type="button" data-look="clean" aria-pressed="false"><span class="sw" aria-hidden="true"><i style="background:#151b3d"></i><i style="background:#4cc9f0"></i><i style="background:#b794f6"></i></span><b>Clean</b></button>
             <button type="button" data-look="day" aria-pressed="false"><span class="sw" aria-hidden="true"><i style="background:#eef2fa"></i><i style="background:#0369a1"></i><i style="background:#b45309"></i></span><b>Day</b></button>
             <button type="button" data-look="classic" aria-pressed="false"><span class="sw" aria-hidden="true"><i style="background:#1a1142"></i><i style="background:#3ff0ff"></i><i style="background:#ff4fd8"></i></span><b>Classic</b></button>
           </div>
-          <p class="mnote">Your skin is saved on this device and used in every Music Theory Game.</p>
+          <p class="mnote">Your skin is saved on this device and used in every Music Theory Game. Medieval is only in Scale Quest.</p>
         </div>
       </div>
       <button class="btn tbtn who" id="whoBtn" type="button">👤 SIGN IN</button>
@@ -1990,7 +2058,8 @@ function showSkin(){ document.querySelectorAll('#skinPick [data-look]').forEach(
 $('#skinPick').addEventListener('click', e => {
   const b = e.target.closest('[data-look]'); if(!b) return;
   SFX.click(); document.documentElement.dataset.skin = b.dataset.look;
-  try{ localStorage.setItem('mtg_skin_v1', b.dataset.look); }catch(err){}
+  try{ if(b.dataset.look === 'medieval') localStorage.setItem('sq_skin_v1', 'medieval');
+    else { localStorage.setItem('mtg_skin_v1', b.dataset.look); localStorage.setItem('sq_skin_v1', 'shared'); } }catch(err){}
   showSkin(); skinMenu(false); $('#skinBtn').focus();
 });
 function skinMenu(open){
