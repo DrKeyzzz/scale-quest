@@ -1000,11 +1000,12 @@ html[data-skin="medieval"] .btn{border-radius:8px}
 html[data-skin="medieval"] :is(.start,.playbig,.submit){font-family:var(--title);font-weight:800;letter-spacing:.05em;color:#fbf3df;
   background:linear-gradient(#b8862b,#8a611c);border:2px solid #5c3f10;box-shadow:0 4px 0 #5c3f10}
 html[data-skin="medieval"] :is(.start,.playbig,.submit):active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 #5c3f10}
-html[data-skin="medieval"] :is(.chaos,.playbig.chaos){background:linear-gradient(#a8322f,#6e1b1c);border-color:#4a1010;box-shadow:0 4px 0 #4a1010;color:#fbf3df}
-html[data-skin="medieval"] :is(.nova,.playbig.nova){background:linear-gradient(#36598f,#1b2f52);border-color:#101d36;box-shadow:0 4px 0 #101d36;color:#fbf3df}
+html[data-skin="medieval"] :is(.btn.chaos,.playbig.chaos){background:linear-gradient(#a8322f,#6e1b1c);border-color:#4a1010;box-shadow:0 4px 0 #4a1010;color:#fbf3df}
+html[data-skin="medieval"] :is(.btn.nova,.playbig.nova){background:linear-gradient(#36598f,#1b2f52);border-color:#101d36;box-shadow:0 4px 0 #101d36;color:#fbf3df}
 html[data-skin="medieval"] .modetag{background:#3d6b3a;color:#fbf3df}
 html[data-skin="medieval"] .modetag.chaos{background:#9e2a2b;color:#fbf3df}
 html[data-skin="medieval"] .modetag.nova{background:#2c4a7a;color:#fbf3df}
+html[data-skin="medieval"] .hlab .modetag{display:inline-block;font:800 11px/1.2 'Alegreya Sans',sans-serif;letter-spacing:.06em;padding:3px 7px;border:0;border-radius:4px;box-shadow:none;animation:none;width:auto}
 /* answer buttons: little parchment shields */
 html[data-skin="medieval"] .degbtns button{background:radial-gradient(circle at 40% 30%,#fff3d4,#e2c88f);border:2px solid #8a6a3f;border-radius:10px 10px 50% 50%/10px 10px 38% 38%;box-shadow:0 3px 0 #8a6a3f}
 html[data-skin="medieval"] .paper{border-color:#8a6a3f;background:var(--paper)}
@@ -1015,6 +1016,8 @@ html[data-skin="medieval"] .chaos-intro p{color:#ffd8a8}
 html[data-skin="medieval"] .chaos-intro p small{color:var(--gold2);font-family:'Alegreya Sans',sans-serif}
 html[data-skin="medieval"] .nova-intro{background:radial-gradient(circle at 50% 40%,rgba(54,89,143,.95) 0,rgba(16,24,44,.97) 70%)}
 html[data-skin="medieval"] .nova-intro p{color:var(--gold2)}
+html[data-skin="medieval"] .nova-intro .dragon{display:block;font-size:min(34vh,220px);line-height:1;animation:dragonIn 1.4s cubic-bezier(.2,.7,.2,1);filter:drop-shadow(0 0 24px #d9480f)}
+@keyframes dragonIn{from{transform:scale(.1) rotate(-12deg);opacity:0}60%{transform:scale(1.15)}}
 html[data-skin="medieval"] .crt{display:none}
 @media (max-width:760px){ html[data-skin="medieval"] .logo{font-size:24px} }
 </style>
@@ -1428,6 +1431,11 @@ const ORD = {1:'tonic (1st)',2:'2nd',3:'3rd',4:'4th',5:'5th',6:'6th',7:'7th',8:'
 /* Ranked CHAOS: every run is the same length, so scores compare fairly.
    Final score = points × key bonus (+10% for each ★★ scale beyond the first; see KEY_BONUS_* below). */
 const CHAOS_LEN = 20;
+// Mode names on screen: the Medieval skin calls them Training, The Tournament and The Dragon's Lair (ids stay practice/chaos/nova).
+const MED = () => document.documentElement.dataset.skin === 'medieval';
+const MNt = m => (MED() ? {practice: 'Training', chaos: 'The Tournament', nova: 'The Dragon’s Lair'} : {practice: 'Practice', chaos: 'CHAOS', nova: 'SUPERNOVA'})[m];   // the MODE dropdown
+const MNs = () => MED() ? 'TOURNAMENT' : 'CHAOS';   // in a sentence: "a TOURNAMENT run"
+const MN = m => (MED() ? {practice: 'TRAINING', chaos: 'THE TOURNAMENT', nova: 'THE DRAGON’S LAIR'} : {practice: 'PRACTICE', chaos: 'CHAOS', nova: 'SUPERNOVA'})[m];
 // SCALE DEGREES mode (major keys only)
 const DEG_NAME = {1:'Tonic',2:'Supertonic',3:'Mediant',4:'Subdominant',5:'Dominant',6:'Submediant',7:'Leading Tone'};
 const ORDN = {1:'1st',2:'2nd',3:'3rd',4:'4th',5:'5th',6:'6th',7:'7th'};
@@ -1710,7 +1718,7 @@ function localTop(n){
   return Object.values(best).sort((a,b) => b.score - a.score).slice(0, n);
 }
 function boardTable(list){
-  if(!list.length) return '<p class="dim">No scores yet. Finish a CHAOS run to claim the top spot!</p>';
+  if(!list.length) return `<p class="dim">No scores yet. Finish a ${MNs()} run to claim the top spot!</p>`;
   return `<table class="board"><tbody>${list.map((x,i) =>
     `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
@@ -1942,11 +1950,11 @@ function ddOptions(name){
     {v: 'pick', t: 'Pick my own…', d: 'Check any scales in More options', sep: true}];
   }
   if(name === 'mode') return [
-    {v: 'practice', t: 'Practice', d: 'One scale at a time. No clock, no hearts.'},
-    {v: 'chaos', t: 'CHAOS', d: `${CHAOS_LEN} timed questions from your scales. Post a high score!`},
-    S.deg || S.ks ? {v: 'nova', t: 'SUPERNOVA', d: `Off in ${S.ks ? 'Key signatures' : 'Scale degrees'} (it builds scales)`, locked: true}
-      : novaUnlocked() ? {v: 'nova', t: 'SUPERNOVA', d: `All 150 scales, ${CHAOS_LEN} questions, ${NOVA_HEARTS} hearts.`}
-      : {v: 'nova', t: '🔒 SUPERNOVA', d: 'Finish one CHAOS run to unlock', locked: true}];
+    {v: 'practice', t: MNt('practice'), d: 'One scale at a time. No clock, no hearts.'},
+    {v: 'chaos', t: MNt('chaos'), d: `${CHAOS_LEN} timed questions from your scales. Post a high score!`},
+    S.deg || S.ks ? {v: 'nova', t: MNt('nova'), d: `Off in ${S.ks ? 'Key signatures' : 'Scale degrees'} (it builds scales)`, locked: true}
+      : novaUnlocked() ? {v: 'nova', t: MNt('nova'), d: `All 150 scales, ${CHAOS_LEN} questions, ${NOVA_HEARTS} hearts.`}
+      : {v: 'nova', t: '🔒 ' + MNt('nova'), d: `Finish one ${MNs()} run to unlock`, locked: true}];
   return [3, 5, 8, 10].map(n => ({v: String(n), t: `${n} per scale`}));
 }
 function setChoice(name, v){
@@ -1976,9 +1984,9 @@ function setChoice(name, v){
     return;
   }
   if(name === 'mode'){
-    if(v === 'nova' && S.ks) return focusToast('<b>SUPERNOVA</b> builds scales, so it\'s off in <b>Key signatures</b>. Pick other scales first.');
-    if(v === 'nova' && S.deg) return focusToast('<b>SUPERNOVA</b> builds scales, so it\'s off in <b>Scale degrees</b>. Pick other scales first.');
-    if(v === 'nova' && !novaUnlocked()) return focusToast('🔒 <b>SUPERNOVA</b> unlocks after you finish one <b>CHAOS</b> run. Try CHAOS first!');
+    if(v === 'nova' && S.ks) return focusToast(`<b>${MN('nova')}</b> builds scales, so it's off in <b>Key signatures</b>. Pick other scales first.`);
+    if(v === 'nova' && S.deg) return focusToast(`<b>${MN('nova')}</b> builds scales, so it's off in <b>Scale degrees</b>. Pick other scales first.`);
+    if(v === 'nova' && !novaUnlocked()) return focusToast(`🔒 <b>${MN('nova')}</b> unlocks after you finish one <b>${MN('chaos')}</b> run. Try ${MNs()} first!`);
     S.mode = v; store.set('mode', v);
   } else { S.qpk = +v; store.set('qpk', S.qpk); }
   syncQuick();
@@ -1995,10 +2003,10 @@ function syncQuick(){
   const b = $('#playBtn');
   b.className = 'btn playbig ' + (S.mode === 'practice' ? 'start' : S.mode);
   b.disabled = !nova && !sel.length;
-  $('#playLabel').textContent = {practice: 'START', chaos: 'START CHAOS', nova: 'START SUPERNOVA'}[S.mode];
+  $('#playLabel').textContent = (S.mode === 'practice' ? 'START' : 'START ' + MN(S.mode));
   const what = nova ? 'ALL 150 SCALES' : !sel.length ? 'NO SCALES PICKED' : S.ks ? 'KEY SIGNATURES' + (S.ksMinor ? ' + MINOR' : '') + ' · ' + (sel.length === 1 ? scaleName(sel[0]).toUpperCase() : selSummary(sel)) : S.deg ? 'SCALE DEGREES' + (S.degFocus ? ` (+${DEG_NAME[S.degFocus].toUpperCase()})` : '') + ' · ' + (sel.length === 1 ? scaleName(sel[0]).toUpperCase() : selSummary(sel))
     : scalesValue() !== 'pick' || sel.length === 1 ? scalesTitle().toUpperCase() : selSummary(sel);
-  const how = nova ? `SUPERNOVA · ${NOVA_HEARTS} HEARTS` : S.mode === 'chaos' ? `CHAOS · ${CHAOS_LEN} TIMED QUESTIONS` : `PRACTICE · ${S.qpk} PER SCALE`;
+  const how = nova ? `${MN('nova')} · ${NOVA_HEARTS} HEARTS` : S.mode === 'chaos' ? `${MN('chaos')} · ${CHAOS_LEN} TIMED QUESTIONS` : `${MN('practice')} · ${S.qpk} PER SCALE`;
   $('#playSum').innerHTML = `<b>${esc(what)}</b> · ${how}${S.clef !== 'treble' ? ' · ' + CL().tag : ''}`;
   ctaPiano(nova ? null : sel[0]);
 }
@@ -2060,7 +2068,7 @@ $('#skinPick').addEventListener('click', e => {
   SFX.click(); document.documentElement.dataset.skin = b.dataset.look;
   try{ if(b.dataset.look === 'medieval') localStorage.setItem('sq_skin_v1', 'medieval');
     else { localStorage.setItem('mtg_skin_v1', b.dataset.look); localStorage.setItem('sq_skin_v1', 'shared'); } }catch(err){}
-  showSkin(); skinMenu(false); $('#skinBtn').focus();
+  showSkin(); skinMenu(false); $('#skinBtn').focus(); syncQuick();   // the mode names follow the skin
 });
 function skinMenu(open){
   const pop = $('#skinPop');
@@ -2094,7 +2102,7 @@ function howTo(then){
     <ol class="steps howsteps">
       <li><span class="n">1</span><div><b>PICK YOUR SCALES</b><span>C major is ready to go. The SCALES menu has more sets, or choose Pick my own… to check any scale.</span></div></li>
       <li><span class="n">2</span><div><b>PRESS START</b><span>Build each scale on the piano or the staff (tap, click or use the arrow keys), then press SUBMIT or Enter. Practice has no clock and no hearts, so take your time: a miss shows you the right answer.</span></div></li>
-      <li><span class="n">3</span><div><b>TRY CHAOS</b><span>Set MODE to CHAOS: ${CHAOS_LEN} timed questions from your scales. Answer fast for bonus points and post a high score. Finish one to unlock SUPERNOVA.</span></div></li>
+      <li><span class="n">3</span><div><b>TRY ${MN('chaos')}</b><span>Set MODE to ${MN('chaos')}: ${CHAOS_LEN} timed questions from your scales. Answer fast for bonus points and post a high score. Finish one to unlock ${MN('nova')}.</span></div></li>
     </ol>
     <div class="obtns"><button class="btn obtn" type="button" id="howGo" data-focus>${then ? 'GOT IT · START!' : 'GOT IT'}</button></div>`);
   p.querySelector('#howGo').onclick = () => { store.set('howto', true); closeOverlay(); if(then) playPressed(); };
@@ -2307,7 +2315,7 @@ function updateHUD(){
   const hideKey = q && q.type === 'ksname';   // naming the key: don't show it
   $('#hudKey').textContent = q ? (hideKey ? 'KEY SIGNATURE' : ksQ(q) ? q.name.toUpperCase() : scaleName(q.key).toUpperCase()) : '—';
   $('#ladder').style.visibility = hideKey ? 'hidden' : '';
-  const tag = $('#modeTag'); tag.textContent = (r.deg ? 'DEGREES · ' : '') + (r.mode === 'nova' ? 'SUPERNOVA' : r.mode === 'chaos' ? 'CHAOS' : 'PRACTICE'); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
+  const tag = $('#modeTag'); tag.textContent = (r.deg ? 'DEGREES · ' : '') + MN(r.mode); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
   $('#hudQ').textContent = isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
   $('#hudScore').textContent = String(r.score).padStart(6, '0');
   $('#hudStreak').textContent = 'x' + r.streak;
@@ -2758,11 +2766,12 @@ function startRun(mode){
   $('#timer').hidden = !isTimed(mode);
   $('#app').classList.toggle('novaRun', mode === 'nova');
   if(mode === 'nova'){
-    $('#novaIntroStar').innerHTML = starSVG('big'); $('#novaIntro').hidden = false; S.overlay = true;
+    $('#novaIntroStar').innerHTML = MED() ? '<span class="dragon" aria-hidden="true">🐉</span>' : starSVG('big'); $('#novaIntro p').textContent = MN('nova'); $('#novaIntro').hidden = false; S.overlay = true;
     SFX.nova();
     later(() => { $('#novaIntro').hidden = true; S.overlay = false; nextQuestion(); }, 2400);
   } else if(mode === 'chaos'){
     $('#chaosMix').textContent = 'MIXING ' + keys.map(shortName).join(' · ');
+    $('#chaosIntro p').firstChild.nodeValue = MED() ? '⚔ THE ' : 'CHAOS'; $('#chaosIntro p').childNodes[2].nodeValue = MED() ? 'TOURNAMENT ⚔' : 'MODE';
     $('#chaosIntro').hidden = false; S.overlay = true;
     const app = $('#app'); app.classList.remove('shake'); void app.offsetWidth; app.classList.add('shake');
     SFX.chaos();
@@ -3166,7 +3175,7 @@ function endRun(reason){
   const keys = PLAY_ORDER.filter(k => r.stats[k] && r.stats[k].total);
   const right = keys.reduce((a,k) => a + r.stats[k].right, 0), total = keys.reduce((a,k) => a + r.stats[k].total, 0);
   const acc = total ? Math.round(100*right/total) : 0;
-  const title = reason === 'victory' ? 'ALL KEYS CLEARED!' : reason === 'complete' ? 'CHAOS SURVIVED!' : 'RUN OVER';
+  const title = reason === 'victory' ? 'ALL KEYS CLEARED!' : reason === 'complete' ? (MED() ? 'TOURNAMENT WON!' : 'CHAOS SURVIVED!') : 'RUN OVER';
   if(r.mode === 'nova') return novaEnd(reason);
   if(reason === 'quit') SFX.over(); else SFX.win();
   const bars = keys.map(k => { const s = r.stats[k], p = Math.round(100*s.right/s.total);
@@ -3179,9 +3188,9 @@ function endRun(reason){
   const eligible = ranked && !r.continued && final > 0;
   if(S.test && S.testRun) return tsEnd(r, {acc, total, final, reason});
   const why = eligible ? '' : r.mode === 'practice'
-    ? `Practice runs don't go on the board. Finish a ${CHAOS_LEN}-question CHAOS run to post a high score.`
+    ? `Practice runs don't go on the board. Finish a ${CHAOS_LEN}-question ${MNs()} run to post a high score.`
     : r.continued ? 'This run used CONTINUE, so it can\'t post a high score.'
-    : ranked ? '' : `Finish all ${CHAOS_LEN} CHAOS questions to post a high score.`;
+    : ranked ? '' : `Finish all ${CHAOS_LEN} ${MNs()} questions to post a high score.`;
   const p = openOverlay(`
     <h2 class="otitle">${title}</h2>
     <div class="bigstats">
@@ -3246,7 +3255,7 @@ function novaEnd(reason){
   const misses = r.misses.length ? `<details class="misses"><summary>WHAT YOU MISSED (${r.misses.length})</summary><ul>${r.misses.map(m => `<li>${esc(m)}</li>`).join('')}</ul></details>` : '';
   const p = openOverlay((finished ? `
     <div class="burst">${starSVG('big')}${Array.from({length: 12}, (_, i) => `<i style="--a:${i * 30}deg;animation-delay:${(i % 4) * .2}s"></i>`).join('')}</div>
-    <h2 class="otitle" style="color:#fff3b0;text-shadow:0 0 18px #ff9d2e">SUPERNOVA!</h2>
+    <h2 class="otitle" style="color:#fff3b0;text-shadow:0 0 18px #ff9d2e">${MED() ? 'DRAGON SLAIN!' : 'SUPERNOVA!'}</h2>
     <div class="cert">
       <span class="dim">THIS CERTIFIES THAT</span>
       <span class="who">${esc(me ? displayName(me).toUpperCase() : 'A GUEST')}</span>
@@ -3259,7 +3268,7 @@ function novaEnd(reason){
     <p class="osub">You reached question <b>${reached}</b> of ${CHAOS_LEN}${reached >= 10 ? ' and earned the <b style="color:#ffcf4a">SURVIVOR</b> mark!' : '. Reach 10 to earn the SURVIVOR mark.'}</p>
     <div class="bigstats"><div><small>SCORE</small><strong>${String(final).padStart(6, '0')}</strong></div><div><small>ACCURACY</small><strong>${acc}%</strong></div><div><small>BEST STREAK</small><strong>x${r.best}</strong></div></div>`)
     + misses + `
-    ${postable ? `<div class="initials" id="postArea">${me ? `<button class="btn obtn" type="button" id="novaPost" data-focus style="background:#ffcf4a">POST TO THE SUPERNOVA BOARD</button>`
+    ${postable ? `<div class="initials" id="postArea">${me ? `<button class="btn obtn" type="button" id="novaPost" data-focus style="background:#ffcf4a">POST TO THE ${MN('nova')} BOARD</button>`
       : `${isGuest() ? '<p class="weak" style="color:var(--dim)">GUEST GAME: THIS RUN ISN\'T SAVED.</p>' : ''}<button class="btn obtn" type="button" id="novaSignIn" data-focus>${isGuest() ? 'SIGN IN FOR NEXT TIME' : 'ENTER YOUR NAME TO POST'}</button>`}</div>` : ''}
     <div class="obtns">${learnBtnHTML(r)}<button class="btn obtn" id="againBtn" type="button">TRY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, 'nova-panel');
   wireLearnBtn(p, r);
@@ -3270,7 +3279,7 @@ function novaEnd(reason){
     area.innerHTML = '<p class="weak" style="color:#ffcf4a">POSTING...</p>';
     try{
       await Cloud.novaSubmit({name: displayName(me), classCode: me.classCode || '', classCodes: classesOf(me).map(c => c.code), score: final, points: r.score, streak: r.best, accuracy: acc, reached, finished});
-      area.innerHTML = `<p class="weak" style="color:#ffcf4a">POSTED! ${finished ? 'YOUR SUPERNOVA STAR NOW SHINES NEXT TO YOUR NAME.' : 'SURVIVOR MARK SAVED.'}</p>`;
+      area.innerHTML = `<p class="weak" style="color:#ffcf4a">POSTED! ${finished ? `YOUR ${MN('nova')} STAR NOW SHINES NEXT TO YOUR NAME.` : 'SURVIVOR MARK SAVED.'}</p>`;
     } catch(err){ area.innerHTML = `<p class="weak" style="color:var(--bad)">${esc(errMsg(err)).toUpperCase()}</p><button class="btn obtn" type="button" id="retryNova" style="background:#ffcf4a">TRY POSTING AGAIN</button>`; const rb = area.querySelector('#retryNova'); if(rb) rb.onclick = doNova; }
   };
   if(post){ post.onclick = doNova; if(!/[?&]selftest/.test(location.search)) doNova(); }   // scores post automatically
@@ -3282,20 +3291,20 @@ function novaUnlocked(){ return store.get('chaos_done', false) || store.get('ran
 function novaWarning(){
   const p = openOverlay(`
     <div>${starSVG('t3')}</div>
-    <h2 class="otitle" style="color:#fff3b0;text-shadow:0 0 18px #ff9d2e">SUPERNOVA</h2>
+    <h2 class="otitle" style="color:#fff3b0;text-shadow:0 0 18px #ff9d2e">${MN('nova')}</h2>
     <p class="osub">The hardest test in Scale Quest.</p>
     <div class="bigstats"><div><small>SCALES</small><strong>150</strong></div><div><small>QUESTIONS</small><strong>${CHAOS_LEN}</strong></div><div><small>HEARTS</small><strong>${NOVA_HEARTS}</strong></div></div>
     <p class="osub dim" style="font-size:20px">Every major, minor and mode, with double sharps and flats. No second tries and no CONTINUE. Miss one and you'll see the right answer before you move on.</p>
-    <p class="osub" style="font-size:20px">Finish all ${CHAOS_LEN} to earn the <b style="color:#ffcf4a">SUPERNOVA</b> star next to your name on every leaderboard. Reach question 10 for the <b style="color:#ffcf4a">SURVIVOR</b> mark.</p>
+    <p class="osub" style="font-size:20px">Finish all ${CHAOS_LEN} to earn the <b style="color:#ffcf4a">${MN('nova')}</b> star next to your name on every leaderboard. Reach question 10 for the <b style="color:#ffcf4a">SURVIVOR</b> mark.</p>
     <p class="otitle" style="font-size:14px">ARE YOU SURE?</p>
-    <div class="obtns"><button class="btn obtn alt" id="novaBack" type="button">BACK</button><button class="btn obtn" id="novaGo" type="button" data-focus style="background:#ffcf4a">START SUPERNOVA</button></div>`, 'nova-panel');
+    <div class="obtns"><button class="btn obtn alt" id="novaBack" type="button">BACK</button><button class="btn obtn" id="novaGo" type="button" data-focus style="background:#ffcf4a">START ${MN('nova')}</button></div>`, 'nova-panel');
   p.querySelector('#novaBack').onclick = closeOverlay;
   p.querySelector('#novaGo').onclick = () => { audio(); startRun('nova'); };
 }
 // "Maya R. ★" where Maya has finished a SUPERNOVA in that class (or anywhere, on the World board).
 function markNova(list, finishers){ return list.map(x => ({...x, nova: finishers.has(`${x.name}|${x.classCode || ''}`) || (x.dev && finishers.has(`${x.name}|`))})); }
 function novaTable(list){
-  if(!list.length) return '<p class="dim">No SUPERNOVA runs yet. Be the first to survive!</p>';
+  if(!list.length) return `<p class="dim">No ${MN('nova')} runs yet. Be the first to survive!</p>`;
   return `<table class="board"><tbody>${list.map((x,i) => `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.finished ? starSVG('badge') : ' <span class="novatag">SURVIVOR</span>'}</td><td class="k">${x.finished ? '20/20' : `${x.reached}/20`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 function toMenu(){
@@ -3316,7 +3325,7 @@ function renderBoard(){
 }
 function boardPanel(){
   const pr = getProfile(), cls = classesOf(pr);   // one class tab per class, main class first
-  const tabs = Cloud.on ? [...cls.map(c => ['class:' + c.code, String(c.name).toUpperCase()]), ['world', 'WORLD TOP 10'], ['deg', 'DEGREES'], ['ks', 'KEY SIGS'], ['nova', '★ SUPERNOVA'], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
+  const tabs = Cloud.on ? [...cls.map(c => ['class:' + c.code, String(c.name).toUpperCase()]), ['world', 'WORLD TOP 10'], ['deg', 'DEGREES'], ['ks', 'KEY SIGS'], ['nova', '★ ' + MN('nova')], ['device', 'THIS DEVICE']] : [['device', 'THIS DEVICE']];
   const p = openOverlay(`
     <h2 class="otitle">LEADERBOARD</h2>
     ${tabs.length > 1 ? `<div class="otabs" role="group" aria-label="Which scores">${tabs.map(([k,l]) => `<button type="button" data-tab="${k}" aria-pressed="false">${esc(l)}</button>`).join('')}</div>` : ''}
@@ -3325,13 +3334,13 @@ function boardPanel(){
     <div class="obtns"><button class="btn obtn alt" id="bpRefresh" type="button">REFRESH</button><button class="btn obtn" id="bpClose" type="button" data-focus>CLOSE</button></div>`);
   let tab = tabs[0][0];
   const tabClass = () => cls.find(c => 'class:' + c.code === tab);
-  const NOTES = {world: 'The 10 best CHAOS runs from everyone who plays.', nova: 'Finished runs (star) first, then SURVIVORS who reached question 10.', deg: 'Best SCALE DEGREES CHAOS runs.', ks: 'Best KEY SIGNATURES CHAOS runs.', device: 'Scores saved on this computer.'};
+  const NOTES = {world: `The 10 best ${MNs()} runs from everyone who plays.`, nova: 'Finished runs (star) first, then SURVIVORS who reached question 10.', deg: `Best SCALE DEGREES ${MNs()} runs.`, ks: `Best KEY SIGNATURES ${MNs()} runs.`, device: 'Scores saved on this computer.'};
   // DEGREES and SUPERNOVA show a top 5 for each of the student's classes, then the World.
   const head = c => `<h3 class="slabel" style="margin:6px 0">${esc(String(c.name).toUpperCase())}</h3>`, worldHead = '<h3 class="slabel" style="margin:12px 0 6px">WORLD</h3>';
   const show = () => {
     const el = p.querySelector('#bpList'), want = tab, tc = tabClass();
     p.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tab === tab));
-    p.querySelector('#bpNote').textContent = tc ? `Each student's best CHAOS run in ${tc.name}.` : NOTES[tab];
+    p.querySelector('#bpNote').textContent = tc ? `Each student's best ${MNs()} run in ${tc.name}.` : NOTES[tab];
     if(tab === 'device'){ el.innerHTML = boardTable(markMe(localTop(10))); return; }
     el.innerHTML = '<p class="dim">LOADING...</p>';
     if(tab === 'deg' || tab === 'ks'){
@@ -3360,7 +3369,7 @@ function chaosPicker(){
   const keys = PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major'));
   const bk = bonusKeys(keys);
   const p = openOverlay(`
-    <h2 class="otitle" style="color:var(--mag)">${S.ks ? 'CHAOS: KEY SIGNATURES' : S.deg ? 'CHAOS: SCALE DEGREES' : 'CHAOS MODE'}</h2>
+    <h2 class="otitle" style="color:var(--mag)">${S.ks ? MN('chaos') + ': KEY SIGNATURES' : S.deg ? MN('chaos') + ': SCALE DEGREES' : MED() ? MN('chaos') : 'CHAOS MODE'}</h2>
     <p class="osub">${CHAOS_LEN} random ${S.ks ? 'key signature ' : S.deg ? 'scale-degree ' : ''}questions from: ${keys.map(shortName).join(' · ')}</p>
     <div class="bigstats">
       <div><small>QUESTIONS</small><strong>${CHAOS_LEN}</strong></div>
@@ -3368,7 +3377,7 @@ function chaosPicker(){
       <div><small>KEY BONUS</small><strong>x${keyBonus(bk.length).toFixed(1)}</strong></div>
     </div>
     <p class="osub dim" style="font-size:20px">Finish all ${CHAOS_LEN} without using CONTINUE to post your score. Fast answers earn a speed bonus. The key bonus counts only your ★★ scales: ${bk.length} of ${keys.length}.</p>
-    <div class="obtns"><button class="btn obtn mag" id="goChaos" type="button" data-focus>START CHAOS</button><button class="btn obtn alt" id="cancelChaos" type="button">CANCEL</button></div>`, 'mag');
+    <div class="obtns"><button class="btn obtn mag" id="goChaos" type="button" data-focus>START ${MN('chaos')}</button><button class="btn obtn alt" id="cancelChaos" type="button">CANCEL</button></div>`, 'mag');
   p.querySelector('#goChaos').onclick = () => startRun('chaos');
   p.querySelector('#cancelChaos').onclick = closeOverlay;
 }
