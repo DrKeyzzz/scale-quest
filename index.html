@@ -1019,6 +1019,19 @@ html[data-skin="medieval"] .nova-intro p{color:var(--gold2)}
 html[data-skin="medieval"] .nova-intro .dragon{display:block;font-size:min(34vh,220px);line-height:1;animation:dragonIn 1.4s cubic-bezier(.2,.7,.2,1);filter:drop-shadow(0 0 24px #d9480f)}
 @keyframes dragonIn{from{transform:scale(.1) rotate(-12deg);opacity:0}60%{transform:scale(1.15)}}
 html[data-skin="medieval"] .crt{display:none}
+.kmap{display:none}
+html[data-skin="medieval"] .kmap{display:block;max-width:380px;margin:18px auto 0;text-align:center}
+html[data-skin="medieval"] .kmap h3{margin:0 0 6px;font:800 18px var(--title);color:#7a1f20;letter-spacing:.04em}
+html[data-skin="medieval"] .kmap p{margin:6px 0 0;font-size:15px;color:var(--dim);line-height:1.35}
+.kmap svg{width:100%;height:auto;display:block}
+.kmap .land{fill:#ecdab1;stroke:#8a6a3f;stroke-width:3} .kmap .rs{fill:rgba(158,42,43,.13)} .kmap .rf{fill:rgba(44,74,122,.13)}
+.kmap .hub{fill:#f6ead0;stroke:#8a6a3f;stroke-width:2} .kmap .hubt{font:800 13px var(--title);fill:#7a1f20;text-anchor:middle}
+.kmap .kk{cursor:pointer;outline:none} .kmap .kk circle:first-child{fill:#fbf3df;stroke:#8a6a3f;stroke-width:1.5}
+.kmap .kk text{font-family:var(--title);font-weight:800;text-anchor:middle;fill:#33241a;pointer-events:none}
+.kmap .kk.sharp text{fill:#7a1f20} .kmap .kk.flat text{fill:#1b2f52}
+.kmap .kk:hover circle:first-child,.kmap .kk:focus-visible circle:first-child{stroke:#c9972e;stroke-width:3}
+.kmap .kk.on circle:first-child{fill:#c9972e;stroke:#5c3f10;stroke-width:2.5} .kmap .kk.on text{fill:#fbf3df}
+.kmap .seal{fill:#9e2a2b;stroke:#6e1b1c;stroke-width:1}
 @media (max-width:760px){ html[data-skin="medieval"] .logo{font-size:24px} }
 </style>
 <!-- MTG_SOUND start: identical in every game. Master copy: Music Games/shared/mtg-sound.snippet.js (install with apply-sound.py) -->
@@ -1157,6 +1170,7 @@ html[data-skin="medieval"] .crt{display:none}
         <p class="cta-hint"><span class="kb">or press <kbd>ENTER</kbd></span><span class="kb" aria-hidden="true">·</span><button type="button" class="linkish" id="howBtn">HOW TO PLAY</button></p>
       </div>
       <div class="cta-piano" id="ctaPiano" aria-hidden="true"></div>
+      <div class="kmap" id="kmap"></div>
     </div>
 
     <div id="question" hidden style="display:contents">
@@ -2000,6 +2014,7 @@ function syncQuick(){
     const b = dd.querySelector('.sel'); b.textContent = t; b.setAttribute('aria-label', `${dd.firstElementChild.textContent}: ${t}`);
     if(name === 'qpk') dd.classList.toggle('off', S.mode !== 'practice');   // only practice uses it
   });
+  renderKmap();
   const b = $('#playBtn');
   b.className = 'btn playbig ' + (S.mode === 'practice' ? 'start' : S.mode);
   b.disabled = !nova && !sel.length;
@@ -2587,6 +2602,31 @@ function setDeg(on){
   else S.degFocus = 0;
   toggleSelMenu(false); renderKeyRows(); renderAssignment();
 }
+// The Kingdom Map (Medieval skin only, on the home screen): the 15 major keys on the circle of fifths. Sharp keys are the
+// red realm, flat keys the blue realm; a key at ★★ or better wears a wax seal; clicking a kingdom sets up practice on it.
+const KMAP = [['C'], ['G'], ['D'], ['A'], ['E'], ['B', 'Cb'], ['F#', 'Gb'], ['C#', 'Db'], ['Ab'], ['Eb'], ['Bb'], ['F']];
+function renderKmap(){
+  const el = $('#kmap'); if(!el || !MED()) return;
+  const ms = masteryMap(), sel = selKeys(), one = !S.deg && !S.ks && sel.length === 1 ? sel[0] : null;
+  const cell = (k, x, y, fs) => {
+    const on = k === one, won = (ms[k] || 0) >= 2, realm = k === 'C' ? 'home' : k.includes('#') || ['G', 'D', 'A', 'E', 'B'].includes(k) ? 'sharp' : 'flat';
+    return `<g class="kk ${realm}${on ? ' on' : ''}" data-k="${k}" role="button" tabindex="0" aria-pressed="${on}" aria-label="${esc(scaleName(k))}${won ? ', won' : ''}">
+      <circle cx="${x}" cy="${y}" r="${fs * 1.25}"/><text x="${x}" y="${y + fs * .36}" font-size="${fs}">${esc(fmt(k))}</text>
+      ${won ? `<circle class="seal" cx="${x + fs * .95}" cy="${y - fs * .95}" r="${fs * .42}"/>` : ''}</g>`;
+  };
+  let g = '';
+  KMAP.forEach((ks, i) => {
+    const a = (i * 30 - 90) * Math.PI / 180, r = 112, x = 160 + r * Math.cos(a), y = 160 + r * Math.sin(a);
+    if(ks.length === 1) g += cell(ks[0], x, y, 17);
+    else ks.forEach((k, j) => { const rr = j ? r - 34 : r + 4, xx = 160 + rr * Math.cos(a), yy = 160 + rr * Math.sin(a); g += cell(k, xx, yy, 13); });
+  });
+  el.innerHTML = `<h3>The Kingdom Map</h3><svg viewBox="0 0 320 320" role="group" aria-label="Kingdom map: the major keys on the circle of fifths">
+    <circle class="land" cx="160" cy="160" r="152"/><path class="rs" d="M160 8 A152 152 0 0 1 160 312Z"/><path class="rf" d="M160 8 A152 152 0 0 0 160 312Z"/>
+    <circle class="hub" cx="160" cy="160" r="44"/><text class="hubt" x="160" y="156">THE</text><text class="hubt" x="160" y="174">REALM</text>${g}</svg>
+    <p>Pick a kingdom to train in it. Win it (★★) and it gets your wax seal. Sharp keys are the red realm, flat keys the blue.</p>`;
+}
+document.addEventListener('click', e => { const k = e.target.closest && e.target.closest('#kmap [data-k]'); if(k){ SFX.click(); focusScale(k.dataset.k); } });
+document.addEventListener('keydown', e => { const k = e.target.closest && e.target.closest('#kmap [data-k]'); if(k && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); e.stopPropagation(); focusScale(k.dataset.k); } }, true);
 // Practice set up on one scale (also the end screen's PRACTICE NEXT button). deg keeps Scale Degrees on.
 function focusScale(id, deg=false){
   if(S.mode !== 'practice') setChoice('mode', 'practice');
