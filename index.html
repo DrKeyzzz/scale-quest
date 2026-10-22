@@ -1349,9 +1349,9 @@ const FIREBASE = {
   projectId: 'rhythm-trainer-fc313',
   appId: '1:956677028482:web:c3ec72a279e61b6f6c929b',
 };
-// Built-in teachers (must match teacherEmails() in firestore.rules). Other teachers request access and the admin approves them.
-const TEACHER_EMAILS = ['milnesda@eht.k12.nj.us'];
-const ADMIN_EMAILS = ['milnesda@eht.k12.nj.us'];   // can manage the World board (must match firestore.rules)
+// Admins (filled by adminCheck() from Firestore). Other teachers request access and the admin approves them.
+const TEACHER_EMAILS = [];
+const ADMIN_EMAILS = [];   // can manage the World board (filled by adminCheck())
 const DAILY_GOAL = 40;                              // questions per day when no assignment sets a goal
 
 /* ============================================================
@@ -1480,18 +1480,29 @@ const store = {
 
 /* ---------- class leaderboard (Google Sheet via Apps Script) ---------- */
 // ---------- developer scores ----------
-// The developer plays as "Milnes D.". When he posts while signed in with his Google account, the score is marked
+// The developer plays as "Maestro". When he posts while signed in with his Google account, the score is marked
 // dev: true and shows on every class's board with a DEV badge. The rules stop anyone else using that name.
-const DEV_NAME = 'Milnes D.', DEV_EMAILS = ['milnesda@eht.k12.nj.us'];
-const isDevName = n => /^\s*milnes\s*d\.?\s*$/i.test(String(n || ''));
+const DEV_NAME = 'Maestro', DEV_EMAILS = [];   // filled by adminCheck()
+// Admins are listed in Firestore (admins/<their Google email>, added in the Firebase Console), not in this file.
+// adminCheck reads that one entry after a Google sign-in and, for an admin, adds them to the lists above for this page.
+async function adminCheck(email) {
+  email = String(email || '').toLowerCase();
+  if (!email) return false;
+  const lists = [TEACHER_EMAILS, ADMIN_EMAILS, DEV_EMAILS];
+  if (lists[0].includes(email)) return true;
+  try { const { fs, db } = await (() => Cloud.fb())(); if (!(await fs.getDoc(fs.doc(db, 'admins', email))).exists()) return false; } catch { return false; }
+  lists.forEach(l => l.includes(email) || l.push(email));
+  return true;
+}
+const isDevName = n => /^\s*maestro\b/i.test(String(n || ''));
 // true = post as the developer; asks him to sign in once if needed. Throws for anyone else using the name.
 async function devPost(name, getAuth, signIn) {
   if (!isDevName(name)) return false;
   const { auth } = await getAuth();
   if (auth.authStateReady) await auth.authStateReady();
   let email = auth.currentUser && auth.currentUser.email;
-  if (!email || !DEV_EMAILS.includes(String(email).toLowerCase())) email = await signIn();
-  if (!DEV_EMAILS.includes(String(email).toLowerCase())) throw new Error('Only the developer can post as Milnes D.');
+  if (!(await adminCheck(email))) email = await signIn();
+  if (!(await adminCheck(email))) throw new Error('Only the developer can post as Maestro.');
   return true;
 }
 // Every developer score in a collection (merged into class boards).
@@ -1570,7 +1581,7 @@ const Cloud = {
   saveAssignment(code, a){ return this.run(({fs, db}) => fs.updateDoc(fs.doc(db, 'classes', code), {scale_assignment: a || null})); },
 
   // ----- teacher access: requests and approvals -----
-  async isTeacher(email){ if(TEACHER_EMAILS.includes(email)) return true; return this.run(async ({fs, db}) => (await fs.getDoc(fs.doc(db, 'teachers', email))).exists()); },
+  async isTeacher(email){ if (TEACHER_EMAILS.includes(email) || await adminCheck(email)) return true; return this.run(async ({fs, db}) => (await fs.getDoc(fs.doc(db, 'teachers', email))).exists()); },
   myRequest(email){ return this.run(async ({fs, db}) => { const d = await fs.getDoc(fs.doc(db, 'teacher_requests', email)); return d.exists() ? d.data() : null; }); },
   requestAccess(email, r){ return this.run(({fs, db}) => fs.setDoc(fs.doc(db, 'teacher_requests', email), {email, name: r.name, school: r.school, note: r.note, created_at: fs.serverTimestamp()})); },
   cancelRequest(email){ return this.run(({fs, db}) => fs.deleteDoc(fs.doc(db, 'teacher_requests', email))); },
