@@ -3602,6 +3602,8 @@ function teacherLogin(){
     catch(err){ o.querySelector('#tlErr').textContent = errMsg(err); }
   };
 }
+/* Teachers with a school email (letters only before the @, on a k12.xx.us or .edu domain) join on their own; student addresses have numbers. Same check as schoolEmail() in the rules. */
+const schoolEmail = e => /^[a-z._-]+@([a-z0-9-]+[.])*(k12[.][a-z][a-z][.]us|edu)$/.test(e) && !/@.*stu/.test(e);
 // Someone who isn't a teacher yet can ask for access; the admin approves it in the ADMIN tab.
 async function requestScreen(email){
   let req = null; try{ req = await Cloud.myRequest(email); } catch(e){}
@@ -3623,7 +3625,7 @@ async function requestScreen(email){
       <label class="slabel" for="rqSchool">SCHOOL<input id="rqSchool" maxlength="80" style="${field}"></label>
       <label class="slabel" for="rqNote">NOTE (OPTIONAL)<input id="rqNote" maxlength="300" style="${field}" placeholder="What you teach, how you heard about it"></label>
       <p class="werr" id="rqErr"></p>
-      <div class="obtns"><button class="btn obtn alt" type="button" id="rqClose">CANCEL</button><button class="btn obtn" type="submit">REQUEST TEACHER ACCESS</button></div>
+      <div class="obtns"><button class="btn obtn alt" type="button" id="rqClose">CANCEL</button><button class="btn obtn" type="submit">${schoolEmail(email) ? 'START NOW' : 'REQUEST TEACHER ACCESS'}</button></div>
     </form>`);
   o.querySelector('#rqClose').onclick = done;
   o.querySelector('#rqForm').onsubmit = async e => {
@@ -3631,6 +3633,10 @@ async function requestScreen(email){
     const name = o.querySelector('#rqName').value.trim(), school = o.querySelector('#rqSchool').value.trim(), note = o.querySelector('#rqNote').value.trim();
     if(name.length < 2){ o.querySelector('#rqErr').textContent = 'Type your name.'; return; }
     try{
+      if(schoolEmail(email)){
+        try{ await Cloud.run(({fs, db}) => fs.setDoc(fs.doc(db, 'teachers', email), { name: name.slice(0, 60), school: school.slice(0, 80), approved_at: fs.serverTimestamp(), approved_by: 'self' })); TD.email = email; closeOverlay(); openTeacherView(); return; }
+        catch(err){ /* blocked by the admin: ask instead */ }
+      }
       await Cloud.requestAccess(email, {name, school, note});
       o.innerHTML = `<h2 class="otitle">REQUEST SENT</h2><p class="osub">Thanks, ${esc(name)}. You'll be able to open the Teacher Dashboard once your request is approved. Sign in again then.</p><div class="obtns"><button class="btn obtn" type="button" id="rqOk" data-focus>OK</button></div>`;
       o.querySelector('#rqOk').onclick = done;
