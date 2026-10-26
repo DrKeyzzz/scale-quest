@@ -1653,10 +1653,25 @@ async function devRows(fs, db, col, extra = []) {
   catch (e) { if (e.code === 'failed-precondition') console.warn('[index needed]', e.message); }
   try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra, fs.limit(10)))).docs; } catch (e) { return []; }
 }
-// Scores that also count for a class through class_codes (students in 2+ classes). No orderBy, so no new index.
-async function multiRows(fs, db, col, code) {
-  try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('class_codes', 'array-contains', code)))).docs; } catch (e) { return []; }
+// PRIVACY (2026-10-26): a score with a name is saved inside its class (classes/<code>/<collection>), so reading it needs the code.
+// The World boards read world_scores/<game>/runs: only a random game name (like "Blue Trumpet 42"), the score and the icon.
+// The developer's runs (Maestro) stay in the old top level collection and are added to every class board.
+const WORLD_GAME = {scale_scores: 'scale', degree_scores: 'degree', key_scores: 'key', nova_scores: 'nova'};
+const NICK_KEY = 'mtg_nick_v1', NICK_RE = /^[A-Z][a-z]+ [A-Z][a-z]+ [0-9]{1,2}$/;
+const NICK_COLORS = ['Blue', 'Red', 'Green', 'Gold', 'Silver', 'Purple', 'Orange', 'Teal', 'Coral', 'Indigo', 'Amber', 'Jade', 'Ruby', 'Violet', 'Crimson', 'Azure'];
+const NICK_THINGS = ['Trumpet', 'Violin', 'Cello', 'Flute', 'Tuba', 'Oboe', 'Harp', 'Piano', 'Drum', 'Banjo', 'Sax', 'Clarinet', 'Bassoon', 'Viola', 'Guitar', 'Marimba', 'Ukulele', 'Trombone', 'Piccolo', 'Horn'];
+let NICK = '';
+// This device's World name, made once and kept (shared by every game on the site).
+function myNick(){
+  if(NICK) return NICK;
+  try{ const n = localStorage.getItem(NICK_KEY); if(n && NICK_RE.test(n)) return NICK = n; } catch(e){}
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  NICK = `${pick(NICK_COLORS)} ${pick(NICK_THINGS)} ${1 + Math.floor(Math.random() * 99)}`;
+  try{ localStorage.setItem(NICK_KEY, NICK); } catch(e){}
+  return NICK;
 }
+// The classes a run counts for (the active class; up to 3 for older multi-class sign-ins).
+const runCodes = e => [...new Set((e.classCodes && e.classCodes.length ? e.classCodes : [e.classCode]).filter(Boolean))].slice(0, 3);
 // Leaderboard read limits (keeps a busy school inside Firebase's free daily reads):
 const LB_N = 60;          // a class board reads at most its top 60 runs
 const NOVA_FIN_KEY = 'sq_nova_finishers_v1';
@@ -1692,7 +1707,7 @@ const Cloud = {
     const snap = await fs.getDocs(fs.query(fs.collection(db, 'classes'), fs.where('ownerEmail', '==', auth.currentUser.email)));
     return snap.docs.map(d => ({code: d.id, ...d.data()})).sort((a,b) => String(a.name).localeCompare(String(b.name)));
   }); },
-  // A teacher can pick their own code (4–7 letters/numbers); otherwise a random one is made.
+  // A teacher can pick their own code (6–7 letters/numbers); otherwise a random one is made.
   createClass(name, custom){ return this.run(async ({fs, db, auth}) => {
     if(custom){
       const ref = fs.doc(db, 'classes', custom);
@@ -1748,24 +1763,37 @@ const Cloud = {
   }); },
   // Deletes Scale Quest's scores and progress for a class (the class itself stays: the Rhythm Trainer uses it too).
   clearClassData(code){ return this.run(async ({fs, db, auth}) => {
-    const a = await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code)));
+    const a = await fs.getDocs(this.classCol(fs, db, code, 'scale_scores'));
     const b = await fs.getDocs(fs.query(fs.collection(db, 'scale_progress'), fs.where('owner', '==', auth.currentUser.email), fs.where('class_code', '==', code)));
     const docs = [...a.docs, ...b.docs];
     for(let i = 0; i < docs.length; i += 400){ const w = fs.writeBatch(db); docs.slice(i, i + 400).forEach(d => w.delete(d.ref)); await w.commit(); }
   }); },
 
   // ----- leaderboards -----
-  row(d){ const x = d.data(); return {id: d.id, dev: !!x.dev, icon: x.icon || '', name: x.name, classCode: x.class_code || '', score: x.score, keys: x.key_count, streak: x.streak || 0, accuracy: x.accuracy, date: x.created_at && x.created_at.toDate ? x.created_at.toDate() : new Date()}; },
+  classCol(fs, db, code, col){ return fs.collection(db, 'classes', code, col); },
+  worldCol(fs, db, col){ return fs.collection(db, 'world_scores', WORLD_GAME[col], 'runs'); },
+  // One batch: a copy in each of the run's classes + the anonymous World copy. The developer's runs stay top level.
+  async post(fs, db, col, data, codes, level){
+    if(data.dev) return (await fs.addDoc(fs.collection(db, col), data)).id;
+    const b = fs.writeBatch(db), refs = codes.map(code => fs.doc(this.classCol(fs, db, code, col)));
+    refs.forEach((ref, i) => b.set(ref, {...data, class_code: codes[i]}));
+    const w = {nick: myNick(), level: String(level).slice(0, 24), score: data.score, created_at: data.created_at}, wref = fs.doc(this.worldCol(fs, db, col));
+    if(data.icon) w.icon = data.icon;
+    b.set(wref, w);
+    await b.commit();
+    return (refs[0] || wref).id;
+  },
+  row(d){ const x = d.data(), world = !('name' in x); return {id: d.id, path: d.ref.path, world, dev: !!x.dev, icon: x.icon || '', name: world ? x.nick : x.name, classCode: x.class_code || '', score: x.score, keys: world ? +x.level || 0 : x.key_count, streak: x.streak || 0, accuracy: x.accuracy, date: x.created_at && x.created_at.toDate ? x.created_at.toDate() : new Date()}; },
   submit(e){ return this.run(async ({fs, db}) => {
-    const dev = await devPost(e.name, () => this.fb(), () => this.signIn());
+    const dev = await devPost(e.name, () => this.fb(), () => this.signIn()), col = e.col || 'scale_scores', codes = dev ? [] : runCodes(e);
     const data = {name: dev ? DEV_NAME : e.name, score: e.score, points: e.points, streak: e.streak, accuracy: e.accuracy, questions: e.questions, key_count: e.keyCount, key_list: e.keyList, created_at: fs.serverTimestamp()};
-    if(e.classCode) data.class_code = e.classCode;
-    if(e.classCodes && e.classCodes.length > 1) data.class_codes = e.classCodes;
+    if(dev && e.classCode) data.class_code = e.classCode;
     if(iconOf(getProfile())) data.icon = iconOf(getProfile());
     if(dev) data.dev = true;
-    const id = (await fs.addDoc(fs.collection(db, e.col || 'scale_scores'), data)).id;
+    const id = await this.post(fs, db, col, data, codes, e.keyCount);
     if(e.col){ Object.keys(LB_CACHE).filter(k => k.startsWith('deg')).forEach(k => delete LB_CACHE[k]); return id; }
-    this.addToBoards({id, dev: !!data.dev, icon: data.icon || '', name: data.name, classCode: e.classCode || '', score: e.score, keys: e.keyCount, streak: e.streak || 0, accuracy: e.accuracy, date: new Date()}, data.class_codes);
+    const x = {id, dev, icon: data.icon || '', name: data.name, score: e.score, keys: e.keyCount, streak: e.streak || 0, accuracy: e.accuracy, date: new Date()};
+    this.addToBoards(dev ? null : {...x, world: true, name: myNick(), streak: 0}, codes.map(code => ({...x, classCode: code})));
     return id;
   }); },
   // Board results are kept 60 s per query shape, so reopening a board costs no reads.
@@ -1775,45 +1803,31 @@ const Cloud = {
     return load().then(v => { LB_CACHE[key] = {t: Date.now(), v}; return v; });
   },
   // A just-posted run goes straight into any cached board it belongs on.
-  addToBoards(x, codes){
+  addToBoards(wx, classRuns){
     const w = LB_CACHE['scale_scores|world'];
-    if(w){ const l = w.v; if(l.length < 10 || x.score > l[l.length - 1].score) w.v = [...l, x].sort((a,b) => b.score - a.score).slice(0, 10); }
-    for(const code of codes || [x.classCode]){
-      const c = code && LB_CACHE['scale_scores|class|' + code];
+    if(w && wx){ const l = w.v; if(l.length < 10 || wx.score > l[l.length - 1].score) w.v = [...l, wx].sort((a,b) => b.score - a.score).slice(0, 10); }
+    for(const x of classRuns){
+      const c = LB_CACHE['scale_scores|class|' + x.classCode];
       if(c){ const b = c.v, l = b.rows; if(b.full || x.score > l[l.length - 1].score) c.v = {full: b.full, rows: [...l, x].sort((a,b) => b.score - a.score).slice(0, b.full ? undefined : LB_N)}; }
     }
   },
-  // Equality + orderBy needs a composite index. If it's missing, warn once (the message has the create link) and use the old query this session.
-  async indexed(shape, fast, slow){
-    if(!LB_NOINDEX[shape]){
-      try{ return await fast(); }
-      catch(e){ if(!e || e.code !== 'failed-precondition') throw e; LB_NOINDEX[shape] = true; console.warn('[index needed]', e.message); }
-    }
-    return slow();
-  },
-  // World Top 10: the 10 best runs (a small read, safe for public traffic).
-  worldTop(){ return this.cached('scale_scores|world', () => this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(10)))).docs.map(d => this.row(d)))); },
-  worldRank(score, col = 'scale_scores'){ return this.run(async ({fs, db}) => (await fs.getCountFromServer(fs.query(fs.collection(db, col), fs.where('score', '>', score)))).data().count + 1); },
+  // World Top 10: the 10 best runs (a small read, safe for public traffic). Game names only.
+  worldTop(){ return this.cached('scale_scores|world', () => this.run(async ({fs, db}) => (await fs.getDocs(fs.query(this.worldCol(fs, db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(10)))).docs.map(d => this.row(d)))); },
+  worldRank(score, col = 'scale_scores'){ return this.run(async ({fs, db}) => (await fs.getCountFromServer(fs.query(this.worldCol(fs, db, col), fs.where('score', '>', score)))).data().count + 1); },
   // SCALE DEGREES CHAOS board: a class (plus the developer's runs) or the World top 10, each player's best run.
   degBoard(code, name = 'degree_scores'){ return this.cached((name === 'degree_scores' ? 'deg|' : 'degks|') + (code || 'world'), () => this.run(async ({fs, db}) => {
-    const col = fs.collection(db, name);
-    let rows = (code ? await this.indexed(name + '|class', async () => (await fs.getDocs(fs.query(col, fs.where('class_code', '==', code), fs.orderBy('score', 'desc'), fs.limit(LB_N)))).docs,
-        async () => (await fs.getDocs(fs.query(col, fs.where('class_code', '==', code)))).docs)
-      : (await fs.getDocs(fs.query(col, fs.orderBy('score', 'desc'), fs.limit(30)))).docs).map(d => this.row(d));
-    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat([...await multiRows(fs, db, name, code), ...await devRows(fs, db, name)].map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
+    let rows = (await fs.getDocs(fs.query(code ? this.classCol(fs, db, code, name) : this.worldCol(fs, db, name), fs.orderBy('score', 'desc'), fs.limit(code ? LB_N : 30)))).docs.map(d => this.row(d));
+    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat((await devRows(fs, db, name)).map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
     return this.bestOf(rows);
   })); },
-  // Teacher dashboard: every score in the class (plus runs from students in 2+ classes that list this one in class_codes).
-  classAll(code){ return this.run(async ({fs, db}) => {
-    const rows = (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code)))).docs.map(d => this.row(d)), seen = new Set(rows.map(x => x.id));
-    return rows.concat((await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_codes', 'array-contains', code)))).docs.map(d => this.row(d)).filter(x => !seen.has(x.id)));
-  }); },
+  // Teacher dashboard: every score in the class.
+  classAll(code){ return this.run(async ({fs, db}) => (await fs.getDocs(this.classCol(fs, db, code, 'scale_scores'))).docs.map(d => this.row(d))); },
   // Student class board: the class's top LB_N runs ({full: true} when that's every run in the class).
-  // The developer's runs, and runs that list the class in class_codes, are added to every class board.
-  classBoard(code){ return this.cached('scale_scores|class|' + code, () => this.run(({fs, db}) => this.indexed('scale_scores|class',
-    async () => { const rows = (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code), fs.orderBy('score', 'desc'), fs.limit(LB_N)))).docs.map(d => this.row(d)); return {rows, full: rows.length < LB_N}; },
-    async () => ({rows: (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code)))).docs.map(d => this.row(d)), full: true}))
-    .then(async b => { const seen = new Set(b.rows.map(x => x.id)); return {...b, rows: b.rows.concat([...await multiRows(fs, db, 'scale_scores', code), ...await devRows(fs, db, 'scale_scores')].map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id)))}; }))); },
+  // The developer's runs are added to every class board.
+  classBoard(code){ return this.cached('scale_scores|class|' + code, () => this.run(async ({fs, db}) => {
+    const rows = (await fs.getDocs(fs.query(this.classCol(fs, db, code, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(LB_N)))).docs.map(d => this.row(d)), seen = new Set(rows.map(x => x.id));
+    return {full: rows.length < LB_N, rows: rows.concat((await devRows(fs, db, 'scale_scores')).map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id)))};
+  })); },
   bestOf(rows){
     const best = {};
     for(const x of rows){ const b = best[x.name]; if(!b || x.score > b.score) best[x.name] = {...x, streak: Math.max(x.streak, b ? b.streak : 0)}; else b.streak = Math.max(b.streak, x.streak); }
@@ -1826,8 +1840,8 @@ const Cloud = {
     const b = await this.classBoard(code), i = this.bestOf(b.rows).findIndex(x => x.name === name);
     if(i >= 0 || b.full) return i + 1;
     return this.run(async ({fs, db}) => {
-      const rows = (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.where('class_code', '==', code), fs.where('score', '>', score), fs.orderBy('score', 'desc')))).docs.map(d => this.row(d)), seen = new Set(rows.map(x => x.id));
-      rows.push(...b.rows.filter(x => x.score > score && !seen.has(x.id)));   // runs that count here through class_codes
+      const rows = (await fs.getDocs(fs.query(this.classCol(fs, db, code, 'scale_scores'), fs.where('score', '>', score), fs.orderBy('score', 'desc')))).docs.map(d => this.row(d)), seen = new Set(rows.map(x => x.id));
+      rows.push(...b.rows.filter(x => x.score > score && !seen.has(x.id)));   // the developer's runs
       const mine = Math.max(score, ...rows.filter(x => x.name === name).map(x => x.score));
       return new Set(rows.filter(x => x.name !== name && x.score > mine).map(x => x.name)).size + 1;
     });
@@ -1836,40 +1850,44 @@ const Cloud = {
   novaSubmit(e){ return this.run(async ({fs, db}) => {
     const dev = await devPost(e.name, () => this.fb(), () => this.signIn());
     const data = {name: dev ? DEV_NAME : e.name, score: e.score, points: e.points, streak: e.streak, accuracy: e.accuracy, reached: e.reached, finished: !!e.finished, created_at: fs.serverTimestamp()};
-    if(e.classCode) data.class_code = e.classCode;
-    if(e.classCodes && e.classCodes.length > 1) data.class_codes = e.classCodes;
+    if(dev && e.classCode) data.class_code = e.classCode;
     if(iconOf(getProfile())) data.icon = iconOf(getProfile());
     if(dev) data.dev = true;
-    await fs.addDoc(fs.collection(db, 'nova_scores'), data);
+    await this.post(fs, db, 'nova_scores', data, dev ? [] : runCodes(e), data.finished ? 'finished' : e.reached);
     Object.keys(LB_CACHE).filter(k => k.startsWith('nova')).forEach(k => delete LB_CACHE[k]);
     if(data.finished) try{ localStorage.removeItem(NOVA_FIN_KEY); } catch(e){}
   }); },
-  novaRow(d){ const x = d.data(); return {id: d.id, dev: !!x.dev, icon: x.icon || '', name: x.name, classCode: x.class_code || '', score: x.score, reached: x.reached, finished: !!x.finished}; },
+  novaRow(d){ const x = d.data(), world = !('name' in x); return {id: d.id, world, dev: !!x.dev, icon: x.icon || '', name: world ? x.nick : x.name, classCode: x.class_code || '', score: x.score, reached: world ? (x.level === 'finished' ? 20 : +x.level || 0) : x.reached, finished: world ? x.level === 'finished' : !!x.finished}; },
   // Class (plus the developer's runs) or World: each player's best run, finished runs first.
   novaBoard(code){ return this.cached('nova|' + (code || 'world'), () => this.run(async ({fs, db}) => {
-    const col = fs.collection(db, 'nova_scores');
-    let rows = (code ? await this.indexed('nova_scores|class', async () => (await fs.getDocs(fs.query(col, fs.where('class_code', '==', code), fs.orderBy('score', 'desc'), fs.limit(LB_N)))).docs,
-        async () => (await fs.getDocs(fs.query(col, fs.where('class_code', '==', code)))).docs)
-      : (await fs.getDocs(fs.query(col, fs.orderBy('score', 'desc'), fs.limit(60)))).docs).map(d => this.novaRow(d));
-    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat([...await multiRows(fs, db, 'nova_scores', code), ...await devRows(fs, db, 'nova_scores')].map(d => this.novaRow(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
+    let rows = (await fs.getDocs(fs.query(code ? this.classCol(fs, db, code, 'nova_scores') : this.worldCol(fs, db, 'nova_scores'), fs.orderBy('score', 'desc'), fs.limit(code ? LB_N : 60)))).docs.map(d => this.novaRow(d));
+    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat((await devRows(fs, db, 'nova_scores')).map(d => this.novaRow(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
     const best = {};
     for(const x of rows){ const b = best[x.name + '|' + x.classCode]; if(!b || (x.finished > b.finished) || (x.finished === b.finished && x.score > b.score)) best[x.name + '|' + x.classCode] = x; }
     return Object.values(best).sort((a,b) => (b.finished - a.finished) || (b.score - a.score));
   })); },
-  // Everyone who has finished a SUPERNOVA ("name|class"), for the star next to their name on every board.
+  // Everyone in this student's classes who has finished a SUPERNOVA ("name|class"), plus the developer ("Maestro|"),
+  // for the star next to their name on the class boards.
   // Kept 6 hours on this device (it's on the start screen of every visit), and refreshed when this device finishes one.
-  novaFinishers(){ return this.cached('nova|finishers', async () => {
-    try{ const c = JSON.parse(localStorage.getItem(NOVA_FIN_KEY) || 'null'); if(c && Date.now() - c.t < 6 * 3600000 && Array.isArray(c.v)) return new Set(c.v); } catch(e){}
-    const v = await this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'nova_scores'), fs.where('finished', '==', true)))).docs.map(d => `${d.data().name}|${d.data().class_code || ''}`));
-    try{ localStorage.setItem(NOVA_FIN_KEY, JSON.stringify({t: Date.now(), v})); } catch(e){}
+  novaFinishers(){ const codes = classesOf(getProfile()).map(c => c.code); return this.cached('nova|finishers|' + codes.join(','), async () => {
+    try{ const c = JSON.parse(localStorage.getItem(NOVA_FIN_KEY) || 'null'); if(c && c.codes === codes.join(',') && Date.now() - c.t < 6 * 3600000 && Array.isArray(c.v)) return new Set(c.v); } catch(e){}
+    const v = await this.run(async ({fs, db}) => {
+      const fin = col => fs.getDocs(fs.query(col, fs.where('finished', '==', true))).then(s => s.docs).catch(() => []);
+      const lists = await Promise.all([...codes.map(code => fin(this.classCol(fs, db, code, 'nova_scores')).then(l => l.map(d => `${d.data().name}|${code}`))),
+        fs.getDocs(fs.query(fs.collection(db, 'nova_scores'), fs.where('dev', '==', true), fs.where('finished', '==', true), fs.limit(10))).then(s => s.docs.map(d => `${d.data().name}|`)).catch(() => [])]);
+      return [].concat(...lists);
+    });
+    try{ localStorage.setItem(NOVA_FIN_KEY, JSON.stringify({t: Date.now(), codes: codes.join(','), v})); } catch(e){}
     return new Set(v);
   }); },
-  worldAll(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(fs.collection(db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(300)))).docs.map(d => this.row(d))); },
-  deleteScore(id){ return this.run(({fs, db}) => fs.deleteDoc(fs.doc(db, 'scale_scores', id))); },
+  // Admin: the World board's 300 best runs (game names only; no real names leave a class).
+  worldAll(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(this.worldCol(fs, db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(300)))).docs.map(d => this.row(d))); },
+  deleteScore(path){ return this.run(({fs, db}) => fs.deleteDoc(fs.doc(db, path))); },
 };
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // no 0/O or 1/I/L mix-ups
-const newClassCode = () => Array.from({length: 5}, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+const newClassCode = () => Array.from({length: 6}, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
 const validCode = c => /^[A-Z0-9]{4,7}$/.test(c);
+const validNewCode = c => /^[A-Z0-9]{6,7}$/.test(c);   // new codes are 6–7 characters (privacy, 2026-10-26); older 4–5 character codes still work
 const cleanCode = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const errMsg = e => (e && e.message ? e.message : String(e || 'Something went wrong.'));
@@ -1886,7 +1904,7 @@ function localTop(n){
 function boardTable(list){
   if(!list.length) return `<p class="dim">No scores yet. Finish a ${MNs()} run to claim the top spot!</p>`;
   return `<table class="board"><tbody>${list.map((x,i) =>
-    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'} · x${+x.streak || 0}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'}${x.world ? '' : ` · x${+x.streak || 0}`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 
 /* ---------- student profile (welcome screen) ---------- */
@@ -3504,7 +3522,7 @@ function toMenu(){
   setPlaying(false); renderBoard(); updateCarts();
   if(S.test && S.test.doc){ S.testRun = false; tsLobby(); }
 }
-function markMe(list){ const p = getProfile(), n = p ? displayName(p) : null; return list.map(x => ({...x, me: x.name === n})); }
+function markMe(list){ const p = getProfile(), n = p ? displayName(p) : null; return list.map(x => ({...x, me: x.world ? x.name === myNick() : x.name === n})); }
 function renderBoard(){
   const wrap = $('#boardWrap'), p = getProfile();
   if(!Cloud.on){ $('#boardTitle').textContent = 'LEADERBOARD'; wrap.innerHTML = boardTable(markMe(localTop(5))); return; }
@@ -3526,7 +3544,7 @@ function boardPanel(){
     <div class="obtns"><button class="btn obtn alt" id="bpRefresh" type="button">REFRESH</button><button class="btn obtn" id="bpClose" type="button" data-focus>CLOSE</button></div>`);
   let tab = tabs[0][0];
   const tabClass = () => cls.find(c => 'class:' + c.code === tab);
-  const NOTES = {world: `The 10 best ${MNs()} runs from everyone who plays.`, nova: 'Finished runs (star) first, then SURVIVORS who reached question 10.', deg: `Best SCALE DEGREES ${MNs()} runs.`, ks: `Best KEY SIGNATURES ${MNs()} runs.`, device: 'Scores saved on this computer.'};
+  const NOTES = {world: `The 10 best ${MNs()} runs from everyone who plays, shown with game names so nobody's real name is public. Yours is ${myNick()}.`, nova: 'Finished runs (star) first, then SURVIVORS who reached question 10.', deg: `Best SCALE DEGREES ${MNs()} runs.`, ks: `Best KEY SIGNATURES ${MNs()} runs.`, device: 'Scores saved on this computer.'};
   // DEGREES and SUPERNOVA show a top 5 for each of the student's classes, then the World.
   const head = c => `<h3 class="slabel" style="margin:6px 0">${esc(String(c.name).toUpperCase())}</h3>`, worldHead = '<h3 class="slabel" style="margin:12px 0 6px">WORLD</h3>';
   const show = () => {
@@ -3874,12 +3892,12 @@ function tdClasses(){
     <p class="dim" style="margin:0">These are the same classes and codes as The Big Score. Students type the code on the welcome screen; from then on their practice shows up in <b>PROGRESS</b> and their CHAOS scores go on that class's board. (To delete a class completely, use The Big Score's dashboard.)</p>
     ${TD.classes.length ? `<div style="overflow-x:auto"><table class="t-table"><thead><tr><th>CLASS</th><th>CODE</th><th>ASSIGNMENT</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p><b>No classes yet.</b> Make your first one below.</p>'}
     <form class="t-row" id="newClassForm"><input id="newClassName" maxlength="40" placeholder="New class name, e.g. Period 3 Theory" aria-label="New class name"><input id="newClassCode" maxlength="7" style="flex:0 1 230px;min-width:180px;text-transform:uppercase" placeholder="Code (optional), e.g. CP2026" aria-label="Class code (optional)"><button class="btn obtn" type="submit">CREATE CLASS</button></form>
-    <p class="dim" style="margin:0">Leave the code blank for a random one, or pick your own: 4–7 letters and numbers.</p>`;
+    <p class="dim" style="margin:0">Leave the code blank for a random one, or pick your own: 6–7 letters and numbers.</p>`;
   $('#newClassForm').onsubmit = async e => {
     e.preventDefault();
     const name = $('#newClassName').value.trim().replace(/\s+/g, ' '), custom = cleanCode($('#newClassCode').value);
     if(!name){ $('#tdErr').textContent = 'Type a class name first.'; return; }
-    if(custom && !validCode(custom)){ $('#tdErr').textContent = 'A code needs 4–7 letters and numbers.'; return; }
+    if(custom && !validNewCode(custom)){ $('#tdErr').textContent = 'A code needs 6–7 letters and numbers.'; return; }
     try{ const code = await Cloud.createClass(name, custom); TD.code = code; await tdLoadClasses(); tdRender(); popupMsg(`Created ${name}: code ${code}`); }
     catch(err){ $('#tdErr').textContent = errMsg(err); }
   };
@@ -3891,13 +3909,13 @@ function tdClasses(){
   $('#tdBody').querySelectorAll('[data-recode]').forEach(b => b.onclick = () => {
     const c = TD.classes.find(x => x.code === b.dataset.recode);
     const o = openOverlay(`<h2 class="otitle">NEW CODE FOR ${esc(c.name.toUpperCase())}</h2>
-      <p class="osub">Pick 4–7 letters and numbers. The old code <b>${esc(c.code)}</b> stops working, and students re-enter the new one. Scores and practice saved under the old code stay in the database but won't show for the new code, so this is best done before students start.</p>
+      <p class="osub">Pick 6–7 letters and numbers. The old code <b>${esc(c.code)}</b> stops working, and students re-enter the new one. Scores and practice saved under the old code stay in the database but won't show for the new code, so this is best done before students start.</p>
       <input id="rcCode" maxlength="7" value="" placeholder="e.g. CP2026" style="font-family:var(--px);font-size:18px;padding:10px;width:220px;text-align:center;text-transform:uppercase;background:var(--shadow);color:var(--yel);border:3px solid var(--yel)" aria-label="New code">
       <p class="werr" id="rcErr"></p><div class="obtns"><button class="btn obtn alt" type="button" id="rcNo">CANCEL</button><button class="btn obtn" type="button" id="rcYes">CHANGE CODE</button></div>`);
     o.querySelector('#rcNo').onclick = closeOverlay;
     o.querySelector('#rcYes').onclick = async () => {
       const code = cleanCode(o.querySelector('#rcCode').value);
-      if(!validCode(code)){ o.querySelector('#rcErr').textContent = 'A code needs 4–7 letters and numbers.'; return; }
+      if(!validNewCode(code)){ o.querySelector('#rcErr').textContent = 'A code needs 6–7 letters and numbers.'; return; }
       if(code === c.code){ closeOverlay(); return; }
       try{ await Cloud.changeCode(c, code); closeOverlay(); TD.code = code; await tdLoadClasses(); tdRender(); popupMsg(`${c.name} now uses code ${code}.`); }
       catch(err){ o.querySelector('#rcErr').textContent = errMsg(err); }
@@ -3915,19 +3933,19 @@ function tdClasses(){
 // ----- Leaderboard scores -----
 async function tdScores(){
   const isAdmin = ADMIN_EMAILS.includes(TD.email);
-  const options = TD.classes.map(c => [c.code, c.name]).concat(isAdmin ? [['__world', 'World (every score)']] : []);
+  const options = TD.classes.map(c => [c.code, c.name]).concat(isAdmin ? [['__world', 'World (game names only)']] : []);
   if(!options.length){ $('#tdBody').innerHTML = '<p class="dim">Make a class first. Its CHAOS scores show up here.</p>'; return; }
   if(!options.some(([k]) => k === TD.scope)) TD.scope = TD.code || options[0][0];
   const world = TD.scope === '__world';
   let list = [];
   $('#tdBody').innerHTML = '<p class="dim">Loading scores...</p>';
   try{ list = world ? await Cloud.worldAll() : (await Cloud.classAll(TD.scope)).sort((a,b) => b.score - a.score); } catch(err){ $('#tdErr').textContent = errMsg(err); }
-  const rows = list.map((e, i) => `<tr><td>${i+1}</td><td>${esc(e.name)}</td>${world ? `<td class="dim">${esc(e.classCode || '—')}</td>` : ''}<td>${e.score}</td><td>${e.keys}</td><td>${e.accuracy}%</td><td class="dim">${e.date.toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</td>
-    <td style="text-align:right"><button class="btn tbtn sm" type="button" data-del="${esc(e.id)}">DELETE</button></td></tr>`).join('');
+  const rows = list.map((e, i) => `<tr><td>${i+1}</td><td>${esc(e.name)}</td><td>${e.score}</td><td>${e.keys}</td><td>${e.accuracy}%</td><td class="dim">${e.date.toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</td>
+    <td style="text-align:right"><button class="btn tbtn sm" type="button" data-del="${esc(e.path)}">DELETE</button></td></tr>`).join('');
   $('#tdBody').innerHTML = `
     <div class="td-sub"><select id="tdScope" aria-label="Leaderboard">${options.map(([k, n]) => `<option value="${esc(k)}" ${k === TD.scope ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
       <span class="dim">Delete a score with an inappropriate name, or use CLASSES → CLEAR to reset a whole class.</span></div>
-    ${list.length ? `<div style="overflow-x:auto"><table class="t-table"><thead><tr><th>#</th><th>NAME</th>${world ? '<th>CLASS</th>' : ''}<th>SCORE</th><th>KEYS</th><th>ACCURACY</th><th>DATE</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="dim">No CHAOS scores posted yet.</p>'}`;
+    ${list.length ? `<div style="overflow-x:auto"><table class="t-table"><thead><tr><th>#</th><th>NAME</th><th>SCORE</th><th>KEYS</th><th>ACCURACY</th><th>DATE</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="dim">No CHAOS scores posted yet.</p>'}`;
   $('#tdScope').onchange = () => { TD.scope = $('#tdScope').value; tdScores(); };
   $('#tdBody').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { b.disabled = true; try{ await Cloud.deleteScore(b.dataset.del); tdScores(); } catch(err){ $('#tdErr').textContent = errMsg(err); b.disabled = false; } });
 }
