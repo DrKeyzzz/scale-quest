@@ -1785,10 +1785,10 @@ const Cloud = {
     this.addToBoards(dev ? null : {...x, world: true, name: myNick(), streak: 0}, codes.map(code => ({...x, classCode: code})));
     return id;
   }); },
-  // Board results are kept 60 s per query shape, so reopening a board costs no reads.
+  // Board results are kept 10 min per query shape (a new run is added to them), so reopening a board costs no reads.
   cached(key, load){
     const c = LB_CACHE[key];
-    if(c && Date.now() - c.t < 60000) return Promise.resolve(c.v);
+    if(c && Date.now() - c.t < 600000) return Promise.resolve(c.v);
     return load().then(v => { LB_CACHE[key] = {t: Date.now(), v}; return v; });
   },
   // A just-posted run goes straight into any cached board it belongs on.
