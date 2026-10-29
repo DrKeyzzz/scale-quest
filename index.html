@@ -3747,7 +3747,7 @@ async function tdProgress(keep){
   const body = $('#tdBody');
   if(!keep) body.innerHTML = '<p class="dim">Loading progress...</p>';
   const LOAD = (code, day) => Cloud.progress(code, day);
-  try{ TD.docs = keep && TD.range === 'today' && TD.docsCode === TD.code ? TD.docs.filter(d => d.date !== dayKey()).concat((await LOAD(TD.code, dayKey())).filter(d => d.date === dayKey())) : await LOAD(TD.code); TD.docsCode = TD.code; $('#tdErr').textContent = ''; } catch(err){ $('#tdErr').textContent = errMsg(err); TD.docs = []; }
+  try{ /* one day reads only that day; a refresh or sort re-reads only today's docs */ const rk = TD.code + '|' + TD.range + '|' + TD.date, day = {today: dayKey(), yesterday: daysAgo(1), week: ''}[TD.range] ?? TD.date; TD.docs = keep && TD.docsKey === rk ? (TD.range === 'today' || TD.range === 'week' ? TD.docs.filter(d => d.date !== dayKey()).concat((await LOAD(TD.code, dayKey())).filter(d => d.date === dayKey())) : TD.docs) : await LOAD(TD.code, day || undefined); TD.docsKey = rk; $('#tdErr').textContent = ''; } catch(err){ $('#tdErr').textContent = errMsg(err); TD.docs = []; }
   const studs = mergeDocs(rangeDocs()), k = TD.sort.key, dir = TD.sort.dir;
   studs.sort((a,b) => (k === 'student' ? String(a.student).localeCompare(String(b.student)) : (a[k] - b[k])) * dir);
   const cls = tdClass(), a = cls && cls.scale_assignment;
@@ -3811,6 +3811,7 @@ async function tdProgress(keep){
     o.querySelector('#dNo').onclick = closeOverlay;
     o.querySelector('#dYes').onclick = async () => { try{ await Cloud.deleteStudent(TD.code, st.sid); closeOverlay(); TD.open = null; tdProgress(); } catch(err){ o.querySelector('#dErr').textContent = errMsg(err); } };
   };
+  clearInterval(TD.timer); // one timer only (each refresh used to add another)
   if(TD.range === 'today') TD.timer = setInterval(() => { if(!document.hidden && TD.tab === 'progress' && !$('#teacherView').hidden && !S.overlay) tdProgress(true); }, 120000);
 }
 function tdStudentDetail(s){
