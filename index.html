@@ -1654,22 +1654,11 @@ async function devRows(fs, db, col, extra = []) {
   try { return (await fs.getDocs(fs.query(fs.collection(db, col), fs.where('dev', '==', true), ...extra, fs.limit(10)))).docs; } catch (e) { return []; }
 }
 // PRIVACY (2026-10-26): a score with a name is saved inside its class (classes/<code>/<collection>), so reading it needs the code.
-// The World boards read world_scores/<game>/runs: only a random game name (like "Blue Trumpet 42"), the score and the icon.
+// The World boards read world_scores/<game>/runs: the student's first name and last initial, the score and the icon.
 // The developer's runs (Maestro) stay in the old top level collection and are added to every class board.
 const WORLD_GAME = {scale_scores: 'scale', degree_scores: 'degree', key_scores: 'key', nova_scores: 'nova'};
-const NICK_KEY = 'mtg_nick_v1', NICK_RE = /^[A-Z][a-z]+ [A-Z][a-z]+ [0-9]{1,2}$/;
-const NICK_COLORS = ['Blue', 'Red', 'Green', 'Gold', 'Silver', 'Purple', 'Orange', 'Teal', 'Coral', 'Indigo', 'Amber', 'Jade', 'Ruby', 'Violet', 'Crimson', 'Azure'];
-const NICK_THINGS = ['Trumpet', 'Violin', 'Cello', 'Flute', 'Tuba', 'Oboe', 'Harp', 'Piano', 'Drum', 'Banjo', 'Sax', 'Clarinet', 'Bassoon', 'Viola', 'Guitar', 'Marimba', 'Ukulele', 'Trombone', 'Piccolo', 'Horn'];
-let NICK = '';
-// This device's World name, made once and kept (shared by every game on the site).
-function myNick(){
-  if(NICK) return NICK;
-  try{ const n = localStorage.getItem(NICK_KEY); if(n && NICK_RE.test(n)) return NICK = n; } catch(e){}
-  const pick = a => a[Math.floor(Math.random() * a.length)];
-  NICK = `${pick(NICK_COLORS)} ${pick(NICK_THINGS)} ${1 + Math.floor(Math.random() * 99)}`;
-  try{ localStorage.setItem(NICK_KEY, NICK); } catch(e){}
-  return NICK;
-}
+// The World board shows the student's own first name and last initial, like the class boards (David, 2026-10-29: no random game names).
+function myNick(){ try{ const p = JSON.parse(localStorage.getItem('rdt_profile_v1') || 'null'); return p && p.first && p.init ? `${p.first.charAt(0).toUpperCase()}${p.first.slice(1)} ${p.init}.` : ''; } catch(e){ return ''; } }
 // The classes a run counts for (the active class; up to 3 for older multi-class sign-ins).
 const runCodes = e => [...new Set((e.classCodes && e.classCodes.length ? e.classCodes : [e.classCode]).filter(Boolean))].slice(0, 3);
 // Leaderboard read limits (keeps a busy school inside Firebase's free daily reads):
@@ -1880,7 +1869,7 @@ const Cloud = {
     try{ localStorage.setItem(NOVA_FIN_KEY, JSON.stringify({t: Date.now(), codes: codes.join(','), v})); } catch(e){}
     return new Set(v);
   }); },
-  // Admin: the World board's 300 best runs (game names only; no real names leave a class).
+  // Admin: the World board's 300 best runs .
   worldAll(){ return this.run(async ({fs, db}) => (await fs.getDocs(fs.query(this.worldCol(fs, db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(300)))).docs.map(d => this.row(d))); },
   deleteScore(path){ return this.run(({fs, db}) => fs.deleteDoc(fs.doc(db, path))); },
 };
@@ -3544,7 +3533,7 @@ function boardPanel(){
     <div class="obtns"><button class="btn obtn alt" id="bpRefresh" type="button">REFRESH</button><button class="btn obtn" id="bpClose" type="button" data-focus>CLOSE</button></div>`);
   let tab = tabs[0][0];
   const tabClass = () => cls.find(c => 'class:' + c.code === tab);
-  const NOTES = {world: `The 10 best ${MNs()} runs from everyone who plays, shown with game names so nobody's real name is public. Yours is ${myNick()}.`, nova: 'Finished runs (star) first, then SURVIVORS who reached question 10.', deg: `Best SCALE DEGREES ${MNs()} runs.`, ks: `Best KEY SIGNATURES ${MNs()} runs.`, device: 'Scores saved on this computer.'};
+  const NOTES = {world: `The 10 best ${MNs()} runs from everyone who plays, shown by first name and last initial.`, nova: 'Finished runs (star) first, then SURVIVORS who reached question 10.', deg: `Best SCALE DEGREES ${MNs()} runs.`, ks: `Best KEY SIGNATURES ${MNs()} runs.`, device: 'Scores saved on this computer.'};
   // DEGREES and SUPERNOVA show a top 5 for each of the student's classes, then the World.
   const head = c => `<h3 class="slabel" style="margin:6px 0">${esc(String(c.name).toUpperCase())}</h3>`, worldHead = '<h3 class="slabel" style="margin:12px 0 6px">WORLD</h3>';
   const show = () => {
@@ -3933,7 +3922,7 @@ function tdClasses(){
 // ----- Leaderboard scores -----
 async function tdScores(){
   const isAdmin = ADMIN_EMAILS.includes(TD.email);
-  const options = TD.classes.map(c => [c.code, c.name]).concat(isAdmin ? [['__world', 'World (game names only)']] : []);
+  const options = TD.classes.map(c => [c.code, c.name]).concat(isAdmin ? [['__world', 'World']] : []);
   if(!options.length){ $('#tdBody').innerHTML = '<p class="dim">Make a class first. Its CHAOS scores show up here.</p>'; return; }
   if(!options.some(([k]) => k === TD.scope)) TD.scope = TD.code || options[0][0];
   const world = TD.scope === '__world';
