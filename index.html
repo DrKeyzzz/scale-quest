@@ -584,6 +584,9 @@ button{font:inherit;color:inherit}
 .hintbox{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px;max-width:720px;text-align:center}
 .hintbox p{margin:4px 0;font-size:16px;line-height:1.4}
 .hintbox .explain{margin:6px 0}
+#staffSvg .hn{font:800 14px var(--px);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:4px}
+#staffSvg .hn.ln{fill:#0284c7}#staffSvg .hn.sp{fill:#c026d3}
+.hl-ln{color:#38bdf8}.hl-sp{color:#e879f9}
 .mp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mp-row .mp-nova,.mp-row .mp-chaos{padding:12px 14px;border-radius:18px}
 .mp-row .mp-star{font-size:42px}
@@ -2535,7 +2538,7 @@ function buildStaff(){
   svg.setAttribute('aria-label', isGrand() ? 'Grand staff' : clefLabel() + ' staff');
   svg.setAttribute('viewBox', `${VX()} 22 ${520 - VX()} ${176 + EXTRA_H()}`);
   svg.innerHTML = `${staffLines(8, 512, 14, {bar: true})}
-    <g id="ksig"></g><g id="ghost" class="ghost"></g><g id="ledgers"></g>
+    <g id="ksig"></g><g id="ghost" class="ghost"></g><g id="ledgers"></g><g id="hintNames"></g>
     <g id="noteG">${noteMarkup()}</g>`;
 }
 // Accidentals drawn as shapes, centred on the line/space at (0,0). One staff space = 20.
@@ -3214,7 +3217,7 @@ function renderQuestion(){
     r.redo = 0; r.seen.add(sig);
   }
   const q = S.run.q, K = `<b>${q.name}</b>`;
-  S.busy = false; S.sel.clear(); S.lock.clear(); say('', ''); setNext(null); ladderHintOff();
+  S.busy = false; S.sel.clear(); S.lock.clear(); say('', ''); setNext(null); ladderHintOff(); hintNamesOff();
   $('#explain').hidden = true; $('#qHelp').hidden = false;
   updateHUD();
   const tag = $('#qTag');
@@ -4711,6 +4714,17 @@ function dailyEnd(){
    line and space names (staff), the step pattern from the first note (build), the trick + circle of fifths (key signatures).
    A hinted right answer still counts, pays 5 coins instead of 10-15, and a level with any hint tops out at 2 stars. */
 const CLEF_LS = {treble: ['E G B D F', 'F A C E'], bass: ['G B D F A', 'A C E G'], alto: ['F A C E G', 'G B D F'], grand: ['treble E G B D F · bass G B D F A', 'treble F A C E · bass A C E G']};
+// The hint on a staff question also writes the letter names on every line and space (whatever the clef), so a student
+// who doesn't know where F is can see it. Lines and spaces get different colours; drawn twice so they're easy to spot.
+function staffNames(){
+  let out = '';
+  staves().forEach(v => { for(let p = 2; p <= 10; p++){
+    const abs = isGrand() ? (v.dy ? p : p + 12) : p, y = yPos(abs) + 5, L = letterAt(abs), line = p % 2 === 0;
+    [140, 460].forEach(x => { out += `<text class="hn ${line ? 'ln' : 'sp'}" x="${x + (line ? 0 : 24)}" y="${y}">${L}</text>`; });   // lines and spaces in two columns
+  } });
+  return out;
+}
+function hintNamesOff(){ const g = document.getElementById('hintNames'); if(g) g.innerHTML = ''; }
 function hintable(r, q){ return !!r && !!q && r.mode === 'practice' && !r.ladder && !r.deg && !(S.test && S.testRun) && !(window.MTGTest && MTGTest.active); }
 function hintFor(q){
   const ton = fmt(tonicOf(q.sk || q.key));
@@ -4718,13 +4732,14 @@ function hintFor(q){
   if(q.type === 'build') return `<div class="hintbox"><p>Start on <b>${ton}</b>${q.dir === 'down' ? ' at the top and go down' : ' and go up'}. Follow the steps: <b>W</b> = whole step (skip one key), <b>H</b> = half step (the very next key, black or white).</p>${stepChips(q, [], false)}</div>`;
   const ls = CLEF_LS[S.clef] || CLEF_LS.treble;
   return `<div class="hintbox"><p>Count up the scale. <b>${ton}</b> is 1, so find number <b>${q.degree}</b>:</p><div class="explain">${scaleChips(q.sk, 'COUNT UP', [], -1)}</div>
-    ${q.type === 'staff' ? `<p class="dim">Lines from the bottom: <b>${ls[0]}</b> · spaces: <b>${ls[1]}</b>. Need a ♯ or ♭? Use the accidental buttons.</p>` : '<p class="dim">Then click that note on the piano (any octave).</p>'}</div>`;
+    ${q.type === 'staff' ? `<p>The letters are on the staff now: <b class="hl-ln">lines ${ls[0]}</b> · <b class="hl-sp">spaces ${ls[1]}</b> (from the bottom). Move the note to that letter. Need a ♯ or ♭? Use the accidental buttons.</p>` : '<p class="dim">Then click that note on the piano (any octave).</p>'}</div>`;
 }
 $('#qHelp').addEventListener('click', e => {
   if(!e.target.closest('#sqHintBtn')) return;
   const r = S.run, q = r && r.q; if(!hintable(r, q) || S.busy) return;
   SFX.click(); const ex = $('#explain'), open = ex.hidden || !ex.querySelector('.hintbox, .kshintbox');
   ex.innerHTML = open ? hintFor(q) : ''; ex.hidden = !open; e.target.setAttribute('aria-expanded', String(open));
+  if(q.type === 'staff') $('#hintNames').innerHTML = open ? staffNames() : '';
   if(open && !q.hinted){ q.hinted = true; r.hints = (r.hints || 0) + 1; }
 });
 
