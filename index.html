@@ -6205,6 +6205,12 @@ headerHints({
   var me = document.currentScript, GAME = (me && me.getAttribute('data-game')) || 'game';
   var MOUNT = me && me.getAttribute('data-mount');
   if (window.__mtgFeedback) return; window.__mtgFeedback = true;
+  // 🔔 notification bell (2026-11-16): one shared script from the hub shows unread replies beside the .mtg-home pills
+  if (!window.MTGMsgBoot && !document.querySelector('script[src*="msg/student-msg.js"]')) {
+    var bs = document.createElement('script'); bs.defer = true;
+    bs.src = (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/hub' : '') + '/msg/student-msg.js';
+    document.head.appendChild(bs);
+  }
   var CFG = { apiKey: 'AIzaSyDU9vbCWJ4yWuD8bAX984DmQF4dvo13BHs', authDomain: 'rhythm-trainer-fc313.firebaseapp.com', projectId: 'rhythm-trainer-fc313', appId: '1:956677028482:web:c3ec72a279e61b6f6c929b' };
   var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
   var MAX = 300, WAIT_MS = 60000, LAST_KEY = 'mtgfb_last_v1';
@@ -6243,6 +6249,17 @@ headerHints({
       var p = JSON.parse(localStorage.getItem('rdt_profile_v1') || 'null');
       return p && p.first && p.init ? p : null;
     }catch(e){ return null; }
+  }
+  // the device key Live Class and Message my teacher use (localStorage mtg_bc_v1:<sid>), so a reply to this note can be private (2026-11-16)
+  function sidOf(p){ return (String(p.first) + String(p.init)).toLowerCase().replace(/[^a-z]/g, '').slice(0, 16); }
+  function devKey(p){
+    var k = 'mtg_bc_v1:' + sidOf(p), o = null;
+    try { o = JSON.parse(localStorage.getItem(k) || 'null'); } catch(e){}
+    if (o && /^[a-z0-9]{20}$/.test(o.key)) return o.key;
+    var a = 'abcdefghijklmnopqrstuvwxyz0123456789', s = '', r = crypto.getRandomValues(new Uint8Array(20));
+    r.forEach(function(x){ s += a[x % 36]; });
+    try { localStorage.setItem(k, JSON.stringify({ key: s, lost: false, conf: 3, hist: [], react: null })); } catch(e){}
+    return s;
   }
   function niceName(p){ var f = String(p.first); return (f.charAt(0).toUpperCase() + f.slice(1) + ' ' + p.init + '.').slice(0, 24); }
   function classList(p){
@@ -6352,11 +6369,13 @@ headerHints({
       owner: cl.length ? String(cl[0].owner || '') : ''
     };
     if (cl.length > 1) data.class_codes = cl.map(function(c){ return String(c.code); });
+    if (!anon) { try { data.key = devKey(p); data.sid = sidOf(p); } catch(e){} }
     sending = true; $('send').disabled = true; $('send').textContent = 'Sending'; err.textContent = '';
     send(data).catch(function(e){
       // a stale class code or owner is refused by the rules: send it again without the class
       if (e && e.code === 'permission-denied' && data.class_code) {
         var d2 = { game: data.game, text: data.text, name: data.name, class_code: '', owner: '' };
+        if (data.key) { d2.key = data.key; d2.sid = data.sid; }
         return send(d2);
       }
       throw e;
