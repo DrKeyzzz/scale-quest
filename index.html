@@ -529,6 +529,13 @@ button{font:inherit;color:inherit}
 .submit.next{background:var(--cyan)}
 .explain{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
 /* ---------- MAP (2026-11-15 redesign, stage 1): worlds of levels on the start screen; Free play = the old setup ---------- */
+.ptype{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;max-width:640px}
+.ptype button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;border-radius:16px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;font-family:var(--px)}
+.ptype button span{font-size:26px;line-height:1}.ptype button b{font-size:17px;font-weight:800}.ptype button small{font-size:12px;color:var(--dim)}
+.ptype button[aria-pressed="true"]{border-color:var(--cyan);background:color-mix(in srgb,var(--cyan) 18%,var(--panel));box-shadow:0 0 0 2px color-mix(in srgb,var(--cyan) 35%,transparent)}
+#app.mapmode .ptype{display:none}
+@media (max-width:600px){.ptype{gap:6px}.ptype button{padding:9px 4px}.ptype button b{font-size:14px}.ptype button small{display:none}}
+.dd.gone{display:none!important}
 .sqtabs{display:flex;gap:6px;padding:4px;border-radius:999px;background:var(--panel);border:1px solid var(--line)}
 .sqtabs button{font:800 15px var(--px);padding:9px 18px;border-radius:999px;border:0;background:none;color:var(--dim);cursor:pointer}
 .sqtabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
@@ -1434,6 +1441,11 @@ html[data-skin="medieval"] .kmap p{margin:6px 0 0;font-size:15px;color:var(--dim
       <div class="assign" id="assignBanner" hidden></div>
       <div class="sqtabs" id="sqTabs" role="tablist" aria-label="Start screen"><button type="button" role="tab" data-t="map" aria-selected="true">🗺️ MAP</button><button type="button" role="tab" data-t="free" aria-selected="false">🎮 FREE PLAY</button></div>
       <div class="sqmap" id="sqMap"></div>
+      <div class="ptype" id="pType" role="group" aria-label="What do you want to practice?">
+        <button type="button" data-p="build" aria-pressed="false"><span aria-hidden="true">🎹</span><b>Build scales</b><small>Major, minor, modes</small></button>
+        <button type="button" data-p="deg" aria-pressed="false"><span aria-hidden="true">🔢</span><b>Scale degrees</b><small>Tonic, dominant…</small></button>
+        <button type="button" data-p="ks" aria-pressed="false"><span aria-hidden="true">🎼</span><b>Key signatures</b><small>Name the key</small></button>
+      </div>
       <div class="cta">
         <h2 class="cta-title">READY TO <span>QUEST?</span></h2>
         <button class="btn start playbig" id="playBtn" type="button"><span class="gl" aria-hidden="true">▶</span> <span id="playLabel">START</span></button>
@@ -2269,14 +2281,12 @@ const PRESETS = [
 ];
 const selKeys = () => PLAY_ORDER.filter(k => S.selected.has(k));
 function scalesValue(){
-  if(S.deg) return 'deg';
   if(S.ks) return 'ks';
   const p = PRESETS.find(p => p.keys.length === S.selected.size && p.keys.every(k => S.selected.has(k)));
   return p ? p.v : 'pick';
 }
 function scalesTitle(){
   const v = scalesValue(), sel = selKeys();
-  if(v === 'deg') return 'Scale degrees';
   if(v === 'ks') return 'Key signatures';
   if(v !== 'pick') return PRESETS.find(p => p.v === v).t;
   return sel.length === 1 ? scaleName(sel[0]) : sel.length ? `My pick (${sel.length} scales)` : 'None picked';
@@ -2284,12 +2294,9 @@ function scalesTitle(){
 const curValue = name => name === 'scales' ? scalesValue() : name === 'mode' ? S.mode : String(S.qpk);
 function ddOptions(name){
   if(name === 'scales'){
-    const ms = masteryMap(), withStars = PRESETS.map(p => { const n = p.keys.filter(k => (ms[k] || 0) >= 2).length, tried = p.keys.some(k => ms[k]);
-      return tried ? {...p, d: p.d + (p.keys.length === 1 ? ` · ${starText(ms[p.keys[0]]) || '☆'}` : ` · ${n}/${p.keys.length} at ★★+`)} : p; });
-    return [...withStars,
-    {v: 'deg', t: 'Scale degrees', d: 'Name the tonic, dominant… in major keys'},
-    {v: 'ks', t: 'Key signatures', d: 'Name, count and write key signatures'},
-    {v: 'pick', t: 'Pick my own…', d: 'Check any scales in More options', sep: true}];
+    // 2026-11-15 cleanup: only sets of scales here (what to practice is the row of 3 buttons above); Scale degrees = major sets only
+    const list = S.deg ? PRESETS.filter(p => p.keys.every(k => typeOf(k) === 'major')) : PRESETS;
+    return [...list, {v: 'pick', t: 'Pick my own…', d: 'Check any scales in More options', sep: true}];
   }
   if(name === 'mode') return [
     {v: 'practice', t: MNt('practice'), d: 'One scale at a time. No clock, no hearts.'},
@@ -2317,6 +2324,7 @@ function setChoice(name, v){
       setDeg(true); return;
     }
     const p = PRESETS.find(p => p.v === v); if(!p) return;
+    if(S.deg && p.keys.every(k => typeOf(k) === 'major')){ S.selected = new Set(p.keys); renderKeyRows(); renderAssignment(); syncQuick(); return; }   // stay in Scale degrees
     S.selected = new Set(p.keys);
     const t = typeOf(p.keys[0]);   // show that family in the key grid
     S.cat = t === 'major' ? 'major' : MINOR_FORMS.includes(t) ? 'minor' : 'modes';
@@ -2354,7 +2362,21 @@ function syncQuick(){
   ctaPiano(nova ? null : sel[0]);
   renderKsLadder();
   renderMap();
+  renderPType();
 }
+function renderPType(){
+  const cur = S.ks ? 'ks' : S.deg ? 'deg' : 'build';
+  document.querySelectorAll('#pType [data-p]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === cur)));
+  const dd = n => document.querySelector(`#quick .dd[data-name="${n}"]`);
+  dd('scales').classList.toggle('gone', S.ks);                          // key signatures: the level tiles pick
+  dd('qpk').classList.toggle('gone', S.ks || S.mode !== 'practice');     // only practice of scales/degrees uses it
+}
+$('#pType').addEventListener('click', e => {
+  const b = e.target.closest('[data-p]'); if(!b || S.run) return;
+  SFX.click(); const v = b.dataset.p;
+  if(v === 'build'){ if(S.ks) setKs(false); if(S.deg) setDeg(false); syncQuick(); }
+  else setChoice('scales', v);   // 'deg' or 'ks' (setChoice keeps the major keys already picked)
+});
 // The little piano on the stage lights up the first scale you'll play.
 function ctaPiano(id){
   const W = 30, H = 92, BW = 18, BH = 56, names = {};
