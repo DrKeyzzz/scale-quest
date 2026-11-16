@@ -565,6 +565,21 @@ button{font:inherit;color:inherit}
 .mp-star{font-size:56px;color:#fff3b0;text-shadow:0 0 22px #ff9d2e;animation:mpSwell 2.4s ease-in-out infinite;flex:none;line-height:1}
 @keyframes mpSwell{50%{transform:scale(1.15) rotate(8deg)}}
 .mp-free{font:600 13px var(--px);color:var(--dim);text-align:center;margin:0}
+.mp-lesson{display:flex;align-items:center;gap:12px;width:100%;margin:10px 0 4px;padding:10px 12px;border-radius:14px;border:2px dashed rgba(255,255,255,.55);background:rgba(255,255,255,.1);color:#fff;cursor:pointer;text-align:left;font-size:26px}
+.mp-lesson.done{border-style:solid;border-color:rgba(255,255,255,.25)}
+.mp-lesson b{display:block;font:900 17px var(--px)}.mp-lesson small{display:block;font:600 13px var(--px);opacity:.9}
+.mp-lesson .go{margin-left:auto;background:#fff;color:#c2410c;font:900 14px var(--px);padding:7px 13px;border-radius:999px}
+.mp-lesson .ok{margin-left:auto;font-size:20px}
+.lesson{max-width:560px;margin:0 auto;text-align:center}
+.lesson p{font-size:17px;line-height:1.45;margin:6px 0 10px}
+.lspiano{width:min(100%,380px);display:block;margin:6px auto 12px}
+.lspiano .lk{cursor:pointer}
+.lspiano .w rect{fill:#fff;stroke:#1b1f3b;stroke-width:2}.lspiano .w text{font:800 15px var(--px);fill:#1b1f3b;text-anchor:middle;pointer-events:none}
+.lspiano .b rect{fill:#1b1f3b}
+.lspiano .lk.on .w rect,.lspiano .w.on rect{fill:#9ef0c0}.lspiano .b.on rect{fill:#2f9e6a}
+.lspiano .lk.now rect{fill:#ffd166!important}
+.lsmsg{min-height:24px;font-weight:700;color:var(--yel)}
+.lspat{letter-spacing:.12em;color:var(--yel)}
 .hintbox{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px;max-width:720px;text-align:center}
 .hintbox p{margin:4px 0;font-size:16px;line-height:1.4}
 .hintbox .explain{margin:6px 0}
@@ -4523,6 +4538,7 @@ function renderMap(){
     const trail = pts.map((p, i) => (i ? 'L' : 'M') + p.x + ' ' + p.y).join(' ');
     const got = W.keys.reduce((a, _, i) => a + starOf(w, i), 0);
     h += `<section class="mp-world${open ? '' : ' lock'}" style="background:${W.bg}"><h3><span style="color:${W.col}">●</span> World ${w + 1} · ${W.n}<small>${open ? `${got} / ${W.keys.length * 3} ⭐` : `🔒 Beat ${esc(MAP_WORLDS[w - 1].boss)} to open`}</small></h3>
+      ${w === 0 ? `<button type="button" class="mp-lesson${d.lesson ? ' done' : ''}" id="mpLesson"><span aria-hidden="true">📖</span><span><b>${d.lesson ? 'How scales work' : 'Start here: how scales work'}</b><small>${d.lesson ? 'Watch the 2-minute lesson again' : 'New to scales? A 2-minute lesson before Level 1'}</small></span>${d.lesson ? '<span class="ok">✓</span>' : '<span class="go">GO</span>'}</button>` : ''}
       <div class="mp-path" style="height:${H}px"><svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${trail}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
     W.keys.forEach((k, i) => {
       const s = starOf(w, i), op = levelOpen(w, i), isCur = !!cur && cur.w === w && cur.i === i;
@@ -4543,6 +4559,7 @@ $('#sqTabs').addEventListener('click', e => {
 $('#sqMap').addEventListener('click', e => {
   if(S.run || S.overlay) return;
   if(e.target.closest('#mpTier')){ SFX.click(); return showTiers(); }
+  if(e.target.closest('#mpLesson')){ SFX.click(); audio(); return startLesson(); }
   if(e.target.closest('#mpChaos')){ SFX.click(); return goChaos(); }
   if(e.target.closest('#mpDaily')){ SFX.click(); if(!store.get('howto', false)){ S.mapPick = null; store.set('howto', true); } audio(); return startDaily(); }
   if(e.target.closest('#mpNova')){
@@ -4709,6 +4726,60 @@ $('#qHelp').addEventListener('click', e => {
   ex.innerHTML = open ? hintFor(q) : ''; ex.hidden = !open; e.target.setAttribute('aria-expanded', String(open));
   if(open && !q.hinted){ q.hinted = true; r.hints = (r.hints || 0) + 1; }
 });
+
+/* ---------- FIRST LESSON: how scales work (2026-11-15, for students who know nothing) ----------
+   "Start here" card at the top of World 1. Five short screens in an overlay, no score: hear a scale, half and whole
+   steps, build C major with the W W H W W W H pattern (tap the keys, wrong taps get a nudge), scale numbers (a tiny
+   question), then Level 1. Done = map lesson: true (the card stays, so they can watch it again). */
+const LS_W = [60, 62, 64, 65, 67, 69, 71, 72], LS_NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'], LS_B = [[0, 61], [1, 63], [3, 66], [4, 68], [5, 70]];
+function lessonPiano(){
+  const W = 44, H = 130;
+  return `<svg class="lspiano" viewBox="-1 -1 ${8 * W + 2} ${H + 2}" role="group" aria-label="Piano">${LS_W.map((m, i) => `<g class="lk w" data-m="${m}" role="button" aria-label="${LS_NAMES[i]}"><rect x="${i * W}" y="0" width="${W}" height="${H}" rx="5"/><text x="${i * W + W / 2}" y="${H - 12}">${LS_NAMES[i]}</text></g>`).join('')}
+    ${LS_B.map(([i, m]) => `<g class="lk b" data-m="${m}" role="button" aria-label="black key"><rect x="${(i + 1) * W - 13}" y="0" width="26" height="80" rx="4"/></g>`).join('')}</svg>`;
+}
+function lessonLight(ms, cls = 'on'){ document.querySelectorAll('.lspiano .lk').forEach(g => g.classList.toggle(cls, ms.includes(+g.dataset.m))); }
+function lessonPlay(list, gap = 380){
+  list.forEach((m, i) => setTimeout(() => { playMidi(m, .5); lessonLight([m], 'now'); }, i * gap));
+  setTimeout(() => lessonLight([], 'now'), list.length * gap + 200);
+}
+function startLesson(){
+  let step = 0, built = 0;
+  const STEPS = [
+    () => ({t: 'What is a scale?', b: `<p>A <b>scale</b> is a set of notes in order, like the steps of a ladder. It starts on a <b>home note</b> and climbs up to the same letter again.</p>${lessonPiano()}<button class="btn obtn alt" id="lsHear" type="button">▶ HEAR C MAJOR</button>`}),
+    () => ({t: 'Half steps and whole steps', b: `<p>A <b>half step (H)</b> is the very next key, black or white. A <b>whole step (W)</b> skips one key.</p>${lessonPiano()}<div class="obtns"><button class="btn obtn alt" id="lsHalf" type="button">SHOW A HALF STEP</button><button class="btn obtn alt" id="lsWhole" type="button">SHOW A WHOLE STEP</button></div>`}),
+    () => ({t: 'Build C major', b: `<p>Every <b>major</b> scale uses the same pattern: <b class="lspat">W W H W W W H</b>. Start on <b>C</b> and tap the keys going up.</p>${lessonPiano()}<p class="lsmsg" id="lsMsg">Tap <b>C</b> to start.</p>`}),
+    () => ({t: 'Scale numbers', b: `<p>Each note in the scale has a number. The home note is <b>1</b>.</p><div class="explain">${scaleChips('C', 'C MAJOR', [], -1)}</div><p>So what is the <b>5th</b> of C major?</p><div class="obtns" id="lsQ"><button class="btn obtn alt" data-a="F" type="button">F</button><button class="btn obtn alt" data-a="G" type="button">G</button><button class="btn obtn alt" data-a="A" type="button">A</button></div><p class="lsmsg" id="lsMsg"></p>`}),
+    () => ({t: 'You\'re ready! 🎉', b: `<p>That's the secret to every scale: <b>start on the home note, follow the pattern, count the numbers</b>. Stuck in a level? Tap <b>💡 Hint</b>.</p>`}),
+  ];
+  function show(){
+    const S1 = STEPS[step](), last = step === STEPS.length - 1, needs = step === 2 || step === 3;
+    const p = openOverlay(`<p class="osub dim">LESSON · ${step + 1} OF ${STEPS.length}</p><h2 class="otitle">${S1.t}</h2><div class="lesson">${S1.b}</div>
+      <div class="obtns">${step ? '<button class="btn obtn alt" id="lsBack" type="button">◀ BACK</button>' : ''}<button class="btn obtn" id="lsNext" type="button"${needs ? ' disabled' : ''} data-focus>${last ? 'START LEVEL 1 ▶' : 'NEXT ▶'}</button><button class="btn obtn alt" id="lsClose" type="button">CLOSE</button></div>`, 'lessonp');
+    const nx = p.querySelector('#lsNext');
+    p.querySelector('#lsClose').onclick = () => { closeOverlay(); renderMap(); };
+    const bk = p.querySelector('#lsBack'); if(bk) bk.onclick = () => { step--; show(); };
+    nx.onclick = () => { if(last){ const d = mapData(); d.lesson = true; mapSave(d); closeOverlay(); startLevel(0, 0); } else { step++; built = 0; show(); } };
+    const hear = p.querySelector('#lsHear'); if(hear) hear.onclick = () => lessonPlay(LS_W);
+    const half = p.querySelector('#lsHalf'); if(half) half.onclick = () => { lessonLight([64, 65]); lessonPlay([64, 65], 600); };
+    const whole = p.querySelector('#lsWhole'); if(whole) whole.onclick = () => { lessonLight([60, 62]); lessonPlay([60, 62], 600); };
+    const pi = p.querySelector('.lspiano');
+    if(pi) pi.addEventListener('click', e => {
+      const g = e.target.closest('.lk'); if(!g) return; const m = +g.dataset.m; playMidi(m, .5);
+      if(step !== 2 || built >= 8) return;
+      const msg = p.querySelector('#lsMsg'), PAT = ['W', 'W', 'H', 'W', 'W', 'W', 'H'];
+      if(m === LS_W[built]){
+        g.classList.add('on'); built++;
+        msg.innerHTML = built === 8 ? '🎉 That\'s C major! Notice: no black keys.' : `Nice! Next is a <b>${PAT[built - 1] === 'W' ? 'whole step (skip a key)' : 'half step (the very next key)'}</b> up.`;
+        if(built === 8){ nx.disabled = false; lessonPlay(LS_W); }
+      } else { SFX.buzz && SFX.buzz(); msg.innerHTML = built ? `Not that one. From ${LS_NAMES[built - 1]}, go a <b>${PAT[built - 1] === 'W' ? 'whole step: skip one key' : 'half step: the very next key'}</b>.` : 'Start on <b>C</b>, the white key just left of the two black keys.'; }
+    });
+    const qq = p.querySelector('#lsQ');
+    if(qq) qq.onclick = e => { const b = e.target.closest('[data-a]'); if(!b) return; const ok = b.dataset.a === 'G';
+      p.querySelector('#lsMsg').innerHTML = ok ? '✓ Yes! Count C 1, D 2, E 3, F 4, <b>G 5</b>.' : 'Not quite. Count up: C 1, D 2, E 3, F 4… what is 5?';
+      if(ok){ nx.disabled = false; SFX.coin(); } };
+  }
+  show();
+}
 
 /* ---------- LEARN: see and hear any scale, with its key signature and the circle of fifths (no score) ---------- */
 const LV = {id: 'C', list: [], miss: {}, done: new Set(), cat: 'major', form: 'nat', mode: 'dor', seq: [], timer: 0, playing: false, onBack: null};
