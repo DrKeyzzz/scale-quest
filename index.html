@@ -2663,7 +2663,7 @@ function sigMarkup(key, x0 = 96, dx = 16){
 }
 // Just the clef and key signature, shown above the piano on "name this key" questions.
 function miniSig(key){
-  return `<svg viewBox="${VX()} 22 ${230 - VX()} ${176 + EXTRA_H()}" role="img" aria-label="${esc(scaleName(key))} key signature">${staffLines(6, 224, 12)}${sigMarkup(key)}</svg>`;
+  return `<svg viewBox="${VX()} 30 ${230 - VX()} ${184 + EXTRA_H()}" role="img" aria-label="${esc(scaleName(key))} key signature">${staffLines(6, 224, 12)}${sigMarkup(key)}</svg>`;
 }
 function drawGhost(answer){
   if(!answer){ $('#ghost').innerHTML = ''; return; }
