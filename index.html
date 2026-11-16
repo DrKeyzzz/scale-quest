@@ -1587,7 +1587,8 @@ const MAJOR_ORDER = ['C','G','D','A','E','B','F#','C#','F','Bb','Eb','Ab','Db','
 const MINOR_SHARP_ROW = ['A','E','B','F#','C#','G#','D#','A#'], MINOR_FLAT_ROW = ['A','D','G','C','F','Bb','Eb','Ab'];
 const MINOR_ORDER = ['A','E','B','F#','C#','G#','D#','A#','D','G','C','F','Bb','Eb','Ab'];
 // KEY SIGNATURE LADDER levels (the ladder code is with the key signature questions further down)
-const LADDER_LEN = 7, LADDER_PASS = 5;   // 7 questions (David 2026-11-15: 10 took too long); stars 5 / 6 / 7
+// Levels 1-2: 7 questions, pass 5 (David 2026-11-15: shorter to start); levels 3-9: 10 questions, pass 8. Stars: pass / one miss / all.
+const ladderLen = i => i < 2 ? 7 : 10, ladderPass = i => i < 2 ? 5 : 8;
 const KS_LADDER = [
   {t: 'First keys', keys: ['C', 'G', 'F'], hint: true},
   {t: 'Sharps 1 to 3', keys: ['C', 'G', 'D', 'A'], hint: true},
@@ -2537,7 +2538,7 @@ function updateHUD(){
   $('#hudKey').textContent = q ? (hideKey ? 'KEY SIGNATURE' : ksQ(q) ? q.name.toUpperCase() : scaleName(q.key).toUpperCase()) : '—';
   $('#ladder').style.visibility = hideKey ? 'hidden' : '';
   const tag = $('#modeTag'); tag.textContent = r.ladder ? `KEY SIGS · LEVEL ${r.ladder.lv + 1}` : (r.deg ? 'DEGREES · ' : '') + MN(r.mode); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
-  $('#hudQ').textContent = r.ladder ? `${Math.min(r.total + 1, LADDER_LEN)}/${LADDER_LEN}` : isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
+  $('#hudQ').textContent = r.ladder ? `${Math.min(r.total + 1, r.ladder.qs.length)}/${r.ladder.qs.length}` : isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
   $('#hudScore').textContent = String(r.score).padStart(6, '0');
   $('#hudStreak').textContent = 'x' + r.streak;
   $('#hudHealth').hidden = r.mode === 'practice'; $('#hud').classList.toggle('nohealth', r.mode === 'practice');   // practice has no hearts
@@ -4280,8 +4281,8 @@ $('#ksMinor').onchange = e => { S.ksMinor = e.target.checked; store.set('ksMinor
 $('#ksMix').onchange = e => { S.ksMix = e.target.checked; store.set('ksMix', S.ksMix); };
 
 /* ---------- KEY SIGNATURE LADDER (2026-11-15) ----------
-   Key signatures + Practice shows 9 levels on the start screen. Each level = LADDER_LEN (7) "name it" questions, only that level's
-   answer buttons, tap = answer. 5 of 7 opens the next level (stars: 5 ★, 6 ★★, 7 ★★★), saved on this device per student
+   Key signatures + Practice shows 9 levels on the start screen. Each level = ladderLen(i) "name it" questions (7 on levels 1-2, then 10), only that level's
+   answer buttons, tap = answer. 5 of 7 (levels 1-2) or 8 of 10 opens the next level (stars: pass ★, one miss ★★, all ★★★), saved on this device per student
    (scalequest.ksladder:<student>), like the other Scale Quest stars. Answers go into MTG_HIST as "Key signatures" as before.
    A teacher link (?settings {ksLevel: 1-9}) opens that level. Count it / Write it stay in Free practice (the old KEY SIGS run). */
 function renderKsLadder(){
@@ -4291,12 +4292,12 @@ function renderKsLadder(){
   if(!ladderOpen(S.ksLv)){ S.ksLv = 0; while(S.ksLv < 8 && ladderOpen(S.ksLv + 1)) S.ksLv++; }
   const st = ladderStars(), L = KS_LADDER[S.ksLv];
   el.innerHTML = `<div class="ksl-row" role="group" aria-label="Key signature levels">${KS_LADDER.map((l, i) => { const open = ladderOpen(i), n = st[i] || 0;
-    return `<button type="button" class="ksl-lv${open ? '' : ' locked'}" data-lv="${i}" aria-current="${i === S.ksLv}"${open ? '' : ` aria-disabled="true" title="Get ${LADDER_PASS} of ${LADDER_LEN} on level ${i} first"`}>
+    return `<button type="button" class="ksl-lv${open ? '' : ' locked'}" data-lv="${i}" aria-current="${i === S.ksLv}"${open ? '' : ` aria-disabled="true" title="Get ${ladderPass(i - 1)} of ${ladderLen(i - 1)} on level ${i} first"`}>
       <b>${open ? '' : '🔒 '}LEVEL ${i + 1}</b>${l.t}<span class="st">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</span></button>`; }).join('')}</div>
     <button type="button" class="ksl-free" id="kslFree">Free practice: name, count and write key signatures ›</button>`;
   $('#playLabel').textContent = `PLAY LEVEL ${S.ksLv + 1}`;
   $('#playBtn').disabled = false;
-  $('#playSum').innerHTML = `<b>KEY SIGNATURES · LEVEL ${S.ksLv + 1}: ${esc(L.t.toUpperCase())}</b> · ${LADDER_LEN} QUESTIONS · GET ${LADDER_PASS} TO PASS${S.clef !== 'treble' ? ' · ' + CL().tag : ''}`;
+  $('#playSum').innerHTML = `<b>KEY SIGNATURES · LEVEL ${S.ksLv + 1}: ${esc(L.t.toUpperCase())}</b> · ${ladderLen(S.ksLv)} QUESTIONS · GET ${ladderPass(S.ksLv)} TO PASS${S.clef !== 'treble' ? ' · ' + CL().tag : ''}`;
   const cur = el.querySelector('[aria-current="true"]'); if(cur && cur.scrollIntoView) cur.scrollIntoView({block: 'nearest', inline: 'center'});
 }
 $('#ksLadder').addEventListener('click', e => {
@@ -4304,7 +4305,7 @@ $('#ksLadder').addEventListener('click', e => {
   if(e.target.closest('#kslFree')){ SFX.click(); if(!store.get('howto', false)) return howTo(true); audio(); startRun('practice'); return; }
   const b = e.target.closest('.ksl-lv'); if(!b) return;
   const i = +b.dataset.lv;
-  if(!ladderOpen(i)) return focusToast(`🔒 Get <b>${LADDER_PASS} of ${LADDER_LEN}</b> on level ${i} to open level ${i + 1}.`);
+  if(!ladderOpen(i)) return focusToast(`🔒 Get <b>${ladderPass(i - 1)} of ${ladderLen(i - 1)}</b> on level ${i} to open level ${i + 1}.`);
   SFX.click(); S.ksLv = i; store.set('ksLv', i);
   if(!store.get('howto', false)) return howTo(true);
   audio(); startLadder(i);
@@ -4316,14 +4317,14 @@ function startLadder(i){
 // The questions: no key twice in a row; "Major or minor?" is about half and half.
 function ladderPlan(i){
   const L = KS_LADDER[i], qs = []; let last = '';
-  for(let n = 0; n < LADDER_LEN; n++){
+  for(let n = 0; n < ladderLen(i); n++){
     let k; do { k = pick(L.keys); } while(k === last && L.keys.length > 1);
     last = k; qs.push({maj: k, minor: !!L.minor || (!!L.mixed && Math.random() < .5)});
   }
   return {lv: i, qs};
 }
 function ladderQuestion(){
-  const r = S.run; if(r.total >= LADDER_LEN) return ladderEnd();
+  const r = S.run; if(r.total >= r.ladder.qs.length) return ladderEnd();
   ladderHintOff();
   const {maj, minor} = r.ladder.qs[r.total], ans = minor ? relMinor(maj) : maj;
   r.q = {key: maj, type: 'ksname', minor, maj, ans, lks: true, name: minor ? fmt(ans) + ' minor' : fmt(maj) + ' major', tries: 0, t0: Date.now()};
@@ -4357,7 +4358,7 @@ function ladderEnd(){
   const r = S.run; if(!r) return; r.ended = true; S.busy = true;
   const i = r.ladder.lv, s = Object.values(r.stats).reduce((a, x) => [a[0] + x.right, a[1] + x.total], [0, 0]);
   const got = s[0], acc = s[1] ? Math.round(100 * got / s[1]) : 0;
-  const stars = got >= LADDER_LEN ? 3 : got >= LADDER_LEN - 1 ? 2 : got >= LADDER_PASS ? 1 : 0;
+  const N = ladderLen(i), P = ladderPass(i), stars = got >= N ? 3 : got >= N - 1 ? 2 : got >= P ? 1 : 0;
   const all = ladderStars(), before = all[i] || 0, newly = stars && !ladderOpen(i + 1) && i < 8;
   if(stars > before){ all[i] = stars; if(ladderKey()) store.set(ladderKey(), all); }
   if(s[1]) MTG_HIST.run('scale', {score: 0, level: i + 1, acc});
@@ -4365,11 +4366,11 @@ function ladderEnd(){
   stars ? SFX.win() : SFX.over();
   const more = i < 8 && ladderOpen(i + 1);
   const title = !stars ? 'SO CLOSE!' : i === 8 ? 'KEY SIGNATURE MASTER!' : newly ? `LEVEL ${i + 2} UNLOCKED!` : 'LEVEL PASSED!';
-  const line = !stars ? `Get ${LADDER_PASS} of ${LADDER_LEN} to open the next level.` : stars < 3 ? `Get ${LADDER_LEN} of ${LADDER_LEN} for three stars.` : 'Perfect!';
+  const line = !stars ? `Get ${P} of ${N} to open the next level.` : stars < 3 ? `Get ${N} of ${N} for three stars.` : 'Perfect!';
   const p = openOverlay(`
     <h2 class="otitle">${title}</h2>
     <p class="osub" style="font-size:40px;color:var(--yel);letter-spacing:4px;font-family:system-ui,sans-serif">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p>
-    <p class="osub">Level ${i + 1} · ${esc(KS_LADDER[i].t)}: <b>${got} of ${LADDER_LEN}</b> right. ${line}</p>
+    <p class="osub">Level ${i + 1} · ${esc(KS_LADDER[i].t)}: <b>${got} of ${N}</b> right. ${line}</p>
     <div class="obtns">${more && stars ? `<button class="btn obtn" id="ladNext" type="button" data-focus>LEVEL ${i + 2} ▶</button>` : ''}<button class="btn obtn${more && stars ? ' alt' : ''}" id="againBtn" type="button"${more && stars ? '' : ' data-focus'}>PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, stars ? '' : 'mag');
   const nx = p.querySelector('#ladNext'); if(nx) nx.onclick = () => startLadder(i + 1);
   p.querySelector('#againBtn').onclick = () => startLadder(i);
@@ -4778,7 +4779,7 @@ async function tsBegin(){
   try{ tsApply(t); }catch(e){}
   S.testRun = true;
   const mode = S.mode === 'nova' ? 'practice' : S.mode;
-  if(mode === 'practice' && S.ks && t.settings && t.settings.ksLevel >= 1) S.ladderGo = S.ksLv;   // a key signature ladder test: that one level (7 questions)
+  if(mode === 'practice' && S.ks && t.settings && t.settings.ksLevel >= 1) S.ladderGo = S.ksLv;   // a key signature ladder test: that one level (7 questions on levels 1-2, 10 after)
   startRun(mode);
 }
 async function tsEnd(r, {acc, total, final, reason}){
