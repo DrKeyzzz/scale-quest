@@ -565,6 +565,9 @@ button{font:inherit;color:inherit}
 .mp-star{font-size:56px;color:#fff3b0;text-shadow:0 0 22px #ff9d2e;animation:mpSwell 2.4s ease-in-out infinite;flex:none;line-height:1}
 @keyframes mpSwell{50%{transform:scale(1.15) rotate(8deg)}}
 .mp-free{font:600 13px var(--px);color:var(--dim);text-align:center;margin:0}
+.hintbox{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px;max-width:720px;text-align:center}
+.hintbox p{margin:4px 0;font-size:16px;line-height:1.4}
+.hintbox .explain{margin:6px 0}
 .mp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mp-row .mp-nova,.mp-row .mp-chaos{padding:12px 14px;border-radius:18px}
 .mp-row .mp-star{font-size:42px}
@@ -3248,6 +3251,7 @@ function renderQuestion(){
   $('#noteG').style.display = ksQ(q) ? 'none' : '';
   $('#staffWrap').classList.toggle('ksbuild', q.type === 'ksbuild');
   if(ksQ(q)) ksRenderBody(q);
+  if(hintable(S.run, q)) $('#qHelp').insertAdjacentHTML('beforeend', ' <button type="button" class="kshint" id="sqHintBtn" aria-expanded="false">💡 Hint</button>');
   $('#submitBtn').disabled = false;
   timerStart();
 }
@@ -3286,7 +3290,7 @@ function onCorrect(){
   if(r.streak === 3) bonus = 50; else if(r.streak === 5) bonus = 100; else if(r.streak % 10 === 0) bonus = 250;
   r.score += pts + speed + bonus; r.pts.base += pts; r.pts.speed += speed; r.pts.streak += bonus; stat(q.key, true); logAnswer(q, true);
   flash('ok'); SFX.coin();
-  if(r.level){ const c = r.level.daily ? 10 : r.level.i >= 4 ? 15 : 10; r.level.coins += c; popup(`+${c} 🪙`); }
+  if(r.level){ const c = q.hinted ? 5 : r.level.daily ? 10 : r.level.i >= 4 ? 15 : 10; r.level.coins += c; popup(`+${c} 🪙`); }
   else if(r.duel){ r.duel.hp--; r.duel.coins += 10; popup('HIT! 💥'); }
   else popup('+' + (pts + speed));
   if(speed) setTimeout(() => popup(`SPEED +${speed} · ${elapsed().toFixed(1)}s`, 'speed'), 120);
@@ -4563,7 +4567,7 @@ function levelEnd(){
   const r = S.run; if(!r) return; r.ended = true; S.busy = true;
   const L = r.level, s = Object.values(r.stats).reduce((a, x) => [a[0] + x.right, a[1] + x.total], [0, 0]);
   const got = s[0], N = L.n, P = levelPass(L.i), acc = s[1] ? Math.round(100 * got / s[1]) : 0;
-  const stars = got >= N ? 3 : got >= N - 1 ? 2 : got >= P ? 1 : 0;
+  const stars = Math.min(r.hints ? 2 : 3, got >= N ? 3 : got >= N - 1 ? 2 : got >= P ? 1 : 0);   // any hint: 2 stars at most
   const nextWasOpen = L.w + 1 < MAP_WORLDS.length && worldOpen(L.w + 1);
   const d = mapData(), key = `${L.w}:${L.i}`, bonus = stars * 10;
   d.coins = (+d.coins || 0) + L.coins + bonus; if(stars > (d.s[key] || 0)) d.s[key] = stars; mapSave(d);
@@ -4572,7 +4576,7 @@ function levelEnd(){
   const W = MAP_WORLDS[L.w], nextI = L.i + 1 < W.keys.length ? L.i + 1 : null;
   const newWorld = false, bossNow = stars && nextI == null && bossOpen(L.w) && !d.s[`${L.w}:boss`];
   const title = !stars ? 'SO CLOSE!' : bossNow ? 'BOSS UNLOCKED!' : 'LEVEL CLEARED!';
-  const line = !stars ? `Get ${P} of ${N} to open the next level.` : stars < 3 ? `Get ${N} of ${N} for three stars.` : 'Perfect!';
+  const line = !stars ? `Get ${P} of ${N} to open the next level.` : stars < 3 ? (r.hints && got >= N - 1 ? `You used ${r.hints === 1 ? 'a hint' : r.hints + ' hints'}: play again with no hints for three stars.` : `Get ${N} of ${N} for three stars.`) : 'Perfect!';
   const next = stars && nextI != null && levelOpen(L.w, nextI) ? {w: L.w, i: nextI} : newWorld ? {w: L.w + 1, i: 0} : null;
   const p = openOverlay(`
     <h2 class="otitle">${title}</h2>
@@ -4682,6 +4686,29 @@ function dailyEnd(){
   const ag = p.querySelector('#againBtn'); if(ag) ag.onclick = startDaily;
   p.querySelector('#menuBtn').onclick = toMenu;
 }
+
+/* ---------- HINTS for students who are lost (2026-11-15, David: "some kids know nothing") ----------
+   A 💡 Hint button on every practice / map level / daily question (not CHAOS, SUPERNOVA, duels or tests; the key signature
+   ladder has its own). It shows how to work the answer out, under the question: count up the scale (piano, staff), the
+   line and space names (staff), the step pattern from the first note (build), the trick + circle of fifths (key signatures).
+   A hinted right answer still counts, pays 5 coins instead of 10-15, and a level with any hint tops out at 2 stars. */
+const CLEF_LS = {treble: ['E G B D F', 'F A C E'], bass: ['G B D F A', 'A C E G'], alto: ['F A C E G', 'G B D F'], grand: ['treble E G B D F · bass G B D F A', 'treble F A C E · bass A C E G']};
+function hintable(r, q){ return !!r && !!q && r.mode === 'practice' && !r.ladder && !r.deg && !(S.test && S.testRun) && !(window.MTGTest && MTGTest.active); }
+function hintFor(q){
+  const ton = fmt(tonicOf(q.sk || q.key));
+  if(ksQ(q)) return ladderHint(q);
+  if(q.type === 'build') return `<div class="hintbox"><p>Start on <b>${ton}</b>${q.dir === 'down' ? ' at the top and go down' : ' and go up'}. Follow the steps: <b>W</b> = whole step (skip one key), <b>H</b> = half step (the very next key, black or white).</p>${stepChips(q, [], false)}</div>`;
+  const ls = CLEF_LS[S.clef] || CLEF_LS.treble;
+  return `<div class="hintbox"><p>Count up the scale. <b>${ton}</b> is 1, so find number <b>${q.degree}</b>:</p><div class="explain">${scaleChips(q.sk, 'COUNT UP', [], -1)}</div>
+    ${q.type === 'staff' ? `<p class="dim">Lines from the bottom: <b>${ls[0]}</b> · spaces: <b>${ls[1]}</b>. Need a ♯ or ♭? Use the accidental buttons.</p>` : '<p class="dim">Then click that note on the piano (any octave).</p>'}</div>`;
+}
+$('#qHelp').addEventListener('click', e => {
+  if(!e.target.closest('#sqHintBtn')) return;
+  const r = S.run, q = r && r.q; if(!hintable(r, q) || S.busy) return;
+  SFX.click(); const ex = $('#explain'), open = ex.hidden || !ex.querySelector('.hintbox, .kshintbox');
+  ex.innerHTML = open ? hintFor(q) : ''; ex.hidden = !open; e.target.setAttribute('aria-expanded', String(open));
+  if(open && !q.hinted){ q.hinted = true; r.hints = (r.hints || 0) + 1; }
+});
 
 /* ---------- LEARN: see and hear any scale, with its key signature and the circle of fifths (no score) ---------- */
 const LV = {id: 'C', list: [], miss: {}, done: new Set(), cat: 'major', form: 'nat', mode: 'dor', seq: [], timer: 0, playing: false, onBack: null};
