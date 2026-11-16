@@ -3095,7 +3095,7 @@ function nextQuestion(){
 }
 function renderQuestion(){
   // Test mode: never ask the same question twice in a run (same scale, kind of question, degree and direction).
-  if(window.MTGTest && MTGTest.active && S.run && S.run.q){
+  if(window.MTGTest && MTGTest.active && S.run && S.run.q && !S.run.ladder){   // a ladder level is planned up front (repeats are fine)
     const r = S.run, k = r.q, sig = [k.key, k.type, k.degree, k.dir].join('|'); r.seen = r.seen || new Set();
     if(r.seen.has(sig)){
       r.redo = (r.redo || 0) + 1;
@@ -4032,7 +4032,7 @@ $('#howBtn').onclick = () => { if(!S.overlay) howTo(false); };
 $('#submitBtn').onclick = primary;
 $('#quitBtn').onclick = () => {
   const r = S.run; if(!r) return;
-  if(r.ladder){ r.ended = true; toMenu(); return; }   // a ladder level just stops (no stars for part of a level)
+  if(r.ladder && !(S.test && S.testRun)){ r.ended = true; toMenu(); return; }   // a ladder level just stops (no stars for part of a level)
   if(Object.keys(r.stats).length) endRun('quit'); else { r.ended = true; toMenu(); }
 };
 // Clef: every staff redraws (questions, key signatures, Learn). save = false for a teacher's test or link (the student's own pick stays stored).
@@ -4372,6 +4372,7 @@ function ladderEnd(){
   const all = ladderStars(), before = all[i] || 0, newly = stars && !ladderOpen(i + 1) && i < 8;
   if(stars > before){ all[i] = stars; if(ladderKey()) store.set(ladderKey(), all); }
   if(s[1]) MTG_HIST.run('scale', {score: 0, level: i + 1, acc});
+  if(S.test && S.testRun) return tsEnd(r, {acc, total: s[1], final: r.score, reason: 'complete'});
   stars ? SFX.win() : SFX.over();
   const more = i < 8 && ladderOpen(i + 1);
   const title = !stars ? 'SO CLOSE!' : i === 8 ? 'KEY SIGNATURE MASTER!' : newly ? `LEVEL ${i + 2} UNLOCKED!` : 'LEVEL PASSED!';
@@ -4752,6 +4753,7 @@ function tsLobby(note){
       <div class="fact"><small>Student</small><b style="font-size:22px">${esc(p ? displayName(p) : '')}</b></div>
       <div class="fact"><small>Tries</small><b style="font-size:22px">${esc(tsTries(t))}</b></div>
       <div class="fact"><small>Clef</small><b style="font-size:22px">${esc(CL().name)}</b></div>
+      ${t.settings && t.settings.ksLevel >= 1 && KS_LADDER[t.settings.ksLevel - 1] ? `<div class="fact"><small>Key signatures</small><b style="font-size:22px">Level ${t.settings.ksLevel}: ${esc(KS_LADDER[t.settings.ksLevel - 1].t)}</b></div>` : ''}
       <div class="fact"><small>Tries used</small><b>${used}${t.tries ? ' / ' + t.tries : ''}</b></div>
       <div class="fact"><small>Your best</small><b>${esc(best)}</b></div>
     </div>
@@ -4788,6 +4790,7 @@ async function tsBegin(){
   try{ tsApply(t); }catch(e){}
   S.testRun = true;
   const mode = S.mode === 'nova' ? 'practice' : S.mode;
+  if(mode === 'practice' && S.ks && t.settings && t.settings.ksLevel >= 1) S.ladderGo = S.ksLv;   // a key signature ladder test: that one level
   startRun(mode);
 }
 async function tsEnd(r, {acc, total, final, reason}){
