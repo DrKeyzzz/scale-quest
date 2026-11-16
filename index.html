@@ -529,6 +529,10 @@ button{font:inherit;color:inherit}
 .submit.next{background:var(--cyan)}
 .explain{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
 /* ---------- MAP (2026-11-15 redesign, stage 1): worlds of levels on the start screen; Free play = the old setup ---------- */
+.td-univ{background:var(--panel);border:2px solid var(--cyan);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.td-univ h3{margin:0 0 4px}.td-univ p{margin:0 0 10px;color:var(--dim)}
+.td-univbtn{display:inline-block;text-decoration:none}
+.td-old summary{cursor:pointer;color:var(--dim);font-weight:700;margin:6px 0}
 .ptype{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;max-width:640px}
 .ptype button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;border-radius:16px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;font-family:var(--px)}
 .ptype button span{font-size:26px;line-height:1}.ptype button b{font-size:17px;font-weight:800}.ptype button small{font-size:12px;color:var(--dim)}
@@ -4074,6 +4078,10 @@ function tdCsv(studs){
 function tdAssign(){
   const cls = tdClass(), a = (cls && cls.scale_assignment) || {}, picked = new Set(a.keys || []);
   $('#tdBody').innerHTML = `
+    <div class="td-univ"><h3>ASSIGN PRACTICE (ALL GAMES)</h3>
+      <p>Assignments now live on one page for every game: pick the class, the game, the skills (scales, key signature levels, Brainwaves areas…), the goal and the dates. Students see it on their home page.</p>
+      <a class="btn tbtn td-univbtn" href="https://drkeyzzz.github.io/teacher/?new=1" target="_blank" rel="noopener">OPEN THE ASSIGN PAGE ↗</a></div>
+    <details class="td-old"><summary>Old: Scale Quest-only scale banner</summary>
     <p class="dim" style="margin:0">Choose the scales <b>${esc(cls.name)}</b> should practice. Students see a banner with a <b>USE THESE KEYS</b> button and their progress toward the goal. It stays until you change or clear it.</p>
     <div class="td-sec" id="aKeys"><h3>SCALES</h3>${[['MAJOR', MAJOR_ORDER], ...MINOR_FORMS.map(f => [SCALE_TYPES[f].name.toUpperCase(), MINOR_ORDER.map(t => t + ':' + f)]), ...MODE_TYPES.map(m => [SCALE_TYPES[m].name.toUpperCase(), MAJOR_ORDER.map(t => t + ':' + m)])]
       .map(([label, ids]) => `<div class="td-keyrow"><span>${label}</span><div class="td-keys">${ids.filter(k => SCALES[k]).map(k => `<button type="button" data-k="${k}" aria-pressed="${picked.has(k)}" title="${scaleName(k)}">${fmt(tonicOf(k))}${MINOR_FORMS.includes(typeOf(k)) ? 'm' : ''}</button>`).join('')}</div></div>`).join('')}</div>
@@ -4083,7 +4091,8 @@ function tdAssign(){
       <span></span>
       <label class="wide">NOTE TO STUDENTS<input id="aNote" maxlength="140" value="${esc(a.note || '')}" placeholder="optional, e.g. Watch out for the sharps in D and A"></label>
     </form>
-    <div class="obtns" style="justify-content:flex-start"><button class="btn obtn" type="button" id="aSave">SAVE ASSIGNMENT</button>${cls.scale_assignment ? '<button class="btn obtn alt" type="button" id="aClear">CLEAR ASSIGNMENT</button>' : ''}</div>`;
+    <div class="obtns" style="justify-content:flex-start"><button class="btn obtn" type="button" id="aSave">SAVE ASSIGNMENT</button>${cls.scale_assignment ? '<button class="btn obtn alt" type="button" id="aClear">CLEAR ASSIGNMENT</button>' : ''}</div>
+    </details>`;
   $('#aKeys').onclick = e => { const b = e.target.closest('[data-k]'); if(b) b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); };
   $('#aSave').onclick = async () => {
     const keys = [...$('#aKeys').querySelectorAll('[aria-pressed="true"]')].map(b => b.dataset.k);
