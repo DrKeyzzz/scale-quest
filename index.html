@@ -552,6 +552,8 @@ button{font:inherit;color:inherit}
 .mp-node .st{position:absolute;top:100%;margin-top:4px;left:50%;transform:translateX(-50%);font-size:13px;letter-spacing:1px;color:#ffd23f;white-space:nowrap;text-shadow:0 1px 2px #000;font-family:system-ui,sans-serif}
 .mp-node.lock{background:#2a2f5e;color:#7d84bd;cursor:not-allowed;font-size:18px}
 .mp-node.lock .st{display:none}
+.mp-node .nl{display:flex;flex-direction:column;align-items:center;line-height:1}
+.mp-node .nl small{font-size:10px;font-weight:700;opacity:.9;margin-top:2px}
 .mp-node.cur{animation:mpPulse 1.4s ease-in-out infinite}
 @keyframes mpPulse{50%{box-shadow:0 6px 0 rgba(0,0,0,.28),0 0 0 10px rgba(255,255,255,.2)}}
 .mp-node.boss{width:82px;height:82px;font-size:38px;border:3px solid rgba(255,255,255,.8)}
@@ -1631,8 +1633,12 @@ const MINOR_ORDER = ['A','E','B','F#','C#','G#','D#','A#','D','G','C','F','Bb','
 const MAP_WORLDS = [
   {n: 'Sharp Keys', col: '#ff7a45', bg: 'linear-gradient(160deg,#5a2412,#24163f)', keys: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'], boss: 'Metronome Max', face: '🤖', f: 1.3, taunt: 'Tick, tock. Think you know your sharp keys? Beat my clock!'},
   {n: 'Flat Keys', col: '#4c8dff', bg: 'linear-gradient(160deg,#123070,#1a1440)', keys: ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'], boss: 'DJ Flat-Top', face: '😎', f: 1.1, taunt: 'Flats are my whole vibe. You can\'t keep up with this mix!'},
+  {n: 'Minor', col: '#b05cff', bg: 'linear-gradient(160deg,#3a1460,#1a1440)', keys: ['A:nat', 'E:nat', 'D:nat', 'G:nat', 'A:harm', 'E:harm', 'D:harm', 'A:mel', 'E:mel'], boss: 'Minor Mona', face: '🦉', f: 1.1, taunt: 'Natural, harmonic, melodic... I know every minor by heart. Do you?'},
+  // World 4 = the key signature ladder's 9 levels (their stars are the ladder's stars); its duel asks "name the key signature"
+  {n: 'Key Signatures', col: '#19c3a6', bg: 'linear-gradient(160deg,#0d4440,#151a40)', keys: ['1', '2', '3', '4', '5', '6', '7', '8', '9'], ladder: true, duelKeys: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'], boss: 'The Signature', face: '🎩', f: 1.0, taunt: 'Sharps, flats, I read them all in a blink. Name them faster than me!'},
+  {n: 'Modes', col: '#ff4fa3', bg: 'linear-gradient(160deg,#55143f,#1a1440)', keys: ['D:dor', 'E:phr', 'F:lyd', 'G:mix', 'A:aeo', 'B:loc', 'C:dor', 'C:mix'], boss: 'Mode Master', face: '👑', f: 0.95, taunt: 'Seven modes, one master. Show me what you\'ve got!'},
 ];
-const MAP_SOON = [['Minor', '#b05cff', 'Natural, harmonic and melodic minor.'], ['Key Signatures', '#19c3a6', 'The 9 key signature levels (in Free play → Key signatures for now).'], ['Modes', '#ff4fa3', 'Dorian to Locrian.']];
+const MAP_SOON = [];
 const levelLen = i => i < 2 ? 7 : 10, levelPass = i => i < 2 ? 5 : 8;   // same lengths as the key signature ladder
 const QPK = () => S.run && S.run.level ? S.run.level.n : S.qpk;
 // KEY SIGNATURE LADDER levels (the ladder code is with the key signature questions further down)
@@ -3066,10 +3072,10 @@ function setPlaying(on){
 function startRun(mode){
   closeOverlay(); preloadSound();
   if(mode === 'nova' && (S.deg || S.ks)) return;
-  const lad = mode === 'practice' && S.ks && S.ladderGo != null ? S.ladderGo : null; S.ladderGo = null;
+  const lad = mode === 'practice' && S.ladderGo != null ? S.ladderGo : null; S.ladderGo = null;   // the key signature ladder (Free play or map World 4)
   const lev = mode === 'practice' && S.levelGo ? S.levelGo : null; S.levelGo = null;   // a map level: one key
   const duel = mode === 'duel' && S.duelGo ? S.duelGo : null; S.duelGo = null; if(mode === 'duel' && !duel) return;   // a boss duel: the world's keys
-  const keys = duel ? MAP_WORLDS[duel.w].keys.slice() : lev ? [lev.k] : lad != null ? KS_LADDER[lad].keys.slice() : mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major')); if(!keys.length) return;
+  const keys = duel ? (MAP_WORLDS[duel.w].duelKeys || MAP_WORLDS[duel.w].keys).slice() : lev ? [lev.k] : lad != null ? KS_LADDER[lad].keys.slice() : mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major')); if(!keys.length) return;
   S.awaitNext = null;
   S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives: mode === 'nova' ? NOVA_HEARTS : mode === 'duel' ? DUEL_HP : 3, misses: [],
            stats:{}, pts:{base:0, speed:0, streak:0}, bonusKeys: mode === 'chaos' ? bonusKeys(keys) : [], lastInstr:null, lastKey:null, lastType:null, lastDeg:{}, q:null, ended:false, deg: S.deg && mode !== 'nova', ks: S.ks && mode !== 'nova', ksMix: S.ksMix && !S.deg && !S.ks,
@@ -3134,6 +3140,7 @@ function nextQuestion(){
     type = r.qInKey === 0 ? 'build' : (r.qInKey % 2 === 1 ? 'staff' : 'piano');
   } else {
     if(r.duel && (r.duel.hp <= 0 || r.lives <= 0)) return duelEnd();
+    if(r.duel && MAP_WORLDS[r.duel.w].ladder){ const k = pick(r.keys.length > 1 ? r.keys.filter(x => x !== r.lastKey) : r.keys); r.lastKey = k; return ksQuestion(k, 'ksname'); }
     if(!r.duel && r.total >= CHAOS_LEN) return endRun('complete');
     // SUPERNOVA: exactly 3 key signature questions; CHAOS: about 1 in 6
     if(r.mode === 'nova' && r.ksAt.has(r.total)) return ksQuestion(pick(r.keys.filter(stdSig)), 'ksname');
@@ -4426,6 +4433,7 @@ function ladderEnd(){
   const N = ladderLen(i), P = ladderPass(i), stars = got >= N ? 3 : got >= N - 1 ? 2 : got >= P ? 1 : 0;
   const all = ladderStars(), before = all[i] || 0, newly = stars && !ladderOpen(i + 1) && i < 8;
   if(stars > before){ all[i] = stars; if(ladderKey()) store.set(ladderKey(), all); }
+  const md = mapData(), ladCoins = got * 10 + stars * 10; md.coins = (+md.coins || 0) + ladCoins; mapSave(md);   // the ladder pays map coins too
   if(s[1]) MTG_HIST.run('scale', {score: 0, level: i + 1, acc});
   if(S.test && S.testRun) return tsEnd(r, {acc, total: s[1], final: r.score, reason: 'complete'});
   stars ? SFX.win() : SFX.over();
@@ -4436,6 +4444,7 @@ function ladderEnd(){
     <h2 class="otitle">${title}</h2>
     <p class="osub" style="font-size:40px;color:var(--yel);letter-spacing:4px;font-family:system-ui,sans-serif">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p>
     <p class="osub">Level ${i + 1} · ${esc(KS_LADDER[i].t)}: <b>${got} of ${N}</b> right. ${line}</p>
+    <p class="osub"><b>🪙 +${ladCoins}</b> coins</p>
     <div class="obtns">${more && stars ? `<button class="btn obtn" id="ladNext" type="button" data-focus>LEVEL ${i + 2} ▶</button>` : ''}<button class="btn obtn${more && stars ? ' alt' : ''}" id="againBtn" type="button"${more && stars ? '' : ' data-focus'}>PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, stars ? '' : 'mag');
   const nx = p.querySelector('#ladNext'); if(nx) nx.onclick = () => startLadder(i + 1);
   p.querySelector('#againBtn').onclick = () => startLadder(i);
@@ -4454,10 +4463,19 @@ function mapData(){ if(!mapKey()) return MAP_GUEST || (MAP_GUEST = {s: {}, coins
 function mapSave(d){ if(mapKey()) store.set(mapKey(), d); }
 function mapOn(){ return S.view === 'map' && !(window.MTGTest && MTGTest.active); }
 function worldOpen(w){ return w === 0 || (mapData().s[`${w - 1}:boss`] || 0) >= 1; }   // beat the boss of the world before
-function levelOpen(w, i){ return worldOpen(w) && (i === 0 || (mapData().s[`${w}:${i - 1}`] || 0) >= 1); }
+// a level's stars (World 4 uses the key signature ladder's own stars)
+function starOf(w, i){ return MAP_WORLDS[w].ladder ? (ladderStars()[i] || 0) : (mapData().s[`${w}:${i}`] || 0); }
+function levelOpen(w, i){ return worldOpen(w) && (i === 0 || starOf(w, i - 1) >= 1); }
+// what a node says: C, Am (nat), D (dor), or the ladder level number
+function nodeLabel(w, k){
+  if(MAP_WORLDS[w].ladder) return esc(k);
+  const t = typeOf(k), sub = MINOR_FORMS.includes(t) ? {nat: 'natural', harm: 'harmonic', mel: 'melodic'}[t] : MODE_TYPES.includes(t) ? SCALE_TYPES[t].name.slice(0, 4).toLowerCase() : '';
+  return sub ? `<span class="nl">${esc(fmt(tonicOf(k)))}${MINOR_FORMS.includes(t) ? 'm' : ''}<small>${sub}</small></span>` : esc(fmt(k));
+}
+function levelName(w, i){ const W = MAP_WORLDS[w]; return W.ladder ? `Key signatures, level ${i + 1}` : scaleName(W.keys[i]); }
 function mapCurrent(){
   const d = mapData();
-  for(let w = 0; w < MAP_WORLDS.length; w++){ if(!worldOpen(w)) return null; const i = MAP_WORLDS[w].keys.findIndex((_, j) => !((d.s[`${w}:${j}`] || 0) >= 1)); if(i >= 0) return {w, i}; if(!d.s[`${w}:boss`]) return {w, boss: true}; }
+  for(let w = 0; w < MAP_WORLDS.length; w++){ if(!worldOpen(w)) return null; const i = MAP_WORLDS[w].keys.findIndex((_, j) => starOf(w, j) < 1); if(i >= 0) return {w, i}; if(!d.s[`${w}:boss`]) return {w, boss: true}; }
   return null;
 }
 function renderMap(){
@@ -4466,18 +4484,18 @@ function renderMap(){
   document.querySelectorAll('#sqTabs [data-t]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.t === (on ? 'map' : 'free'))));
   $('#sqTabs').hidden = !!(window.MTGTest && MTGTest.active);
   if(!on) return;
-  const d = mapData(), cur = mapCurrent(), total = Object.entries(d.s).filter(([k]) => !k.endsWith('boss')).reduce((a, [, v]) => a + (+v || 0), 0);
+  const d = mapData(), cur = mapCurrent(), total = MAP_WORLDS.reduce((a, W, w) => a + W.keys.reduce((b, _, i) => b + starOf(w, i), 0), 0);
   let h = `<div class="mp-head"><b>Your map</b><span class="mp-chip" title="Coins">🪙 ${d.coins}</span><span class="mp-chip" title="Stars">⭐ ${total}</span></div>`;
   MAP_WORLDS.forEach((W, w) => {
     const open = worldOpen(w), n = W.keys.length + 1, rowH = 84, H = n * rowH;
     const pts = Array.from({length: n}, (_, i) => ({x: [50, 74, 50, 26][i % 4], y: 42 + i * rowH}));
     const trail = pts.map((p, i) => (i ? 'L' : 'M') + p.x + ' ' + p.y).join(' ');
-    const got = W.keys.reduce((a, _, i) => a + (d.s[`${w}:${i}`] || 0), 0);
+    const got = W.keys.reduce((a, _, i) => a + starOf(w, i), 0);
     h += `<section class="mp-world${open ? '' : ' lock'}" style="background:${W.bg}"><h3><span style="color:${W.col}">●</span> World ${w + 1} · ${W.n}<small>${open ? `${got} / ${W.keys.length * 3} ⭐` : `🔒 Beat ${esc(MAP_WORLDS[w - 1].boss)} to open`}</small></h3>
       <div class="mp-path" style="height:${H}px"><svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${trail}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
     W.keys.forEach((k, i) => {
-      const s = d.s[`${w}:${i}`] || 0, op = levelOpen(w, i), isCur = !!cur && cur.w === w && cur.i === i;
-      h += `<button type="button" class="mp-node${op ? '' : ' lock'}${isCur ? ' cur' : ''}" data-w="${w}" data-i="${i}" style="left:${pts[i].x}%;top:${pts[i].y}px;--c:${W.col}" aria-label="${esc(scaleName(k))}${op ? '' : ', locked'}${s ? `, ${s} of 3 stars` : ''}">${op ? esc(fmt(k)) : '🔒'}<span class="st" aria-hidden="true">${'★'.repeat(s)}${'☆'.repeat(3 - s)}</span></button>`;
+      const s = starOf(w, i), op = levelOpen(w, i), isCur = !!cur && cur.w === w && cur.i === i;
+      h += `<button type="button" class="mp-node${op ? '' : ' lock'}${isCur ? ' cur' : ''}" data-w="${w}" data-i="${i}" style="left:${pts[i].x}%;top:${pts[i].y}px;--c:${W.col}" aria-label="${esc(levelName(w, i))}${op ? '' : ', locked'}${s ? `, ${s} of 3 stars` : ''}">${op ? nodeLabel(w, k) : '🔒'}<span class="st" aria-hidden="true">${'★'.repeat(s)}${'☆'.repeat(3 - s)}</span></button>`;
     });
     const bp = pts[n - 1];
     const bo = bossOpen(w), beat = !!d.s[`${w}:boss`], bCur = !!cur && cur.w === w && cur.boss;
@@ -4504,10 +4522,11 @@ $('#sqMap').addEventListener('click', e => {
   if(!levelOpen(w, i)) return focusToast(worldOpen(w) ? '🔒 Get a star on the level before it first.' : `🔒 Beat <b>${esc(MAP_WORLDS[w - 1].boss)}</b> to open World ${w + 1}.`);
   SFX.click(); S.mapPick = {w, i};
   if(!store.get('howto', false)) return howTo(true);
-  audio(); S.mapPick = null; startLevel(w, i);
+  audio(); S.mapPick = null; startLevel(w, i);   // (World 4 levels start the key signature ladder)
 });
 function startLevel(w, i){
   if(!levelOpen(w, i)) return;
+  if(MAP_WORLDS[w].ladder){ S.ksLv = i; store.set('ksLv', i); S.ladderGo = i; startRun('practice'); return; }
   S.levelGo = {w, i, n: levelLen(i), k: MAP_WORLDS[w].keys[i]}; startRun('practice');
 }
 function levelEnd(){
@@ -4544,7 +4563,7 @@ function levelEnd(){
    hits you. Answers still go to MTG_HIST and the teacher's progress like any other run. No penalty for losing. */
 const DUEL_HP = 5;
 const duelWin = q => TIME_WINDOW[q.type] * (S.run && S.run.duel ? S.run.duel.f : 1);   // seconds the rival needs
-function bossOpen(w){ const d = mapData(); return worldOpen(w) && MAP_WORLDS[w].keys.every((_, i) => (d.s[`${w}:${i}`] || 0) >= 1); }
+function bossOpen(w){ return worldOpen(w) && MAP_WORLDS[w].keys.every((_, i) => starOf(w, i) >= 1); }
 function startDuel(w){
   if(!bossOpen(w)) return;
   const W = MAP_WORLDS[w];
