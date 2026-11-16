@@ -609,6 +609,7 @@ button{font:inherit;color:inherit}
 @media (max-width:600px){.hintbox .explain .steprow span{font-size:17px!important;padding:5px 7px!important}.hintbox .explain .steprow i{font-size:14px!important;min-width:20px}}
 #staffSvg .hn{font:800 14px var(--px);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:4px}
 #staffSvg .hn.ln{fill:#0284c7}#staffSvg .hn.sp{fill:#c026d3}
+.kslsp{margin:8px 0 0;font:700 15px var(--px)}.kslsp b{display:block;white-space:nowrap}.kslsp .ln{color:#38bdf8}.kslsp .sp{color:#e879f9}
 .hl-ln{color:#38bdf8}.hl-sp{color:#e879f9}
 .pk.white.guide:not(.sel):not(.ok):not(.bad) rect{fill:#fff4c7}.pk.black.guide:not(.sel):not(.ok):not(.bad) rect{fill:#6b5500}
 #pGuide{pointer-events:none}
@@ -4568,7 +4569,7 @@ function ksHintPlan(q){
 function ladderHint(q){
   const P = ksHintPlan(q);
   // the little piano only when there is a step to show (sharps: the half step up; minor: 3 half steps down)
-  return `<div class="kshintbox" id="ksHintBox"><ol class="kssteps">${P.steps.map(t => `<li>${t}</li>`).join('')}</ol>${P.arcs.length ? miniKbd(P.marks, P.arcs) : ''}</div>`;
+  return `<div class="kshintbox" id="ksHintBox"><ol class="kssteps">${P.steps.map(t => `<li>${t}</li>`).join('')}</ol><p class="kslsp"><b class="ln">Lines: ${(CLEF_LS[S.clef] || CLEF_LS.treble)[0]}</b><b class="sp">Spaces: ${(CLEF_LS[S.clef] || CLEF_LS.treble)[1]}</b></p>${P.arcs.length ? miniKbd(P.marks, P.arcs) : ''}</div>`;
 }
 // circle + name the sharp/flat that matters on the staff (and name all of them, small)
 function ksStaffMarks(q, on){
@@ -4580,7 +4581,7 @@ function ksStaffMarks(q, on){
     const x = 96 + i * 16, y = yOf(P[i] + CLEFS[v.clef].sig) + v.dy;
     if(i === mark) out += `<circle cx="${x}" cy="${y - (flat ? 4 : 0)}" r="15" class="kscirc"/><text class="ksn hit" x="${x + 20 + (n - 1 - i) * 16}" y="${y + 5}" text-anchor="start">← ${names[i]}</text>`;
   }
-  g.innerHTML = out;
+  g.innerHTML = out + staffNames([440]);   // 2026-11-16 (David): the line (E G B D F) and space (F A C E) names too, right of the key signature
 }
 $('#qHelp').addEventListener('click', e => {
   if(!e.target.closest('#ksHintBtn')) return;
@@ -4840,11 +4841,11 @@ function dailyEnd(){
 const CLEF_LS = {treble: ['E G B D F', 'F A C E'], bass: ['G B D F A', 'A C E G'], alto: ['F A C E G', 'G B D F'], grand: ['treble E G B D F · bass G B D F A', 'treble F A C E · bass A C E G']};
 // The hint on a staff question also writes the letter names on every line and space (whatever the clef), so a student
 // who doesn't know where F is can see it. Lines and spaces get different colours; drawn twice so they're easy to spot.
-function staffNames(){
+function staffNames(xs = [140, 460]){
   let out = '';
   staves().forEach(v => { for(let p = 2; p <= 10; p++){
     const abs = isGrand() ? (v.dy ? p : p + 12) : p, y = yPos(abs) + 5, L = letterAt(abs), line = p % 2 === 0;
-    [140, 460].forEach(x => { out += `<text class="hn ${line ? 'ln' : 'sp'}" x="${x + (line ? 0 : 24)}" y="${y}">${L}</text>`; });   // lines and spaces in two columns
+    xs.forEach(x => { out += `<text class="hn ${line ? 'ln' : 'sp'}" x="${x + (line ? 0 : 24)}" y="${y}">${L}</text>`; });   // lines and spaces in two columns
   } });
   return out;
 }
