@@ -4725,14 +4725,27 @@ function staffNames(){
   return out;
 }
 function hintNamesOff(){ const g = document.getElementById('hintNames'); if(g) g.innerHTML = ''; }
+// The hint on a piano question (play a note, build a scale) writes the names on the keys: every white key, plus the black
+// keys this scale uses, spelled the way the scale spells them (so F♯ major shows F♯ and E♯).
+const WHITE_PC = {0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B'};
+function pianoNames(q, on){
+  const sc = SCALES[q.sk] || [];
+  allKeys().forEach(g => {
+    if(g.classList.contains('ok') || g.classList.contains('reveal')) return;
+    const pc = +g.dataset.m % 12, inSc = sc.find(n => pcOf(n) === pc), t = g.querySelector('text');
+    if(!on){ if(g.classList.contains('named')){ t.textContent = ''; g.classList.remove('named'); } return; }
+    const name = inSc ? fmt(inSc) : WHITE_PC[pc] || ''; if(!name) return;
+    t.textContent = name; g.classList.add('named');
+  });
+}
 function hintable(r, q){ return !!r && !!q && r.mode === 'practice' && !r.ladder && !r.deg && !(S.test && S.testRun) && !(window.MTGTest && MTGTest.active); }
 function hintFor(q){
   const ton = fmt(tonicOf(q.sk || q.key));
   if(ksQ(q)) return ladderHint(q);
-  if(q.type === 'build') return `<div class="hintbox"><p>Start on <b>${ton}</b>${q.dir === 'down' ? ' at the top and go down' : ' and go up'}. Follow the steps: <b>W</b> = whole step (skip one key), <b>H</b> = half step (the very next key, black or white).</p>${stepChips(q, [], false)}</div>`;
+  if(q.type === 'build') return `<div class="hintbox"><p>The note names are on the keys now. Start on <b>${ton}</b>${q.dir === 'down' ? ' at the top and go down' : ' and go up'}. Follow the steps: <b>W</b> = whole step (skip one key), <b>H</b> = half step (the very next key, black or white).</p>${stepChips(q, [], false)}</div>`;
   const ls = CLEF_LS[S.clef] || CLEF_LS.treble;
   return `<div class="hintbox"><p>Count up the scale. <b>${ton}</b> is 1, so find number <b>${q.degree}</b>:</p><div class="explain">${scaleChips(q.sk, 'COUNT UP', [], -1)}</div>
-    ${q.type === 'staff' ? `<p>The letters are on the staff now: <b class="hl-ln">lines ${ls[0]}</b> · <b class="hl-sp">spaces ${ls[1]}</b> (from the bottom). Move the note to that letter. Need a ♯ or ♭? Use the accidental buttons.</p>` : '<p class="dim">Then click that note on the piano (any octave).</p>'}</div>`;
+    ${q.type === 'piano' ? `<p>The note names are on the piano keys now. Find number ${q.degree} and click it (any octave). A <b>♯</b> is the black key just right of its letter, a <b>♭</b> just left.</p>` : q.type === 'staff' ? `<p>The letters are on the staff now: <b class="hl-ln">lines ${ls[0]}</b> · <b class="hl-sp">spaces ${ls[1]}</b> (from the bottom). Move the note to that letter. Need a ♯ or ♭? Use the accidental buttons.</p>` : ''}</div>`;
 }
 $('#qHelp').addEventListener('click', e => {
   if(!e.target.closest('#sqHintBtn')) return;
@@ -4740,6 +4753,7 @@ $('#qHelp').addEventListener('click', e => {
   SFX.click(); const ex = $('#explain'), open = ex.hidden || !ex.querySelector('.hintbox, .kshintbox');
   ex.innerHTML = open ? hintFor(q) : ''; ex.hidden = !open; e.target.setAttribute('aria-expanded', String(open));
   if(q.type === 'staff') $('#hintNames').innerHTML = open ? staffNames() : '';
+  if(q.type === 'piano' || q.type === 'build') pianoNames(q, open);
   if(open && !q.hinted){ q.hinted = true; r.hints = (r.hints || 0) + 1; }
 });
 
