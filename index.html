@@ -527,6 +527,33 @@ button{font:inherit;color:inherit}
 .submit{font-size:15px;padding:13px 36px}
 .submit.next{background:var(--cyan)}
 .explain{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
+/* KEY SIGNATURE LADDER (2026-11-15): 9 levels on the start screen, only that level's answer buttons, a Hint with the circle of fifths */
+.ksl{width:100%;max-width:900px;margin:4px auto 0;text-align:center}
+.ksl-row{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 8px;scroll-snap-type:x mandatory;justify-content:safe center}
+.ksl-lv{flex:0 0 auto;scroll-snap-align:start;width:92px;min-height:72px;padding:7px 6px;border-radius:12px;border:2px solid var(--line);background:var(--panel);color:var(--ink);
+  font:600 12px/1.25 var(--px);cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:3px}
+.ksl-lv b{font-size:10px;color:var(--dim);font-weight:700;letter-spacing:.04em}
+.ksl-lv .st{color:var(--yel);font-size:13px;letter-spacing:1px;margin-top:auto;font-family:system-ui,sans-serif}
+.ksl-lv[aria-current="true"]{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(76,201,240,.25)}
+.ksl-lv.locked{opacity:.45;cursor:not-allowed}
+.ksl-free{font:600 13px var(--px);color:var(--cyan);background:none;border:0;cursor:pointer;padding:2px 0;text-decoration:underline}
+#app.ksladder .cta-piano{display:none}
+.degbtns.lad{grid-template-columns:repeat(var(--n,4),minmax(0,1fr));max-width:var(--mw,620px)}
+.degbtns.lad button{font-size:22px!important;padding:14px 4px;min-height:58px;border-radius:12px}
+.degbtns.lad.two{grid-template-columns:repeat(8,minmax(0,1fr));max-width:820px}
+.degbtns.lad.two button{font-size:19px!important;padding:12px 2px}
+@media (max-width:700px){.degbtns.lad{grid-template-columns:repeat(min(var(--n,4),3),minmax(0,1fr))}.degbtns.lad.two{grid-template-columns:repeat(4,minmax(0,1fr))}.degbtns.lad button{min-height:50px;padding:10px 2px}}
+.kshint{font:600 14px var(--px);padding:5px 14px;border-radius:999px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.kshintbox{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;background:var(--panel);border-radius:12px;padding:8px 12px;font-size:15px;line-height:1.35;text-align:left}
+.kshintbox p{margin:0;max-width:300px}
+.kshintbox svg{width:130px;height:130px;flex:none}
+.kshintbox svg text{font-family:var(--px);text-anchor:middle;dominant-baseline:central}
+#app.ladrun #submitBtn:not(.next),#app.ladrun #keyHint,#app.ladrun #midiBtn,#app.ladrun #explain:empty{display:none}
+#app.ladrun #staffSvg{max-height:170px}
+/* wide screens: the hint floats beside the staff so nothing moves down */
+#explain.float{position:absolute;right:10px;width:210px;z-index:3}
+#explain.float .kshintbox{flex-direction:column;gap:6px;padding:8px;font-size:13px;box-shadow:var(--soft)}
+#explain.float .kshintbox svg{width:150px;height:150px}
 .explain span{font-family:var(--px);font-size:11px;padding:5px 7px;border:2px solid var(--line);background:var(--panel)}
 .explain sup{font-size:7px;color:var(--dim);margin-left:2px}
 .explain .hit{background:var(--ok);border-color:var(--ok);color:var(--shadow)}
@@ -1309,6 +1336,7 @@ html[data-skin="medieval"] .kmap p{margin:6px 0 0;font-size:15px;color:var(--dim
         <p class="cta-sum" id="playSum"></p>
         <p class="cta-hint"><span class="kb">or press <kbd>ENTER</kbd></span><span class="kb" aria-hidden="true">·</span><button type="button" class="linkish" id="howBtn">HOW TO PLAY</button></p>
       </div>
+      <div class="ksl" id="ksLadder" hidden></div>
       <div class="cta-piano" id="ctaPiano" aria-hidden="true"></div>
       <div class="kmap" id="kmap"></div>
     </div>
@@ -1558,6 +1586,25 @@ const MINOR_FORMS = ['nat', 'harm', 'mel'], MODE_TYPES = ['dor', 'phr', 'lyd', '
 const MAJOR_ORDER = ['C','G','D','A','E','B','F#','C#','F','Bb','Eb','Ab','Db','Gb','Cb'];
 const MINOR_SHARP_ROW = ['A','E','B','F#','C#','G#','D#','A#'], MINOR_FLAT_ROW = ['A','D','G','C','F','Bb','Eb','Ab'];
 const MINOR_ORDER = ['A','E','B','F#','C#','G#','D#','A#','D','G','C','F','Bb','Eb','Ab'];
+// KEY SIGNATURE LADDER levels (the ladder code is with the key signature questions further down)
+const LADDER_LEN = 10, LADDER_PASS = 8;
+const KS_LADDER = [
+  {t: 'First keys', keys: ['C', 'G', 'F'], hint: true},
+  {t: 'Sharps 1 to 3', keys: ['C', 'G', 'D', 'A'], hint: true},
+  {t: 'Flats 1 to 3', keys: ['C', 'F', 'Bb', 'Eb'], hint: true},
+  {t: 'Sharps 4 to 7', keys: ['A', 'E', 'B', 'F#', 'C#'], hint: true},
+  {t: 'Flats 4 to 7', keys: ['Eb', 'Ab', 'Db', 'Gb', 'Cb'], hint: true},
+  {t: 'All major keys', keys: MAJOR_ORDER},
+  {t: 'Minor keys, up to 3', keys: ['C', 'G', 'D', 'A', 'F', 'Bb', 'Eb'], minor: true, hint: true},
+  {t: 'All minor keys', keys: MAJOR_ORDER, minor: true},
+  {t: 'Major or minor?', keys: MAJOR_ORDER, mixed: true},
+];
+// Guests: stars last only while the page is open (guests' practice isn't saved).
+const ladderKey = () => { const p = getProfile(); return p ? 'ksladder:' + studentKey(p) : ''; };
+const LADDER_GUEST = {};
+const ladderStars = () => ladderKey() ? store.get(ladderKey(), {}) || {} : LADDER_GUEST;
+const ladderOpen = i => i === 0 || i <= S.ksOpenTo || (ladderStars()[i - 1] || 0) >= 1;
+const ladderOn = () => S.ks && S.mode === 'practice' && !(window.MTGTest && MTGTest.active);
 const typeOf = id => id.includes(':') ? id.split(':')[1] : 'major';
 const tonicOf = id => id.split(':')[0];
 function spell(tonic, steps){
@@ -1938,7 +1985,7 @@ const S = {
   qpk: store.get('qpk', 5),
   keySig: false,   // no key signatures: students write every accidental themselves (Scale Degrees shows them on its name-it questions)
   deg: store.get('deg', false) === true, degSel: 0, degFocus: 0,
-  ks: store.get('ks', false) === true, ksMinor: store.get('ksMinor', false) === true, ksMix: store.get('ksMix', true) !== false, ksSel: '', ksAcc: '#', ksPlaced: [],
+  ks: store.get('ks', false) === true, ksMinor: store.get('ksMinor', false) === true, ksMix: store.get('ksMix', true) !== false, ksSel: '', ksAcc: '#', ksPlaced: [], ksLv: Math.max(0, Math.min(8, +store.get('ksLv', 0) || 0)), ksOpenTo: -1,
   muted: store.get('muted', false),
   clef: ['treble', 'bass', 'alto', 'grand'].includes(store.get('clef')) ? store.get('clef') : 'treble',   // More options > Clef; a teacher's test or link can set it
   run: null, busy: false, overlay: false,
@@ -2182,6 +2229,7 @@ function syncQuick(){
   const how = nova ? `${MN('nova')} · ${NOVA_HEARTS} HEARTS` : S.mode === 'chaos' ? `${MN('chaos')} · ${CHAOS_LEN} TIMED QUESTIONS` : `${MN('practice')} · ${S.qpk} PER SCALE`;
   $('#playSum').innerHTML = `<b>${esc(what)}</b> · ${how}${S.clef !== 'treble' ? ' · ' + CL().tag : ''}`;
   ctaPiano(nova ? null : sel[0]);
+  renderKsLadder();
 }
 // The little piano on the stage lights up the first scale you'll play.
 function ctaPiano(id){
@@ -2268,7 +2316,7 @@ function playPressed(){
   if(S.run || S.overlay || $('#playBtn').disabled) return;
   if(!store.get('howto', false)) return howTo(true);
   audio(); closeDD();
-  if(S.mode === 'chaos') chaosPicker(); else if(S.mode === 'nova') novaWarning(); else startRun('practice');
+  if(S.mode === 'chaos') chaosPicker(); else if(S.mode === 'nova') novaWarning(); else if(ladderOn()) startLadder(S.ksLv); else startRun('practice');
 }
 function howTo(then){
   const p = openOverlay(`<h2 class="otitle">HOW TO PLAY</h2>
@@ -2488,8 +2536,8 @@ function updateHUD(){
   const hideKey = q && q.type === 'ksname';   // naming the key: don't show it
   $('#hudKey').textContent = q ? (hideKey ? 'KEY SIGNATURE' : ksQ(q) ? q.name.toUpperCase() : scaleName(q.key).toUpperCase()) : '—';
   $('#ladder').style.visibility = hideKey ? 'hidden' : '';
-  const tag = $('#modeTag'); tag.textContent = (r.deg ? 'DEGREES · ' : '') + MN(r.mode); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
-  $('#hudQ').textContent = isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
+  const tag = $('#modeTag'); tag.textContent = r.ladder ? `KEY SIGS · LEVEL ${r.ladder.lv + 1}` : (r.deg ? 'DEGREES · ' : '') + MN(r.mode); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
+  $('#hudQ').textContent = r.ladder ? `${Math.min(r.total + 1, LADDER_LEN)}/${LADDER_LEN}` : isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
   $('#hudScore').textContent = String(r.score).padStart(6, '0');
   $('#hudStreak').textContent = 'x' + r.streak;
   $('#hudHealth').hidden = r.mode === 'practice'; $('#hud').classList.toggle('nohealth', r.mode === 'practice');   // practice has no hearts
@@ -2848,6 +2896,8 @@ function applySettings(o){
   if(typeof o.deg === 'boolean') t.deg = o.deg;
   if(Number.isInteger(o.degFocus) && o.degFocus >= 0 && o.degFocus <= 7) t.degFocus = o.degFocus;
   if(CLEFS[o.clef]) t.clef = o.clef;
+  if(typeof o.ks === 'boolean') t.ks = o.ks;
+  if(Number.isInteger(o.ksLevel) && o.ksLevel >= 1 && o.ksLevel <= 9){ t.ks = true; t.ksLevel = o.ksLevel; }
   if(!Object.keys(t).length) return null;
   if(t.keys){   // like a ready-made set: show the first scale's family in the key grid
     S.selected = new Set(t.keys);
@@ -2862,6 +2912,8 @@ function applySettings(o){
   if(t.mode) setChoice('mode', t.mode); else if(S.mode === 'nova' && t.keys) setChoice('mode', 'practice');
   if(t.qpk) setChoice('qpk', String(t.qpk));
   if(t.clef) setClef(t.clef, false);
+  if('ks' in t && t.ks !== S.ks){ if(t.ks) setChoice('scales', 'ks'); else setKs(false); }
+  if(t.ksLevel){ S.ksLv = t.ksLevel - 1; S.ksOpenTo = S.ksLv; if(S.mode !== 'practice') setChoice('mode', 'practice'); syncQuick(); }   // the teacher's level is open even if not reached yet
   updateCarts(); renderAssignment();
   return t;
 }
@@ -2944,6 +2996,7 @@ function whoMenu(){
 function setPlaying(on){
   setTimeout(renderAssignment, 0);
   $('#app').classList.toggle('playing', on);
+  if(!on) $('#app').classList.remove('ladrun');
   $('#keySelect').classList.toggle('locked', on);
   $('#lockMsg').hidden = !on;
   if(on) closeDD();
@@ -2957,12 +3010,15 @@ function setPlaying(on){
 function startRun(mode){
   closeOverlay(); preloadSound();
   if(mode === 'nova' && (S.deg || S.ks)) return;
-  const keys = mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major')); if(!keys.length) return;
+  const lad = mode === 'practice' && S.ks && S.ladderGo != null ? S.ladderGo : null; S.ladderGo = null;
+  const keys = lad != null ? KS_LADDER[lad].keys.slice() : mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major')); if(!keys.length) return;
   S.awaitNext = null;
   S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives: mode === 'nova' ? NOVA_HEARTS : 3, misses: [],
            stats:{}, pts:{base:0, speed:0, streak:0}, bonusKeys: mode === 'chaos' ? bonusKeys(keys) : [], lastInstr:null, lastKey:null, lastType:null, lastDeg:{}, q:null, ended:false, deg: S.deg && mode !== 'nova', ks: S.ks && mode !== 'nova', ksMix: S.ksMix && !S.deg && !S.ks,
-           ksAt: mode === 'nova' ? new Set([...Array(16).keys()].map(i => i + 3).sort(() => Math.random() - .5).slice(0, 3)) : null};
+           ksAt: mode === 'nova' ? new Set([...Array(16).keys()].map(i => i + 3).sort(() => Math.random() - .5).slice(0, 3)) : null,
+           ladder: lad != null ? ladderPlan(lad) : null};
   setPlaying(true); updateHUD();
+  $('#app').classList.toggle('ladrun', !!S.run.ladder);
   $('#timer').hidden = !isTimed(mode);
   $('#app').classList.toggle('novaRun', mode === 'nova');
   if(mode === 'nova'){
@@ -3008,6 +3064,7 @@ const nameQ = q => q.type === 'dstaff' || q.type === 'dpiano';
 function nextQuestion(){
   const r = S.run; let key, type;
   if(r.deg) return degQuestion();
+  if(r.ladder) return ladderQuestion();
   if(r.ks) return ksQuestion();
   if(r.mode === 'practice'){
     if(r.qInKey >= S.qpk) return keyCleared();
@@ -3975,6 +4032,7 @@ $('#howBtn').onclick = () => { if(!S.overlay) howTo(false); };
 $('#submitBtn').onclick = primary;
 $('#quitBtn').onclick = () => {
   const r = S.run; if(!r) return;
+  if(r.ladder){ r.ended = true; toMenu(); return; }   // a ladder level just stops (no stars for part of a level)
   if(Object.keys(r.stats).length) endRun('quit'); else { r.ended = true; toMenu(); }
 };
 // Clef: every staff redraws (questions, key signatures, Learn). save = false for a teacher's test or link (the student's own pick stays stored).
@@ -4124,7 +4182,11 @@ function ksQuestion(sigKey, forceType){
 function ksRenderText(q, tag){
   const r = S.run;
   tag.className = 'qtag staff';
-  if(q.type === 'ksname'){
+  if(q.type === 'ksname' && r.ladder){
+    tag.textContent = `LEVEL ${r.ladder.lv + 1} · ${KS_LADDER[r.ladder.lv].t.toUpperCase()}`;
+    $('#qText').innerHTML = `What <em>${q.minor ? 'MINOR' : 'MAJOR'}</em> key has this key signature?`;
+    $('#qHelp').innerHTML = KS_LADDER[r.ladder.lv].hint ? '<button type="button" class="kshint" id="ksHintBtn" aria-expanded="false">💡 Hint</button>' : 'Tap the key.';
+  } else if(q.type === 'ksname'){
     tag.textContent = 'KEY SIGNATURE · NAME IT';
     $('#qText').innerHTML = `What <em>${q.minor ? 'MINOR' : 'MAJOR'}</em> key has this key signature?`;
     $('#qHelp').textContent = r.ks || r.mode === 'practice' ? (isFlatKey(q.key) ? 'Tip: the second-to-last flat names the major key.' : sigCount(q.key) ? 'Tip: go up a half step from the last sharp for the major key.' : 'No sharps or flats at all.') + (q.minor ? ' The minor key is 3 half steps below it.' : '') : 'Pick the key, then SUBMIT.';
@@ -4146,7 +4208,11 @@ function ksRenderBody(q){
   $('#ksig').innerHTML = q.type === 'ksname' ? sigMarkup(q.key) : '';
   $('#degCard').hidden = true;
   const B = $('#degBtns'); B.hidden = false; B.className = 'degbtns many';
-  if(q.type === 'ksname'){
+  if(q.type === 'ksname' && S.run.ladder){
+    const L = KS_LADDER[S.run.ladder.lv], maj = L.keys.length === 15 ? MAJOR_ORDER : L.keys;
+    B.className = 'degbtns lad' + (maj.length === 15 ? ' two' : ''); B.style.setProperty('--n', maj.length); B.style.setProperty('--mw', Math.min(820, maj.length * 130) + 'px');
+    B.innerHTML = maj.map(k => { const v = q.minor ? relMinor(k) : k; return `<button type="button" data-k="${v}" aria-pressed="false">${fmt(v)}${q.minor ? 'm' : ''}</button>`; }).join('');
+  } else if(q.type === 'ksname'){
     const list = q.minor ? MINOR_ORDER : MAJOR_ORDER;
     B.innerHTML = list.map(k => `<button type="button" data-k="${k}" aria-pressed="false">${fmt(k)}${q.minor ? 'm' : ''}</button>`).join('');
   } else if(q.type === 'kscount'){
@@ -4155,7 +4221,7 @@ function ksRenderBody(q){
     B.className = 'degbtns tools';
     B.innerHTML = `<button type="button" data-kb="#" aria-pressed="${S.ksAcc === '#'}">♯ SHARP</button><button type="button" data-kb="b" aria-pressed="${S.ksAcc === 'b'}">♭ FLAT</button><button type="button" data-kb="undo">UNDO</button><button type="button" data-kb="clear">CLEAR</button>`;
   }
-  $('#keyHint').textContent = 'ENTER = SUBMIT';
+  $('#keyHint').textContent = S.run.ladder ? 'TAP THE KEY' : 'ENTER = SUBMIT';
 }
 // Sharps or flats in a row (on the grand staff they are placed on the treble staff and copied onto the bass staff).
 function ksAccs(list, x0, dx){
@@ -4196,12 +4262,12 @@ function ksWrong(q){
   }
   const rule = isFlatKey(q.key) ? 'Flats always go B E A D G C F.' : 'Sharps always go F C G D A E B.';
   const picked = q.type === 'ksbuild' ? (S.ksPlaced.length ? 'Your key signature (left) vs. the right one (green). ' : '') : `You picked ${ksLabel(q, S.ksSel)}. `;
-  explain(`${picked}${ksFact(q)} ${sigCount(q.key) ? rule : ''}`, S.run.mode === 'practice' ? ksCof(q) : '');
+  explain(`${picked}${ksFact(q)} ${sigCount(q.key) ? rule : ''}`, S.run.mode === 'practice' && !S.run.ladder ? ksCof(q) : '');   // the ladder: one line, NEXT stays in view
 }
 $('#degBtns').addEventListener('click', e => {
   const q = S.run && S.run.q; if(!ksQ(q) || S.busy || S.overlay) return;
   const k = e.target.closest('[data-k]'), kb = e.target.closest('[data-kb]');
-  if(k){ SFX.click(); S.ksSel = k.dataset.k; say('', ''); document.querySelectorAll('#degBtns [data-k]').forEach(b => b.setAttribute('aria-pressed', b === k)); return; }
+  if(k){ SFX.click(); S.ksSel = k.dataset.k; say('', ''); document.querySelectorAll('#degBtns [data-k]').forEach(b => b.setAttribute('aria-pressed', b === k)); if(S.run.ladder){ $('#explain').classList.remove('float'); $('#explain').style.top = ''; submit(); } return; }
   if(kb){
     SFX.click(); const v = kb.dataset.kb;
     if(v === '#' || v === 'b'){ S.ksAcc = v; document.querySelectorAll('#degBtns [data-kb]').forEach(b => b.setAttribute('aria-pressed', b.dataset.kb === v)); }
@@ -4223,6 +4289,102 @@ $('#staffSvg').addEventListener('pointerdown', e => {
 });
 $('#ksMinor').onchange = e => { S.ksMinor = e.target.checked; store.set('ksMinor', S.ksMinor); syncQuick(); };
 $('#ksMix').onchange = e => { S.ksMix = e.target.checked; store.set('ksMix', S.ksMix); };
+
+/* ---------- KEY SIGNATURE LADDER (2026-11-15) ----------
+   Key signatures + Practice shows 9 levels on the start screen. Each level = LADDER_LEN "name it" questions, only that level's
+   answer buttons, tap = answer. 8 of 10 opens the next level (stars: 8 ★, 9 ★★, 10 ★★★), saved on this device per student
+   (scalequest.ksladder:<student>), like the other Scale Quest stars. Answers go into MTG_HIST as "Key signatures" as before.
+   A teacher link (?settings {ksLevel: 1-9}) opens that level. Count it / Write it stay in Free practice (the old KEY SIGS run). */
+function renderKsLadder(){
+  const el = $('#ksLadder'); if(!el) return;
+  const on = ladderOn(); el.hidden = !on; $('#app').classList.toggle('ksladder', on);
+  if(!on) return;
+  if(!ladderOpen(S.ksLv)){ S.ksLv = 0; while(S.ksLv < 8 && ladderOpen(S.ksLv + 1)) S.ksLv++; }
+  const st = ladderStars(), L = KS_LADDER[S.ksLv];
+  el.innerHTML = `<div class="ksl-row" role="group" aria-label="Key signature levels">${KS_LADDER.map((l, i) => { const open = ladderOpen(i), n = st[i] || 0;
+    return `<button type="button" class="ksl-lv${open ? '' : ' locked'}" data-lv="${i}" aria-current="${i === S.ksLv}"${open ? '' : ` aria-disabled="true" title="Get ${LADDER_PASS} of ${LADDER_LEN} on level ${i} first"`}>
+      <b>${open ? '' : '🔒 '}LEVEL ${i + 1}</b>${l.t}<span class="st">${'★'.repeat(n)}${'☆'.repeat(3 - n)}</span></button>`; }).join('')}</div>
+    <button type="button" class="ksl-free" id="kslFree">Free practice: name, count and write key signatures ›</button>`;
+  $('#playLabel').textContent = `PLAY LEVEL ${S.ksLv + 1}`;
+  $('#playBtn').disabled = false;
+  $('#playSum').innerHTML = `<b>KEY SIGNATURES · LEVEL ${S.ksLv + 1}: ${esc(L.t.toUpperCase())}</b> · ${LADDER_LEN} QUESTIONS · GET ${LADDER_PASS} TO PASS${S.clef !== 'treble' ? ' · ' + CL().tag : ''}`;
+  const cur = el.querySelector('[aria-current="true"]'); if(cur && cur.scrollIntoView) cur.scrollIntoView({block: 'nearest', inline: 'center'});
+}
+$('#ksLadder').addEventListener('click', e => {
+  if(S.run || S.overlay) return;
+  if(e.target.closest('#kslFree')){ SFX.click(); if(!store.get('howto', false)) return howTo(true); audio(); startRun('practice'); return; }
+  const b = e.target.closest('.ksl-lv'); if(!b) return;
+  const i = +b.dataset.lv;
+  if(!ladderOpen(i)) return focusToast(`🔒 Get <b>${LADDER_PASS} of ${LADDER_LEN}</b> on level ${i} to open level ${i + 1}.`);
+  SFX.click(); S.ksLv = i; store.set('ksLv', i);
+  if(!store.get('howto', false)) return howTo(true);
+  audio(); startLadder(i);
+});
+function startLadder(i){
+  if(!ladderOpen(i)) return;
+  S.ksLv = i; store.set('ksLv', i); S.ladderGo = i; startRun('practice');
+}
+// The 10 questions: no key twice in a row; "Major or minor?" is about half and half.
+function ladderPlan(i){
+  const L = KS_LADDER[i], qs = []; let last = '';
+  for(let n = 0; n < LADDER_LEN; n++){
+    let k; do { k = pick(L.keys); } while(k === last && L.keys.length > 1);
+    last = k; qs.push({maj: k, minor: !!L.minor || (!!L.mixed && Math.random() < .5)});
+  }
+  return {lv: i, qs};
+}
+function ladderQuestion(){
+  const r = S.run; if(r.total >= LADDER_LEN) return ladderEnd();
+  $('#explain').classList.remove('float'); $('#explain').style.top = '';
+  const {maj, minor} = r.ladder.qs[r.total], ans = minor ? relMinor(maj) : maj;
+  r.q = {key: maj, type: 'ksname', minor, maj, ans, lks: true, name: minor ? fmt(ans) + ' minor' : fmt(maj) + ' major', tries: 0, t0: Date.now()};
+  renderQuestion();
+}
+// Hint: the trick for this kind of key signature and a circle of fifths (nothing lit, so it doesn't give the answer away).
+function ladderHint(q){
+  const n = sigCount(q.maj), flat = isFlatKey(q.maj);
+  let t = !n ? 'No sharps or flats: that is <b>C major</b> (and A minor).' : !flat
+    ? 'Find the <b>last sharp</b> (farthest right) and go up a half step. That is the major key.'
+    : n === 1 ? 'One flat (B♭) is always <b>F major</b>.' : 'The <b>second-to-last flat</b> names the major key.';
+  if(q.minor) t += ' For the <b>minor</b> key, go <b>down 3 half steps</b> from the major key (the inside ring).';
+  const maj = ['C', 'G', 'D', 'A', 'E', 'B/C♭', 'F♯/G♭', 'C♯/D♭', 'A♭', 'E♭', 'B♭', 'F'];
+  const min = ['Am', 'Em', 'Bm', 'F♯m', 'C♯m', 'G♯m', 'D♯m', 'A♯m', 'Fm', 'Cm', 'Gm', 'Dm'];
+  let s = '<circle cx="85" cy="85" r="80" fill="var(--bg2)" stroke="var(--line)" stroke-width="2"/><circle cx="85" cy="85" r="47" fill="none" stroke="var(--line)"/>';
+  maj.forEach((k, i) => { const a = (i * 30 - 90) * Math.PI / 180;
+    s += `<text x="${(85 + 64 * Math.cos(a)).toFixed(1)}" y="${(85 + 64 * Math.sin(a)).toFixed(1)}" font-size="${k.length > 2 ? 10 : 14}" font-weight="700" fill="${q.minor ? 'var(--dim)' : 'var(--ink)'}">${k}</text>`;
+    s += `<text x="${(85 + 33 * Math.cos(a)).toFixed(1)}" y="${(85 + 33 * Math.sin(a)).toFixed(1)}" font-size="9.5" font-weight="600" fill="${q.minor ? 'var(--mag)' : 'var(--dim)'}">${min[i]}</text>`; });
+  s += '<text x="85" y="85" font-size="9" fill="var(--dim)">♯ → · ← ♭</text>';
+  return `<div class="kshintbox"><svg viewBox="0 0 170 170" role="img" aria-label="Circle of fifths">${s}</svg><p>${t}</p></div>`;
+}
+$('#qHelp').addEventListener('click', e => {
+  if(!e.target.closest('#ksHintBtn')) return;
+  const r = S.run, q = r && r.q; if(!q || !r.ladder || S.busy) return;
+  SFX.click(); const ex = $('#explain'), open = ex.hidden || !ex.querySelector('.kshintbox');
+  ex.innerHTML = open ? ladderHint(q) : ''; ex.hidden = !open; e.target.setAttribute('aria-expanded', open);
+  const sw = $('#staffWrap'), fl = open && innerWidth >= 1100 && sw.offsetParent === $('#stage');
+  ex.classList.toggle('float', fl); ex.style.top = fl ? sw.offsetTop + 'px' : '';
+});
+function ladderEnd(){
+  const r = S.run; if(!r) return; r.ended = true; S.busy = true;
+  const i = r.ladder.lv, s = Object.values(r.stats).reduce((a, x) => [a[0] + x.right, a[1] + x.total], [0, 0]);
+  const got = s[0], acc = s[1] ? Math.round(100 * got / s[1]) : 0;
+  const stars = got >= LADDER_LEN ? 3 : got >= LADDER_LEN - 1 ? 2 : got >= LADDER_PASS ? 1 : 0;
+  const all = ladderStars(), before = all[i] || 0, newly = stars && !ladderOpen(i + 1) && i < 8;
+  if(stars > before){ all[i] = stars; if(ladderKey()) store.set(ladderKey(), all); }
+  if(s[1]) MTG_HIST.run('scale', {score: 0, level: i + 1, acc});
+  stars ? SFX.win() : SFX.over();
+  const more = i < 8 && ladderOpen(i + 1);
+  const title = !stars ? 'SO CLOSE!' : i === 8 ? 'KEY SIGNATURE MASTER!' : newly ? `LEVEL ${i + 2} UNLOCKED!` : 'LEVEL PASSED!';
+  const line = !stars ? `Get ${LADDER_PASS} of ${LADDER_LEN} to open the next level.` : stars < 3 ? `Get ${LADDER_LEN} of ${LADDER_LEN} for three stars.` : 'Perfect!';
+  const p = openOverlay(`
+    <h2 class="otitle">${title}</h2>
+    <p class="osub" style="font-size:40px;color:var(--yel);letter-spacing:4px;font-family:system-ui,sans-serif">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p>
+    <p class="osub">Level ${i + 1} · ${esc(KS_LADDER[i].t)}: <b>${got} of ${LADDER_LEN}</b> right. ${line}</p>
+    <div class="obtns">${more && stars ? `<button class="btn obtn" id="ladNext" type="button" data-focus>LEVEL ${i + 2} ▶</button>` : ''}<button class="btn obtn${more && stars ? ' alt' : ''}" id="againBtn" type="button"${more && stars ? '' : ' data-focus'}>PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, stars ? '' : 'mag');
+  const nx = p.querySelector('#ladNext'); if(nx) nx.onclick = () => startLadder(i + 1);
+  p.querySelector('#againBtn').onclick = () => startLadder(i);
+  p.querySelector('#menuBtn').onclick = toMenu;
+}
 
 /* ---------- LEARN: see and hear any scale, with its key signature and the circle of fifths (no score) ---------- */
 const LV = {id: 'C', list: [], miss: {}, done: new Set(), cat: 'major', form: 'nat', mode: 'dor', seq: [], timer: 0, playing: false, onBack: null};
