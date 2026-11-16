@@ -554,7 +554,7 @@ button{font:inherit;color:inherit}
 .mp-node.lock .st{display:none}
 .mp-node.cur{animation:mpPulse 1.4s ease-in-out infinite}
 @keyframes mpPulse{50%{box-shadow:0 6px 0 rgba(0,0,0,.28),0 0 0 10px rgba(255,255,255,.2)}}
-.mp-node.boss{width:82px;height:82px;font-size:38px;border:3px solid rgba(255,255,255,.8);cursor:default;opacity:.75}
+.mp-node.boss{width:82px;height:82px;font-size:38px;border:3px solid rgba(255,255,255,.8)}
 .mp-node.boss .st{font:800 11px var(--px);letter-spacing:0;color:#fff}
 .mp-nova{display:flex;align-items:center;gap:16px;width:100%;padding:16px;border-radius:20px;border:2px solid #ffcf4a;cursor:pointer;text-align:left;color:#fff;
   background:radial-gradient(circle at 12% 50%,#ffb84d 0%,#c2410c 30%,#2a0f3a 75%);box-shadow:0 0 36px rgba(255,170,60,.3)}
@@ -563,6 +563,9 @@ button{font:inherit;color:inherit}
 .mp-star{font-size:56px;color:#fff3b0;text-shadow:0 0 22px #ff9d2e;animation:mpSwell 2.4s ease-in-out infinite;flex:none;line-height:1}
 @keyframes mpSwell{50%{transform:scale(1.15) rotate(8deg)}}
 .mp-free{font:600 13px var(--px);color:var(--dim);text-align:center;margin:0}
+.mp-node.boss.lock{opacity:.6}
+.mp-node.boss:not(.lock){cursor:pointer;opacity:1}
+.duelface{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;font-size:60px;margin:0 auto 6px;border:4px solid #fff}
 @media (prefers-reduced-motion:reduce){.mp-node.cur,.mp-star{animation:none}}
 @media (max-width:700px){.mp-node{width:54px;height:54px;font-size:18px}.mp-node.boss{width:70px;height:70px;font-size:32px}.mp-world h3{font-size:16px}}
 /* KEY SIGNATURE LADDER (2026-11-15): 9 levels on the start screen, only that level's answer buttons, a Hint with the circle of fifths */
@@ -1626,8 +1629,8 @@ const MINOR_SHARP_ROW = ['A','E','B','F#','C#','G#','D#','A#'], MINOR_FLAT_ROW =
 const MINOR_ORDER = ['A','E','B','F#','C#','G#','D#','A#','D','G','C','F','Bb','Eb','Ab'];
 // MAP worlds (2026-11-15 redesign; the map code is with the key signature ladder code further down)
 const MAP_WORLDS = [
-  {n: 'Sharp Keys', col: '#ff7a45', bg: 'linear-gradient(160deg,#5a2412,#24163f)', keys: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'], boss: 'Metronome Max', face: '🤖'},
-  {n: 'Flat Keys', col: '#4c8dff', bg: 'linear-gradient(160deg,#123070,#1a1440)', keys: ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'], boss: 'DJ Flat-Top', face: '😎'},
+  {n: 'Sharp Keys', col: '#ff7a45', bg: 'linear-gradient(160deg,#5a2412,#24163f)', keys: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'], boss: 'Metronome Max', face: '🤖', f: 1.3, taunt: 'Tick, tock. Think you know your sharp keys? Beat my clock!'},
+  {n: 'Flat Keys', col: '#4c8dff', bg: 'linear-gradient(160deg,#123070,#1a1440)', keys: ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'], boss: 'DJ Flat-Top', face: '😎', f: 1.1, taunt: 'Flats are my whole vibe. You can\'t keep up with this mix!'},
 ];
 const MAP_SOON = [['Minor', '#b05cff', 'Natural, harmonic and melodic minor.'], ['Key Signatures', '#19c3a6', 'The 9 key signature levels (in Free play → Key signatures for now).'], ['Modes', '#ff4fa3', 'Dorian to Locrian.']];
 const levelLen = i => i < 2 ? 7 : 10, levelPass = i => i < 2 ? 5 : 8;   // same lengths as the key signature ladder
@@ -1691,7 +1694,7 @@ const ORDN = {1:'1st',2:'2nd',3:'3rd',4:'4th',5:'5th',6:'6th',7:'7th'};
 const dw = (q, d) => q.dn ? `${DEG_NAME[d].toUpperCase()} (${ORDN[d]})` : ORD[d];
 // SUPERNOVA: every scale, 20 questions, 2 hearts, no second tries. A miss shows the right answer and waits for NEXT QUESTION.
 const NOVA_HEARTS = 2;
-const isTimed = m => m === 'chaos' || m === 'nova';
+const isTimed = m => m === 'chaos' || m === 'nova' || m === 'duel';
 // The mode ladder's stars: t1 practice, t2 chaos, t3 supernova (also 'badge' and 'big').
 function starSVG(cls){
   const pts = n => Array.from({length: n * 2}, (_, i) => { const a = Math.PI * i / n - Math.PI / 2, rr = i % 2 ? 19 : 46; return `${(50 + rr * Math.cos(a)).toFixed(1)},${(50 + rr * Math.sin(a)).toFixed(1)}`; }).join(' ');
@@ -2364,7 +2367,7 @@ function playPressed(){
   if(S.run || S.overlay || $('#playBtn').disabled) return;
   if(!store.get('howto', false)) return howTo(true);
   audio(); closeDD();
-  if(mapOn()){ const c = S.mapPick || mapCurrent(); S.mapPick = null; if(c) startLevel(c.w, c.i); else focusToast('Every open level has a star! Replay any level for more stars, or try Free play.'); return; }
+  if(mapOn()){ const c = S.mapPick || mapCurrent(); S.mapPick = null; if(c && c.boss) startDuel(c.w); else if(c) startLevel(c.w, c.i); else focusToast('Every open level has a star! Replay any level for more stars, or try Free play.'); return; }
   if(S.mode === 'chaos') chaosPicker(); else if(S.mode === 'nova') novaWarning(); else if(ladderOn()) startLadder(S.ksLv); else startRun('practice');
 }
 function howTo(then){
@@ -2585,13 +2588,14 @@ function updateHUD(){
   const hideKey = q && q.type === 'ksname';   // naming the key: don't show it
   $('#hudKey').textContent = q ? (hideKey ? 'KEY SIGNATURE' : ksQ(q) ? q.name.toUpperCase() : scaleName(q.key).toUpperCase()) : '—';
   $('#ladder').style.visibility = hideKey ? 'hidden' : '';
-  const tag = $('#modeTag'); tag.textContent = r.level ? `WORLD ${r.level.w + 1} · LEVEL ${r.level.i + 1}` : r.ladder ? `KEY SIGS · LEVEL ${r.ladder.lv + 1}` : (r.deg ? 'DEGREES · ' : '') + MN(r.mode); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
+  const tag = $('#modeTag'); tag.textContent = r.duel ? 'BOSS DUEL' : r.level ? `WORLD ${r.level.w + 1} · LEVEL ${r.level.i + 1}` : r.ladder ? `KEY SIGS · LEVEL ${r.ladder.lv + 1}` : (r.deg ? 'DEGREES · ' : '') + MN(r.mode); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
   $('#hudQ').textContent = r.ladder ? `${Math.min(r.total + 1, r.ladder.qs.length)}/${r.ladder.qs.length}` : isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${QPK()}`;
   $('#hudScore').textContent = String(r.score).padStart(6, '0');
   $('#hudStreak').textContent = 'x' + r.streak;
   $('#hudHealth').hidden = r.mode === 'practice'; $('#hud').classList.toggle('nohealth', r.mode === 'practice');   // practice has no hearts
-  $('#hudLives').innerHTML = Array.from({length: r.mode === 'nova' ? NOVA_HEARTS : 3}, (_, i) => heart(i < r.lives)).join('');
-  $('#hudLives').setAttribute('aria-label', `${r.lives} of ${r.mode === 'nova' ? NOVA_HEARTS : 3} health`);
+  $('#hudLives').innerHTML = Array.from({length: r.mode === 'nova' ? NOVA_HEARTS : r.duel ? DUEL_HP : 3}, (_, i) => heart(i < r.lives)).join('');
+  $('#hudLives').setAttribute('aria-label', `${r.lives} of ${r.mode === 'nova' ? NOVA_HEARTS : r.duel ? DUEL_HP : 3} health`);
+  if(r.duel){ $('#ladder').style.visibility = ''; $('#ladder').innerHTML = `<span class="cur">${MAP_WORLDS[r.duel.w].face} ${esc(MAP_WORLDS[r.duel.w].boss.toUpperCase())} ${'❤️'.repeat(Math.max(0, r.duel.hp))}${'🖤'.repeat(DUEL_HP - Math.max(0, r.duel.hp))}</span>`; return; }
   // A long run (SUPERNOVA, or CHAOS with lots of scales) shows a one-line summary instead of every scale.
   $('#ladder').innerHTML = r.mode === 'nova' ? `<span class="cur">ALL ${r.keys.length} SCALES</span>`
     : r.keys.length > 12 ? `<span>${r.mode === 'practice' ? `${r.keyIdx + 1} OF ${r.keys.length} · ` : ''}${selSummary(r.keys)}</span>`
@@ -2625,11 +2629,12 @@ function timerLoop(){
     const hold = S.busy || S.overlay;
     if(hold && !timer.pausedAt) timer.pausedAt = performance.now();
     if(!hold && timer.pausedAt){ timer.start += performance.now() - timer.pausedAt; timer.pausedAt = 0; }
-    const f = Math.max(0, 1 - elapsed() / TIME_WINDOW[q.type]), b = speedBonus(q), lab = $('#timeLab');
+    const duel = S.run.duel, f = Math.max(0, 1 - elapsed() / (duel ? duelWin(q) : TIME_WINDOW[q.type])), b = speedBonus(q), lab = $('#timeLab');
     $('#timeFill').style.width = (f * 100) + '%';
     $('#timeFill').className = 'timefill' + (f > .5 ? '' : f > .2 ? ' mid' : ' low');
     $('#timeClock').textContent = elapsed().toFixed(1) + 's';
-    lab.textContent = b ? `SPEED +${b}` : 'NO SPEED BONUS'; lab.classList.toggle('none', !b);
+    if(duel){ lab.textContent = `${MAP_WORLDS[duel.w].face} ${MAP_WORLDS[duel.w].boss.toUpperCase()} IS THINKING…`; lab.classList.remove('none'); if(f <= 0 && !hold) rivalHits(); }
+    else { lab.textContent = b ? `SPEED +${b}` : 'NO SPEED BONUS'; lab.classList.toggle('none', !b); }
   }
   requestAnimationFrame(timerLoop);
 }
@@ -3063,12 +3068,14 @@ function startRun(mode){
   if(mode === 'nova' && (S.deg || S.ks)) return;
   const lad = mode === 'practice' && S.ks && S.ladderGo != null ? S.ladderGo : null; S.ladderGo = null;
   const lev = mode === 'practice' && S.levelGo ? S.levelGo : null; S.levelGo = null;   // a map level: one key
-  const keys = lev ? [lev.k] : lad != null ? KS_LADDER[lad].keys.slice() : mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major')); if(!keys.length) return;
+  const duel = mode === 'duel' && S.duelGo ? S.duelGo : null; S.duelGo = null; if(mode === 'duel' && !duel) return;   // a boss duel: the world's keys
+  const keys = duel ? MAP_WORLDS[duel.w].keys.slice() : lev ? [lev.k] : lad != null ? KS_LADDER[lad].keys.slice() : mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major')); if(!keys.length) return;
   S.awaitNext = null;
-  S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives: mode === 'nova' ? NOVA_HEARTS : 3, misses: [],
+  S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives: mode === 'nova' ? NOVA_HEARTS : mode === 'duel' ? DUEL_HP : 3, misses: [],
            stats:{}, pts:{base:0, speed:0, streak:0}, bonusKeys: mode === 'chaos' ? bonusKeys(keys) : [], lastInstr:null, lastKey:null, lastType:null, lastDeg:{}, q:null, ended:false, deg: S.deg && mode !== 'nova', ks: S.ks && mode !== 'nova', ksMix: S.ksMix && !S.deg && !S.ks,
            ksAt: mode === 'nova' ? new Set([...Array(16).keys()].map(i => i + 3).sort(() => Math.random() - .5).slice(0, 3)) : null,
-           ladder: lad != null && !lev ? ladderPlan(lad) : null, level: lev ? {...lev, coins: 0} : null};
+           ladder: lad != null && !lev ? ladderPlan(lad) : null, level: lev ? {...lev, coins: 0} : null, duel: duel ? {w: duel.w, hp: DUEL_HP, f: MAP_WORLDS[duel.w].f, coins: 0} : null};
+  if(duel){ S.run.deg = false; S.run.ks = false; S.run.ksMix = false; }
   if(lev){ S.run.deg = false; S.run.ks = false; S.run.ksMix = true; }   // a level is that key's scale questions (+ its key signature)
   setPlaying(true); updateHUD();
   $('#app').classList.toggle('ladrun', !!S.run.ladder);
@@ -3126,7 +3133,8 @@ function nextQuestion(){
     if(r.ksMix && QPK() >= 3 && r.qInKey === QPK() - 1 && stdSig(key)) return ksQuestion(key, 'ksname');
     type = r.qInKey === 0 ? 'build' : (r.qInKey % 2 === 1 ? 'staff' : 'piano');
   } else {
-    if(r.total >= CHAOS_LEN) return endRun('complete');
+    if(r.duel && (r.duel.hp <= 0 || r.lives <= 0)) return duelEnd();
+    if(!r.duel && r.total >= CHAOS_LEN) return endRun('complete');
     // SUPERNOVA: exactly 3 key signature questions; CHAOS: about 1 in 6
     if(r.mode === 'nova' && r.ksAt.has(r.total)) return ksQuestion(pick(r.keys.filter(stdSig)), 'ksname');
     if(r.mode === 'chaos' && r.ksMix && Math.random() < 1/6){ const ok = r.keys.filter(stdSig); if(ok.length) return ksQuestion(pick(ok), 'ksname'); }
@@ -3249,7 +3257,9 @@ function onCorrect(){
   if(r.streak === 3) bonus = 50; else if(r.streak === 5) bonus = 100; else if(r.streak % 10 === 0) bonus = 250;
   r.score += pts + speed + bonus; r.pts.base += pts; r.pts.speed += speed; r.pts.streak += bonus; stat(q.key, true); logAnswer(q, true);
   flash('ok'); SFX.coin();
-  if(r.level){ const c = r.level.i >= 4 ? 15 : 10; r.level.coins += c; popup(`+${c} 🪙`); } else popup('+' + (pts + speed));
+  if(r.level){ const c = r.level.i >= 4 ? 15 : 10; r.level.coins += c; popup(`+${c} 🪙`); }
+  else if(r.duel){ r.duel.hp--; r.duel.coins += 10; popup('HIT! 💥'); }
+  else popup('+' + (pts + speed));
   if(speed) setTimeout(() => popup(`SPEED +${speed} · ${elapsed().toFixed(1)}s`, 'speed'), 120);
   if(bonus){ SFX.streak(); setTimeout(() => popup(`STREAK x${r.streak}! +${bonus}`, 'streak'), 250); }
   const praise = pick(['NICE!','PERFECT!','GREAT!','YES!','NAILED IT!']);
@@ -3428,7 +3438,7 @@ function onWrong(){
     explain(text, chips);
   }
   updateHUD();
-  const next = () => r.lives <= 0 ? (r.mode === 'nova' ? endRun('fail') : continuePrompt()) : advance();
+  const next = () => r.lives <= 0 ? (r.mode === 'nova' ? endRun('fail') : r.duel ? duelEnd() : continuePrompt()) : advance();
   if(practice || r.mode === 'nova') setNext(r.mode === 'nova' && r.lives <= 0 ? 'SEE RESULTS ▶' : 'NEXT QUESTION ▶', next);
   else later(next, q.type === 'build' ? 5000 : 3400);   // longer to study the right scale
 }
@@ -4088,7 +4098,7 @@ $('#howBtn').onclick = () => { if(!S.overlay) howTo(false); };
 $('#submitBtn').onclick = primary;
 $('#quitBtn').onclick = () => {
   const r = S.run; if(!r) return;
-  if((r.ladder || r.level) && !(S.test && S.testRun)){ r.ended = true; toMenu(); return; }   // a ladder level just stops (no stars for part of a level)
+  if((r.ladder || r.level || r.duel) && !(S.test && S.testRun)){ r.ended = true; toMenu(); return; }   // a ladder level just stops (no stars for part of a level)
   if(Object.keys(r.stats).length) endRun('quit'); else { r.ended = true; toMenu(); }
 };
 // Clef: every staff redraws (questions, key signatures, Learn). save = false for a teacher's test or link (the student's own pick stays stored).
@@ -4443,11 +4453,11 @@ var MAP_GUEST = MAP_GUEST || {s: {}, coins: 0};   // var: renderMap can run (fro
 function mapData(){ if(!mapKey()) return MAP_GUEST || (MAP_GUEST = {s: {}, coins: 0}); const d = store.get(mapKey(), null); return d && typeof d === 'object' && d.s ? d : {s: {}, coins: 0}; }
 function mapSave(d){ if(mapKey()) store.set(mapKey(), d); }
 function mapOn(){ return S.view === 'map' && !(window.MTGTest && MTGTest.active); }
-function worldOpen(w){ if(w === 0) return true; const d = mapData(); return MAP_WORLDS[w - 1].keys.every((_, i) => (d.s[`${w - 1}:${i}`] || 0) >= 1); }
+function worldOpen(w){ return w === 0 || (mapData().s[`${w - 1}:boss`] || 0) >= 1; }   // beat the boss of the world before
 function levelOpen(w, i){ return worldOpen(w) && (i === 0 || (mapData().s[`${w}:${i - 1}`] || 0) >= 1); }
 function mapCurrent(){
   const d = mapData();
-  for(let w = 0; w < MAP_WORLDS.length; w++){ if(!worldOpen(w)) return null; const i = MAP_WORLDS[w].keys.findIndex((_, j) => !((d.s[`${w}:${j}`] || 0) >= 1)); if(i >= 0) return {w, i}; }
+  for(let w = 0; w < MAP_WORLDS.length; w++){ if(!worldOpen(w)) return null; const i = MAP_WORLDS[w].keys.findIndex((_, j) => !((d.s[`${w}:${j}`] || 0) >= 1)); if(i >= 0) return {w, i}; if(!d.s[`${w}:boss`]) return {w, boss: true}; }
   return null;
 }
 function renderMap(){
@@ -4456,21 +4466,22 @@ function renderMap(){
   document.querySelectorAll('#sqTabs [data-t]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.t === (on ? 'map' : 'free'))));
   $('#sqTabs').hidden = !!(window.MTGTest && MTGTest.active);
   if(!on) return;
-  const d = mapData(), cur = mapCurrent(), total = Object.values(d.s).reduce((a, v) => a + (+v || 0), 0);
+  const d = mapData(), cur = mapCurrent(), total = Object.entries(d.s).filter(([k]) => !k.endsWith('boss')).reduce((a, [, v]) => a + (+v || 0), 0);
   let h = `<div class="mp-head"><b>Your map</b><span class="mp-chip" title="Coins">🪙 ${d.coins}</span><span class="mp-chip" title="Stars">⭐ ${total}</span></div>`;
   MAP_WORLDS.forEach((W, w) => {
     const open = worldOpen(w), n = W.keys.length + 1, rowH = 84, H = n * rowH;
     const pts = Array.from({length: n}, (_, i) => ({x: [50, 74, 50, 26][i % 4], y: 42 + i * rowH}));
     const trail = pts.map((p, i) => (i ? 'L' : 'M') + p.x + ' ' + p.y).join(' ');
     const got = W.keys.reduce((a, _, i) => a + (d.s[`${w}:${i}`] || 0), 0);
-    h += `<section class="mp-world${open ? '' : ' lock'}" style="background:${W.bg}"><h3><span style="color:${W.col}">●</span> World ${w + 1} · ${W.n}<small>${open ? `${got} / ${W.keys.length * 3} ⭐` : `🔒 Get a star on every World ${w} level`}</small></h3>
+    h += `<section class="mp-world${open ? '' : ' lock'}" style="background:${W.bg}"><h3><span style="color:${W.col}">●</span> World ${w + 1} · ${W.n}<small>${open ? `${got} / ${W.keys.length * 3} ⭐` : `🔒 Beat ${esc(MAP_WORLDS[w - 1].boss)} to open`}</small></h3>
       <div class="mp-path" style="height:${H}px"><svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${trail}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
     W.keys.forEach((k, i) => {
       const s = d.s[`${w}:${i}`] || 0, op = levelOpen(w, i), isCur = !!cur && cur.w === w && cur.i === i;
       h += `<button type="button" class="mp-node${op ? '' : ' lock'}${isCur ? ' cur' : ''}" data-w="${w}" data-i="${i}" style="left:${pts[i].x}%;top:${pts[i].y}px;--c:${W.col}" aria-label="${esc(scaleName(k))}${op ? '' : ', locked'}${s ? `, ${s} of 3 stars` : ''}">${op ? esc(fmt(k)) : '🔒'}<span class="st" aria-hidden="true">${'★'.repeat(s)}${'☆'.repeat(3 - s)}</span></button>`;
     });
     const bp = pts[n - 1];
-    h += `<div class="mp-node boss" style="left:${bp.x}%;top:${bp.y}px;--c:${W.col}" title="Boss duels are coming soon">${W.face}<span class="st">BOSS · ${esc(W.boss)} · SOON</span></div></div></section>`;
+    const bo = bossOpen(w), beat = !!d.s[`${w}:boss`], bCur = !!cur && cur.w === w && cur.boss;
+    h += `<button type="button" class="mp-node boss${bo ? '' : ' lock'}${bCur ? ' cur' : ''}" data-w="${w}" data-boss="1" style="left:${bp.x}%;top:${bp.y}px;--c:${W.col}" aria-label="Boss duel: ${esc(W.boss)}${bo ? '' : ', locked'}${beat ? ', beaten' : ''}">${bo ? W.face : '🔒'}<span class="st">${beat ? '✔ ' : 'BOSS · '}${esc(W.boss)}</span></button></div></section>`;
   });
   MAP_SOON.forEach(([n, c, t], j) => { h += `<section class="mp-world soonw"><h3><span style="color:${c}">●</span> World ${j + 3} · ${n}<small>🔒 coming soon</small></h3><p>${t}</p></section>`; });
   h += `<button type="button" class="mp-nova" id="mpNova"><span class="mp-star" aria-hidden="true">★</span><span><b>${MN('nova')}</b><small>All 150 scales · ${CHAOS_LEN} questions · ${NOVA_HEARTS} hearts · no second tries${novaUnlocked() ? '' : ` · 🔒 finish one ${MNs()} run in Free play to unlock`}</small></span></button>
@@ -4489,7 +4500,8 @@ $('#sqMap').addEventListener('click', e => {
   }
   const b = e.target.closest('.mp-node[data-w]'); if(!b) return;
   const w = +b.dataset.w, i = +b.dataset.i;
-  if(!levelOpen(w, i)) return focusToast(worldOpen(w) ? '🔒 Get a star on the level before it first.' : `🔒 Get a star on every World ${w} level to open World ${w + 1}.`);
+  if(b.dataset.boss){ if(!bossOpen(w)) return focusToast(`🔒 Get a star on every World ${w + 1} level to face <b>${esc(MAP_WORLDS[w].boss)}</b>.`); SFX.click(); audio(); return startDuel(w); }
+  if(!levelOpen(w, i)) return focusToast(worldOpen(w) ? '🔒 Get a star on the level before it first.' : `🔒 Beat <b>${esc(MAP_WORLDS[w - 1].boss)}</b> to open World ${w + 1}.`);
   SFX.click(); S.mapPick = {w, i};
   if(!store.get('howto', false)) return howTo(true);
   audio(); S.mapPick = null; startLevel(w, i);
@@ -4509,8 +4521,8 @@ function levelEnd(){
   if(s[1]) MTG_HIST.run('scale', {score: 0, level: L.i + 1, acc});
   stars ? SFX.win() : SFX.over();
   const W = MAP_WORLDS[L.w], nextI = L.i + 1 < W.keys.length ? L.i + 1 : null;
-  const newWorld = !nextWasOpen && L.w + 1 < MAP_WORLDS.length && worldOpen(L.w + 1);
-  const title = !stars ? 'SO CLOSE!' : newWorld ? `WORLD ${L.w + 2} UNLOCKED!` : 'LEVEL CLEARED!';
+  const newWorld = false, bossNow = stars && nextI == null && bossOpen(L.w) && !d.s[`${L.w}:boss`];
+  const title = !stars ? 'SO CLOSE!' : bossNow ? 'BOSS UNLOCKED!' : 'LEVEL CLEARED!';
   const line = !stars ? `Get ${P} of ${N} to open the next level.` : stars < 3 ? `Get ${N} of ${N} for three stars.` : 'Perfect!';
   const next = stars && nextI != null && levelOpen(L.w, nextI) ? {w: L.w, i: nextI} : newWorld ? {w: L.w + 1, i: 0} : null;
   const p = openOverlay(`
@@ -4518,9 +4530,63 @@ function levelEnd(){
     <p class="osub" style="font-size:44px;color:var(--yel);letter-spacing:5px;font-family:system-ui,sans-serif">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p>
     <p class="osub">${esc(scaleName(L.k))}: <b>${got} of ${N}</b> right. ${line}</p>
     <p class="osub"><b>🪙 +${L.coins + bonus}</b> coins${bonus ? ` (${bonus} star bonus)` : ''}</p>
-    <div class="obtns">${next ? `<button class="btn obtn" id="lvNext" type="button" data-focus>NEXT: ${esc(scaleName(MAP_WORLDS[next.w].keys[next.i]).toUpperCase())} ▶</button>` : ''}<button class="btn obtn${next ? ' alt' : ''}" id="againBtn" type="button"${next ? '' : ' data-focus'}>PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MAP</button></div>`, stars ? '' : 'mag');
+    <div class="obtns">${next ? `<button class="btn obtn" id="lvNext" type="button" data-focus>NEXT: ${esc(scaleName(MAP_WORLDS[next.w].keys[next.i]).toUpperCase())} ▶</button>` : bossNow ? `<button class="btn obtn" id="lvBoss" type="button" data-focus>FACE ${esc(W.boss.toUpperCase())} ${W.face}</button>` : ''}<button class="btn obtn${next || bossNow ? ' alt' : ''}" id="againBtn" type="button"${next || bossNow ? '' : ' data-focus'}>PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MAP</button></div>`, stars ? '' : 'mag');
   const nx = p.querySelector('#lvNext'); if(nx) nx.onclick = () => startLevel(next.w, next.i);
+  const bb = p.querySelector('#lvBoss'); if(bb) bb.onclick = () => startDuel(L.w);
   p.querySelector('#againBtn').onclick = () => startLevel(L.w, L.i);
+  p.querySelector('#menuBtn').onclick = toMenu;
+}
+
+/* ---------- BOSS DUELS (2026-11-15 redesign, stage 2) ----------
+   The last node of each world. Opens when every level in that world has a star; beating the boss opens the next world.
+   A duel is run mode 'duel': random questions from the world's keys (staff, piano, now and then a build), 5 hearts each.
+   The speed bar is the rival: answer right before it runs out = you hit the rival; wrong, or the bar runs out = the rival
+   hits you. Answers still go to MTG_HIST and the teacher's progress like any other run. No penalty for losing. */
+const DUEL_HP = 5;
+const duelWin = q => TIME_WINDOW[q.type] * (S.run && S.run.duel ? S.run.duel.f : 1);   // seconds the rival needs
+function bossOpen(w){ const d = mapData(); return worldOpen(w) && MAP_WORLDS[w].keys.every((_, i) => (d.s[`${w}:${i}`] || 0) >= 1); }
+function startDuel(w){
+  if(!bossOpen(w)) return;
+  const W = MAP_WORLDS[w];
+  const p = openOverlay(`
+    <div class="duelface" style="background:${W.col}">${W.face}</div>
+    <h2 class="otitle">${esc(W.boss.toUpperCase())}</h2>
+    <p class="osub">"${esc(W.taunt)}"</p>
+    <p class="osub dim">Answer right before the bar runs out to hit ${esc(W.boss)}. Too slow or wrong, and you get hit. ${DUEL_HP} hits wins.</p>
+    <div class="obtns"><button class="btn obtn" id="fightBtn" type="button" data-focus>FIGHT! ⚔️</button><button class="btn obtn alt" id="menuBtn" type="button">MAP</button></div>`);
+  p.querySelector('#fightBtn').onclick = () => { S.duelGo = {w}; startRun('duel'); };
+  p.querySelector('#menuBtn').onclick = toMenu;
+}
+// The rival got there first: a miss, with the right answer shown.
+function rivalHits(){
+  const r = S.run, q = r && r.q; if(!q || S.busy || r.ended) return;
+  timerPause(); S.busy = true; $('#submitBtn').disabled = true;
+  logAnswer(q, false); r.streak = 0; r.lives--; stat(q.key, false);
+  flash('bad'); SFX.buzz(); popup(`${MAP_WORLDS[r.duel.w].face} GOT THERE FIRST!`);
+  const ans = q.type === 'build' ? notesLine(q) : ksQ(q) ? ksFact(q) : `The ${ORD[q.degree]} of ${q.name} is ${fmt(q.answer)}.`;
+  if(q.type === 'piano') keysOfPc(pcOf(q.answer)).forEach(m => { PK[m].classList.add('reveal'); label(m, q.answer); });
+  else if(q.type === 'staff') drawGhost(q.answer);
+  else if(ksQ(q)){ const g = $(`#degBtns [data-k="${q.ans}"]`); if(g) g.classList.add('ok'); }
+  say(`${MAP_WORLDS[r.duel.w].boss} was faster! ${ans}`, 'bad');
+  updateHUD();
+  later(() => r.lives <= 0 ? duelEnd() : advance(), 2600);
+}
+function duelEnd(){
+  const r = S.run; if(!r || r.ended) return; r.ended = true; S.busy = true;
+  const D = r.duel, W = MAP_WORLDS[D.w], win = D.hp <= 0;
+  const s = Object.values(r.stats).reduce((a, x) => [a[0] + x.right, a[1] + x.total], [0, 0]), acc = s[1] ? Math.round(100 * s[0] / s[1]) : 0;
+  const d = mapData(), prize = win ? 150 : 0, firstWin = win && !d.s[`${D.w}:boss`];
+  d.coins = (+d.coins || 0) + D.coins + prize; if(win) d.s[`${D.w}:boss`] = 1; mapSave(d);
+  if(s[1]) MTG_HIST.run('scale', {score: r.score, level: D.w + 1, acc});
+  win ? SFX.win() : SFX.over();
+  const nextW = D.w + 1 < MAP_WORLDS.length ? D.w + 1 : null;
+  const p = openOverlay(`
+    <div class="duelface" style="background:${W.col}">${win ? '😵' : W.face}</div>
+    <h2 class="otitle">${win ? `YOU BEAT ${esc(W.boss.toUpperCase())}!` : `${esc(W.boss.toUpperCase())} WINS THIS TIME`}</h2>
+    <p class="osub">${win ? `<b>🪙 +${D.coins + prize}</b> coins${firstWin ? (nextW != null ? ` · <b>World ${nextW + 1}: ${esc(MAP_WORLDS[nextW].n)}</b> is open!` : ' · More worlds are coming soon!') : ''}` : `No penalty.${D.coins ? ` <b>🪙 +${D.coins}</b> coins for your hits.` : ''} Practice a level, then try again!`}</p>
+    <div class="obtns">${win && firstWin && nextW != null ? `<button class="btn obtn" id="dNext" type="button" data-focus>WORLD ${nextW + 1} ▶</button>` : !win ? `<button class="btn obtn" id="dAgain" type="button" data-focus>REMATCH ⚔️</button>` : ''}<button class="btn obtn alt" id="menuBtn" type="button"${win && !(firstWin && nextW != null) ? ' data-focus' : ''}>MAP</button></div>`, win ? '' : 'mag');
+  const nx = p.querySelector('#dNext'); if(nx) nx.onclick = () => startLevel(nextW, 0);
+  const ag = p.querySelector('#dAgain'); if(ag) ag.onclick = () => startDuel(D.w);
   p.querySelector('#menuBtn').onclick = toMenu;
 }
 
