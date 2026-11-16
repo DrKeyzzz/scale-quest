@@ -592,6 +592,13 @@ button{font:inherit;color:inherit}
 #staffSvg .hn{font:800 14px var(--px);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:4px}
 #staffSvg .hn.ln{fill:#0284c7}#staffSvg .hn.sp{fill:#c026d3}
 .hl-ln{color:#38bdf8}.hl-sp{color:#e879f9}
+.pk.white.guide:not(.sel):not(.ok):not(.bad) rect{fill:#fff4c7}.pk.black.guide:not(.sel):not(.ok):not(.bad) rect{fill:#6b5500}
+#pGuide{pointer-events:none}
+#pGuide .gnum{fill:#ffd166;stroke:#1b1f3b;stroke-width:2}
+#pGuide .gnumt{font:900 15px var(--px);fill:#1b1f3b;text-anchor:middle}
+#pGuide .garc{fill:none;stroke:#ffd166;stroke-width:3}#pGuide .garc.h{stroke:#ff8fa3}
+#pGuide .glabbg{fill:#ffd166}#pGuide .glabbg.h{fill:#ff8fa3}
+#pGuide .glab{font:900 14px var(--px);fill:#1b1f3b;text-anchor:middle}
 .mp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mp-row .mp-nova,.mp-row .mp-chaos{padding:12px 14px;border-radius:18px}
 .mp-row .mp-star{font-size:42px}
@@ -3222,7 +3229,7 @@ function renderQuestion(){
     r.redo = 0; r.seen.add(sig);
   }
   const q = S.run.q, K = `<b>${q.name}</b>`;
-  S.busy = false; S.sel.clear(); S.lock.clear(); say('', ''); setNext(null); ladderHintOff(); hintNamesOff();
+  S.busy = false; S.sel.clear(); S.lock.clear(); say('', ''); setNext(null); ladderHintOff(); hintNamesOff(); if(document.getElementById('pGuide')) pianoGuide(S.run.q, false);
   $('#explain').hidden = true; $('#qHelp').hidden = false;
   updateHUD();
   const tag = $('#qTag');
@@ -4733,6 +4740,34 @@ function hintNamesOff(){ const g = document.getElementById('hintNames'); if(g) g
 // The hint on a piano question (play a note, build a scale) writes the names on the keys: every white key, plus the black
 // keys this scale uses, spelled the way the scale spells them (so F♯ major shows F♯ and E♯).
 const WHITE_PC = {0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B'};
+// ...and shows the scale ON the piano: its keys tinted and numbered 1-8, and (build questions) an arc above each pair of
+// neighbouring scale keys labelled W or H, so a beginner sees the pattern right where they click. Degree questions get the
+// numbers only (count to the number). The piano's viewBox grows upward to make room for the arcs, and goes back after.
+function pianoGuide(q, on){
+  const svg = document.querySelector('#pianoWrap svg'); if(!svg) return;
+  const old = document.getElementById('pGuide'); if(old) old.remove();
+  allKeys().forEach(g => g.classList.remove('guide'));
+  if(!svg.dataset.vb) svg.dataset.vb = svg.getAttribute('viewBox');
+  svg.setAttribute('viewBox', svg.dataset.vb);
+  if(!on) return;
+  const build = q.type === 'build';
+  let seq;
+  if(build){ const {run, opt} = buildSpec(q); seq = [...run, opt].filter(m => PK[m]); }
+  else { const root = pcOf(SCALES[q.sk][0]); let start = PIANO_LO + ((root - PIANO_LO % 12) + 12) % 12; seq = stepsOf(q.sk).map(st => start + st).filter(m => PK[m]); }
+  const ctr = m => { const r = PK[m].querySelector('rect'); return +r.getAttribute('x') + +r.getAttribute('width') / 2; };
+  const black = m => PK[m].classList.contains('black');
+  let g = '';
+  seq.forEach((m, i) => { PK[m].classList.add('guide'); const x = ctr(m), y = black(m) ? 72 : 140;
+    g += `<circle cx="${x}" cy="${y}" r="13" class="gnum"/><text x="${x}" y="${y + 5}" class="gnumt">${i + 1}</text>`; });
+  if(build){
+    for(let i = 1; i < seq.length; i++){
+      const a = ctr(seq[i - 1]), b = ctr(seq[i]), d = Math.abs(seq[i] - seq[i - 1]), mid = (a + b) / 2, lab = d === 1 ? 'H' : d === 2 ? 'W' : 'W+H';
+      g += `<path d="M${a} -2 Q${mid} -34 ${b} -2" class="garc${d === 1 ? ' h' : ''}"/><rect x="${mid - (lab.length > 1 ? 19 : 12)}" y="-44" width="${lab.length > 1 ? 38 : 24}" height="22" rx="11" class="glabbg${d === 1 ? ' h' : ''}"/><text x="${mid}" y="-28" class="glab">${lab}</text>`;
+    }
+    const [x0, y0, w, h] = svg.dataset.vb.split(' ').map(Number); svg.setAttribute('viewBox', `${x0} ${y0 - 48} ${w} ${h + 48}`);
+  }
+  svg.insertAdjacentHTML('beforeend', `<g id="pGuide" aria-hidden="true">${g}</g>`);
+}
 function pianoNames(q, on){
   const sc = SCALES[q.sk] || [];
   allKeys().forEach(g => {
@@ -4748,10 +4783,10 @@ function hintFor(q){
   const ton = fmt(tonicOf(q.sk || q.key));
   if(ksQ(q)) return ladderHint(q);
   // build: the whole scale laid out with the steps between the notes, so the W/H pattern and the notes line up
-  if(q.type === 'build') return `<div class="hintbox"><p>Here is <b>${esc(q.name)}</b>, with the steps between the notes. Start on <b>${ton}</b>${q.dir === 'down' ? ' at the top' : ''} and click them in order. <b>W</b> = whole step (skip one key) · <b>H</b> = half step (the very next key).</p><div class="explain">${stepChips(q, [], true)}</div></div>`;
+  if(q.type === 'build') return `<div class="hintbox"><p>Look at the piano: click the <b>numbered keys, 1 to 8</b>. The arcs show each step: <b>W</b> = whole step (skips a key) · <b>H</b> = half step (the very next key).</p><div class="explain">${stepChips(q, [], true)}</div></div>`;
   const ls = CLEF_LS[S.clef] || CLEF_LS.treble;
   return `<div class="hintbox"><p>Count up the scale. <b>${ton}</b> is 1, so find number <b>${q.degree}</b>:</p><div class="explain">${scaleChips(q.sk, 'COUNT UP', [], -1)}</div>
-    ${q.type === 'piano' ? `<p>The note names are on the piano keys now. Find number ${q.degree} and click it (any octave). A <b>♯</b> is the black key just right of its letter, a <b>♭</b> just left.</p>` : q.type === 'staff' ? `<p>The letters are on the staff now: <b class="hl-ln">lines ${ls[0]}</b> · <b class="hl-sp">spaces ${ls[1]}</b> (from the bottom). Move the note to that letter. Need a ♯ or ♭? Use the accidental buttons.</p>` : ''}</div>`;
+    ${q.type === 'piano' ? `<p>Look at the piano: the scale is numbered on the keys. Click key number <b>${q.degree}</b> (any octave works). A <b>♯</b> is the black key just right of its letter, a <b>♭</b> just left.</p>` : q.type === 'staff' ? `<p>The letters are on the staff now: <b class="hl-ln">lines ${ls[0]}</b> · <b class="hl-sp">spaces ${ls[1]}</b> (from the bottom). Move the note to that letter. Need a ♯ or ♭? Use the accidental buttons.</p>` : ''}</div>`;
 }
 $('#qHelp').addEventListener('click', e => {
   if(!e.target.closest('#sqHintBtn')) return;
@@ -4759,7 +4794,7 @@ $('#qHelp').addEventListener('click', e => {
   SFX.click(); const ex = $('#explain'), open = ex.hidden || !ex.querySelector('.hintbox, .kshintbox');
   ex.innerHTML = open ? hintFor(q) : ''; ex.hidden = !open; e.target.setAttribute('aria-expanded', String(open));
   if(q.type === 'staff') $('#hintNames').innerHTML = open ? staffNames() : '';
-  if(q.type === 'piano' || q.type === 'build') pianoNames(q, open);
+  if(q.type === 'piano' || q.type === 'build'){ pianoNames(q, open); pianoGuide(q, open); }
   if(open && !q.hinted){ q.hinted = true; r.hints = (r.hints || 0) + 1; }
 });
 
