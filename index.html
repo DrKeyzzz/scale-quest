@@ -308,6 +308,7 @@ button{font:inherit;color:inherit}
 .degcard{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .degcard span{font-family:var(--px);font-size:9px;padding:5px 7px;border:2px solid var(--line);background:var(--panel);color:var(--dim)}
 .degcard b{color:var(--yel);font-weight:400;margin-right:4px}
+.degcard.count span{color:var(--ink);border-color:var(--yel);font-size:15px}.degcard.count span.lbl{border:0;background:none;color:var(--yel);font-size:13px}
 .sigmini{flex:none;width:118px;padding:0;align-self:center} .sigmini svg{display:block;width:100%;height:auto}
 .pianowrap.nameit{display:flex;gap:10px;align-items:center;width:min(100%,830px,calc(28vh * 2.95 + 230px))}
 .pianowrap.nameit>svg{flex:1;min-width:0}
@@ -3329,7 +3330,7 @@ function renderQuestion(){
   // Scale Degrees: the reference card (practice only), the key signature and the answer buttons
   const r = S.run;
   $('#degCard').hidden = !(r.deg && r.mode === 'practice');
-  $('#degCard').innerHTML = Object.entries(DEG_NAME).map(([n, nm]) => `<span><b>${n}</b>${nm.toUpperCase()}</span>`).join('');
+  $('#degCard').innerHTML = degCardHtml(); $('#degCard').classList.remove('count');
   $('#degBtns').hidden = !nameQ(q);
   $('#degBtns').innerHTML = Object.entries(DEG_NAME).map(([n, nm]) => `<button type="button" data-d="${n}" aria-pressed="false"><b>${n}</b>${nm.toUpperCase()}</button>`).join('');
   $('#sigMini').hidden = q.type !== 'dpiano'; $('#pianoWrap').classList.toggle('nameit', q.type === 'dpiano');
@@ -4874,7 +4875,18 @@ function pianoNames(q, on){
     t.textContent = name; g.classList.add('named');
   });
 }
-function hintable(r, q){ return !!r && !!q && r.mode === 'practice' && !r.ladder && !r.deg && !(S.test && S.testRun) && !(window.MTGTest && MTGTest.active); }
+// The Scale degrees reference row above the question; its hint (2026-11-16, David) turns it into the scale counted up
+// ("COUNT UP FROM C: 1 C · 2 D …") and writes the letters on the staff / piano, so a student finds the note's letter and reads its number.
+// Same height as the reference row, so the screen still fits without scrolling.
+function degCardHtml(){ return Object.entries(DEG_NAME).map(([n, nm]) => `<span><b>${n}</b>${nm.toUpperCase()}</span>`).join(''); }
+function degCountHtml(q){ return `<span class="lbl">COUNT UP FROM ${esc(fmt(tonicOf(q.sk)))}:</span>` + (SCALES[q.sk] || []).slice(0, 7).map((n, i) => `<span><b>${i + 1}</b>${esc(fmt(n))}</span>`).join(''); }
+function degHint(q, open){
+  const c = $('#degCard'); c.innerHTML = open ? degCountHtml(q) : degCardHtml(); c.classList.toggle('count', open);
+  if(q.type === 'dstaff') $('#hintNames').innerHTML = open ? staffNames([460]) : '';   // right of the key signature
+  if(q.type === 'staff') $('#hintNames').innerHTML = open ? staffNames() : '';
+  if(q.type === 'dpiano' || q.type === 'piano') pianoNames(q, open);
+}
+function hintable(r, q){ return !!r && !!q && r.mode === 'practice' && !r.ladder && !(S.test && S.testRun) && !(window.MTGTest && MTGTest.active); }
 function hintFor(q){
   const ton = fmt(tonicOf(q.sk || q.key));
   if(ksQ(q)) return ladderHint(q);
@@ -4887,6 +4899,7 @@ function hintFor(q){
 $('#qHelp').addEventListener('click', e => {
   if(!e.target.closest('#sqHintBtn')) return;
   const r = S.run, q = r && r.q; if(!hintable(r, q) || S.busy) return;
+  if(r.deg){ SFX.click(); const b = e.target.closest('#sqHintBtn'), open = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', String(open)); degHint(q, open); if(open && !q.hinted){ q.hinted = true; r.hints = (r.hints || 0) + 1; } return; }
   SFX.click(); const ex = $('#explain'), open = ex.hidden || !ex.querySelector('.hintbox, .kshintbox');
   ex.innerHTML = open ? hintFor(q) : ''; ex.hidden = !open; e.target.setAttribute('aria-expanded', String(open));
   if(q.type === 'staff') $('#hintNames').innerHTML = open ? staffNames() : '';
