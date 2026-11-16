@@ -565,6 +565,20 @@ button{font:inherit;color:inherit}
 .mp-star{font-size:56px;color:#fff3b0;text-shadow:0 0 22px #ff9d2e;animation:mpSwell 2.4s ease-in-out infinite;flex:none;line-height:1}
 @keyframes mpSwell{50%{transform:scale(1.15) rotate(8deg)}}
 .mp-free{font:600 13px var(--px);color:var(--dim);text-align:center;margin:0}
+.mp-tier{cursor:pointer;background:linear-gradient(90deg,#ffcf4a,#ff9d2e);color:#3b2300;border:0}
+.mp-daily,.mp-chaos{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:18px;border:0;cursor:pointer;text-align:left;color:#fff}
+.mp-daily{background:linear-gradient(90deg,#ff4fa3,#ff7a45)}
+.mp-daily.done{background:linear-gradient(90deg,#3a3f74,#2b305e)}
+.mp-chaos{background:linear-gradient(90deg,#7c3aed,#4c1d95)}
+.mp-daily .ic,.mp-chaos .ic{font-size:30px;flex:none}
+.mp-daily b,.mp-chaos b{display:block;font:900 18px var(--px)}
+.mp-daily small,.mp-chaos small{display:block;font:600 13px var(--px);opacity:.95;margin-top:2px}
+.mp-daily .go{margin-left:auto;background:#fff;color:#c2185b;font:900 14px var(--px);padding:8px 14px;border-radius:999px;flex:none}
+.mp-daily.done .go{color:#3a3f74}
+.tiertag{font-family:system-ui,sans-serif;font-size:.9em}
+.tierlist{display:grid;gap:6px;text-align:left;margin:10px 0;width:100%;max-width:420px}
+.tierlist div{display:flex;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:12px;background:var(--panel);font:700 16px var(--px)}
+.tierlist div.me{outline:2px solid var(--yel)}
 .mp-node.boss.lock{opacity:.6}
 .mp-node.boss:not(.lock){cursor:pointer;opacity:1}
 .duelface{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;font-size:60px;margin:0 auto 6px;border:4px solid #fff}
@@ -1639,6 +1653,9 @@ const MAP_WORLDS = [
   {n: 'Modes', col: '#ff4fa3', bg: 'linear-gradient(160deg,#55143f,#1a1440)', keys: ['D:dor', 'E:phr', 'F:lyd', 'G:mix', 'A:aeo', 'B:loc', 'C:dor', 'C:mix'], boss: 'Mode Master', face: '👑', f: 0.95, taunt: 'Seven modes, one master. Show me what you\'ve got!'},
 ];
 const MAP_SOON = [];
+// Ranked tiers (best finished CHAOS score) and the daily challenge's scales: see RANKED TIERS + DAILY CHALLENGE further down
+const TIERS = [[0, '🥉', 'Bronze'], [1000, '🥈', 'Silver'], [1800, '🥇', 'Gold'], [2600, '💠', 'Platinum'], [3400, '💎', 'Diamond'], [4500, '👑', 'Champion']];
+const DAILY_KEYS = [...MAJOR_ORDER, ...MINOR_ORDER.map(t => t + ':nat')];   // the 15 majors and 15 natural minors
 const levelLen = i => i < 2 ? 7 : 10, levelPass = i => i < 2 ? 5 : 8;   // same lengths as the key signature ladder
 const QPK = () => S.run && S.run.level ? S.run.level.n : S.qpk;
 // KEY SIGNATURE LADDER levels (the ladder code is with the key signature questions further down)
@@ -1995,7 +2012,7 @@ function localTop(n){
 function boardTable(list){
   if(!list.length) return `<p class="dim">No scores yet. Finish a ${MNs()} run to claim the top spot!</p>`;
   return `<table class="board"><tbody>${list.map((x,i) =>
-    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'}${x.world ? '' : ` · x${+x.streak || 0}`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}${tierTag(+x.score)}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'}${x.world ? '' : ` · x${+x.streak || 0}`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 
 /* ---------- student profile (welcome screen) ---------- */
@@ -2594,7 +2611,7 @@ function updateHUD(){
   const hideKey = q && q.type === 'ksname';   // naming the key: don't show it
   $('#hudKey').textContent = q ? (hideKey ? 'KEY SIGNATURE' : ksQ(q) ? q.name.toUpperCase() : scaleName(q.key).toUpperCase()) : '—';
   $('#ladder').style.visibility = hideKey ? 'hidden' : '';
-  const tag = $('#modeTag'); tag.textContent = r.duel ? 'BOSS DUEL' : r.level ? `WORLD ${r.level.w + 1} · LEVEL ${r.level.i + 1}` : r.ladder ? `KEY SIGS · LEVEL ${r.ladder.lv + 1}` : (r.deg ? 'DEGREES · ' : '') + MN(r.mode); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
+  const tag = $('#modeTag'); tag.textContent = r.duel ? 'BOSS DUEL' : r.level && r.level.daily ? 'DAILY CHALLENGE' : r.level ? `WORLD ${r.level.w + 1} · LEVEL ${r.level.i + 1}` : r.ladder ? `KEY SIGS · LEVEL ${r.ladder.lv + 1}` : (r.deg ? 'DEGREES · ' : '') + MN(r.mode); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
   $('#hudQ').textContent = r.ladder ? `${Math.min(r.total + 1, r.ladder.qs.length)}/${r.ladder.qs.length}` : isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${QPK()}`;
   $('#hudScore').textContent = String(r.score).padStart(6, '0');
   $('#hudStreak').textContent = 'x' + r.streak;
@@ -3264,7 +3281,7 @@ function onCorrect(){
   if(r.streak === 3) bonus = 50; else if(r.streak === 5) bonus = 100; else if(r.streak % 10 === 0) bonus = 250;
   r.score += pts + speed + bonus; r.pts.base += pts; r.pts.speed += speed; r.pts.streak += bonus; stat(q.key, true); logAnswer(q, true);
   flash('ok'); SFX.coin();
-  if(r.level){ const c = r.level.i >= 4 ? 15 : 10; r.level.coins += c; popup(`+${c} 🪙`); }
+  if(r.level){ const c = r.level.daily ? 10 : r.level.i >= 4 ? 15 : 10; r.level.coins += c; popup(`+${c} 🪙`); }
   else if(r.duel){ r.duel.hp--; r.duel.coins += 10; popup('HIT! 💥'); }
   else popup('+' + (pts + speed));
   if(speed) setTimeout(() => popup(`SPEED +${speed} · ${elapsed().toFixed(1)}s`, 'speed'), 120);
@@ -3515,6 +3532,7 @@ function endRun(reason){
   if(ranked && !novaUnlocked()){ store.set('chaos_done', true); renderKeyRows(); }
   const mult = keyBonus(r.bonusKeys.length), final = ranked ? Math.round(r.score * mult) : r.score;
   const eligible = ranked && !r.continued && final > 0;
+  if(eligible && !(S.test && S.testRun)){ const md = mapData(); if(final > (+md.best || 0)){ md.best = final; mapSave(md); } }   // ranked tier (map)
   if(S.test && S.testRun) return tsEnd(r, {acc, total, final, reason});
   const why = eligible ? '' : r.mode === 'practice'
     ? `Practice runs don't go on the board. Finish a ${CHAOS_LEN}-question ${MNs()} run to post a high score.`
@@ -4485,7 +4503,9 @@ function renderMap(){
   $('#sqTabs').hidden = !!(window.MTGTest && MTGTest.active);
   if(!on) return;
   const d = mapData(), cur = mapCurrent(), total = MAP_WORLDS.reduce((a, W, w) => a + W.keys.reduce((b, _, i) => b + starOf(w, i), 0), 0);
-  let h = `<div class="mp-head"><b>Your map</b><span class="mp-chip" title="Coins">🪙 ${d.coins}</span><span class="mp-chip" title="Stars">⭐ ${total}</span></div>`;
+  const tier = tierOf(+d.best || 0), I = dailyInfo();
+  let h = `<div class="mp-head"><b>Your map</b><span class="mp-chip" title="Coins">🪙 ${d.coins}</span><span class="mp-chip" title="Stars">⭐ ${total}</span><button type="button" class="mp-chip mp-tier" id="mpTier" title="Your ranked tier">${tier ? tier[1] + ' ' + tier[2] : '🏅 Unranked'}</button></div>
+    <button type="button" class="mp-daily${I.done ? ' done' : ''}" id="mpDaily"><span class="ic" aria-hidden="true">🔥</span><span><b>${I.done ? 'Daily challenge done!' : 'Daily challenge'}</b><small>${I.done ? `Come back tomorrow · streak ${I.streak} day${I.streak === 1 ? '' : 's'}` : `Scale of the day: ${esc(scaleName(I.key))} · 5 questions · +50 🪙${I.streak ? ` · streak ${I.streak}` : ''}`}</small></span><span class="go">${I.done ? 'AGAIN' : 'PLAY'}</span></button>`;
   MAP_WORLDS.forEach((W, w) => {
     const open = worldOpen(w), n = W.keys.length + 1, rowH = 84, H = n * rowH;
     const pts = Array.from({length: n}, (_, i) => ({x: [50, 74, 50, 26][i % 4], y: 42 + i * rowH}));
@@ -4503,7 +4523,8 @@ function renderMap(){
   });
   MAP_SOON.forEach(([n, c, t], j) => { h += `<section class="mp-world soonw"><h3><span style="color:${c}">●</span> World ${j + 3} · ${n}<small>🔒 coming soon</small></h3><p>${t}</p></section>`; });
   h += `<button type="button" class="mp-nova" id="mpNova"><span class="mp-star" aria-hidden="true">★</span><span><b>${MN('nova')}</b><small>All 150 scales · ${CHAOS_LEN} questions · ${NOVA_HEARTS} hearts · no second tries${novaUnlocked() ? '' : ` · 🔒 finish one ${MNs()} run in Free play to unlock`}</small></span></button>
-    <p class="mp-free">CHAOS, key signatures, scale degrees and picking your own scales are in <b>FREE PLAY</b>.</p>`;
+    <button type="button" class="mp-chaos" id="mpChaos"><span class="ic" aria-hidden="true">⚔️</span><span><b>${MN('chaos')} · RANKED</b><small>${CHAOS_LEN} timed questions from your scales. Your best score sets your tier${tier ? ` (now ${tier[1]} ${tier[2]})` : ''}.</small></span></button>
+    <p class="mp-free">Key signatures (count it, write it), scale degrees and picking your own scales are in <b>FREE PLAY</b>.</p>`;
   el.innerHTML = h;
 }
 $('#sqTabs').addEventListener('click', e => {
@@ -4512,6 +4533,9 @@ $('#sqTabs').addEventListener('click', e => {
 });
 $('#sqMap').addEventListener('click', e => {
   if(S.run || S.overlay) return;
+  if(e.target.closest('#mpTier')){ SFX.click(); return showTiers(); }
+  if(e.target.closest('#mpChaos')){ SFX.click(); return goChaos(); }
+  if(e.target.closest('#mpDaily')){ SFX.click(); if(!store.get('howto', false)){ S.mapPick = null; store.set('howto', true); } audio(); return startDaily(); }
   if(e.target.closest('#mpNova')){
     if(!novaUnlocked()) return focusToast(`🔒 <b>${MN('nova')}</b> unlocks after you finish one <b>${MN('chaos')}</b> run. Find it in <b>FREE PLAY</b>.`);
     SFX.click(); audio(); if(S.ks) setKs(false); if(S.deg) setDeg(false); novaWarning(); return;
@@ -4530,6 +4554,7 @@ function startLevel(w, i){
   S.levelGo = {w, i, n: levelLen(i), k: MAP_WORLDS[w].keys[i]}; startRun('practice');
 }
 function levelEnd(){
+  if(S.run && S.run.level && S.run.level.daily) return dailyEnd();
   const r = S.run; if(!r) return; r.ended = true; S.busy = true;
   const L = r.level, s = Object.values(r.stats).reduce((a, x) => [a[0] + x.right, a[1] + x.total], [0, 0]);
   const got = s[0], N = L.n, P = levelPass(L.i), acc = s[1] ? Math.round(100 * got / s[1]) : 0;
@@ -4606,6 +4631,50 @@ function duelEnd(){
     <div class="obtns">${win && firstWin && nextW != null ? `<button class="btn obtn" id="dNext" type="button" data-focus>WORLD ${nextW + 1} ▶</button>` : !win ? `<button class="btn obtn" id="dAgain" type="button" data-focus>REMATCH ⚔️</button>` : ''}<button class="btn obtn alt" id="menuBtn" type="button"${win && !(firstWin && nextW != null) ? ' data-focus' : ''}>MAP</button></div>`, win ? '' : 'mag');
   const nx = p.querySelector('#dNext'); if(nx) nx.onclick = () => startLevel(nextW, 0);
   const ag = p.querySelector('#dAgain'); if(ag) ag.onclick = () => startDuel(D.w);
+  p.querySelector('#menuBtn').onclick = toMenu;
+}
+
+/* ---------- RANKED TIERS + DAILY CHALLENGE (2026-11-15 redesign, stages 4-5) ----------
+   Tier = the best finished CHAOS score this student has on this device (mapData().best): Bronze for any finished run,
+   then Silver 1000, Gold 1800, Platinum 2600, Diamond 3400, Champion 4500. It shows on the map and next to names on the
+   boards (from each row's score, so no extra reads). The daily challenge: a "scale of the day" (the same for everyone,
+   from the date), 5 questions, pass 4 = +50 coins and the streak goes up (yesterday done = streak + 1, else 1). */
+function tierOf(score){ if(!(score > 0)) return null; let t = TIERS[0]; TIERS.forEach(x => { if(score >= x[0]) t = x; }); return t; }
+function tierTag(score){ const t = tierOf(score); return t ? ` <span class="tiertag" title="${t[2]} tier">${t[1]}</span>` : ''; }
+function showTiers(){
+  const best = +mapData().best || 0, me = tierOf(best);
+  openOverlay(`<h2 class="otitle">RANKED TIERS</h2>
+    <p class="osub">Your best finished <b>${MN('chaos')}</b> score sets your tier. It shows next to your name on the boards.</p>
+    <div class="tierlist">${TIERS.map(t => `<div class="${me && me[2] === t[2] ? 'me' : ''}"><span>${t[1]} ${t[2]}</span><span>${t[0] ? t[0] + '+ points' : 'finish a run'}${me && me[2] === t[2] ? ' · YOU' : ''}</span></div>`).join('')}</div>
+    <p class="osub dim">${best ? `Your best: ${best}` : `No ${MN('chaos')} run finished yet.`}</p>
+    <div class="obtns"><button class="btn obtn" id="tiersChaos" type="button" data-focus>PLAY ${MN('chaos')} ▶</button><button class="btn obtn alt" id="tiersClose" type="button">CLOSE</button></div>`);
+  $('#tiersChaos').onclick = () => { closeOverlay(); goChaos(); };
+  $('#tiersClose').onclick = closeOverlay;
+}
+// CHAOS lives in Free play: switch there with CHAOS picked.
+function goChaos(){ S.view = 'free'; store.set('view', 'free'); if(S.mode !== 'chaos') setChoice('mode', 'chaos'); syncQuick(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+function dailyKey(day = dayKey()){ let h = 7; for(const c of day) h = (h * 31 + c.charCodeAt(0)) >>> 0; return DAILY_KEYS[h % DAILY_KEYS.length]; }
+function dailyInfo(){
+  const d = mapData(), t = dayKey(), y = new Date(); y.setDate(y.getDate() - 1);
+  const yk = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`;
+  const D = d.daily || {}, done = D.last === t, streak = done || D.last === yk ? (+D.streak || 0) : 0;
+  return {key: dailyKey(t), done, streak, yk, t};
+}
+function startDaily(){ const I = dailyInfo(); S.levelGo = {w: -1, i: 0, n: 5, k: I.key, daily: true}; startRun('practice'); }
+function dailyEnd(){
+  const r = S.run; r.ended = true; S.busy = true;
+  const L = r.level, s = Object.values(r.stats).reduce((a, x) => [a[0] + x.right, a[1] + x.total], [0, 0]), got = s[0], pass = got >= 4;
+  const I = dailyInfo(), d = mapData();
+  let streak = I.streak, bonus = 0;
+  if(pass && !I.done){ streak = I.streak + 1; bonus = 50; d.daily = {last: I.t, streak}; }
+  d.coins = (+d.coins || 0) + L.coins + bonus; mapSave(d);
+  if(s[1]) MTG_HIST.run('scale', {score: 0, level: 0, acc: Math.round(100 * got / s[1])});
+  pass ? SFX.win() : SFX.over();
+  const p = openOverlay(`<h2 class="otitle">${pass ? (bonus ? 'DAILY DONE! 🔥' : 'NICE PRACTICE!') : 'SO CLOSE!'}</h2>
+    <p class="osub">${esc(scaleName(L.k))}: <b>${got} of 5</b> right.${pass ? '' : ' Get 4 of 5 to keep your streak going.'}</p>
+    <p class="osub"><b>🪙 +${L.coins + bonus}</b> coins${bonus ? ` · 🔥 streak: <b>${streak} day${streak === 1 ? '' : 's'}</b>` : I.done ? ' · today\'s streak is already counted' : ''}</p>
+    <div class="obtns">${pass ? '' : '<button class="btn obtn" id="againBtn" type="button" data-focus>TRY AGAIN</button>'}<button class="btn obtn${pass ? '' : ' alt'}" id="menuBtn" type="button"${pass ? ' data-focus' : ''}>MAP</button></div>`, pass ? '' : 'mag');
+  const ag = p.querySelector('#againBtn'); if(ag) ag.onclick = startDaily;
   p.querySelector('#menuBtn').onclick = toMenu;
 }
 
