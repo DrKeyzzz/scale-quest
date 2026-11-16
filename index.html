@@ -576,10 +576,17 @@ button{font:inherit;color:inherit}
 .mp-star{font-size:56px;color:#fff3b0;text-shadow:0 0 22px #ff9d2e;animation:mpSwell 2.4s ease-in-out infinite;flex:none;line-height:1}
 @keyframes mpSwell{50%{transform:scale(1.15) rotate(8deg)}}
 .mp-free{font:600 13px var(--px);color:var(--dim);text-align:center;margin:0}
-.mp-lesson{display:flex;align-items:center;gap:12px;width:100%;margin:10px 0 4px;padding:10px 12px;border-radius:14px;border:2px dashed rgba(255,255,255,.55);background:rgba(255,255,255,.1);color:#fff;cursor:pointer;text-align:left;font-size:26px}
+.mp-lesson{display:flex;align-items:center;gap:8px;margin-left:auto;padding:5px 6px 5px 12px;border-radius:999px;border:2px dashed rgba(255,255,255,.55);background:rgba(255,255,255,.1);color:#fff;cursor:pointer;text-align:left;font-size:18px}
+.mp-lesson b{font:800 14px var(--px)}
+.mp-world h3 .mp-wn{display:flex;align-items:center;gap:8px}
+.mp-arr{flex:none;width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(255,255,255,.12);color:#fff;font-size:16px;cursor:pointer}
+.mp-arr:disabled{opacity:.25;cursor:default}
+.mp-world h3 small{margin-left:auto;margin-right:6px}
+.mp-dots{display:flex;align-items:center;gap:8px;margin:8px 0 2px;min-height:34px}
+.mp-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--c);background:transparent;padding:0;cursor:pointer}
+.mp-dot.on{background:var(--c);transform:scale(1.25)}
 .mp-lesson.done{border-style:solid;border-color:rgba(255,255,255,.25)}
-.mp-lesson b{display:block;font:900 17px var(--px)}.mp-lesson small{display:block;font:600 13px var(--px);opacity:.9}
-.mp-lesson .go{margin-left:auto;background:#fff;color:#c2410c;font:900 14px var(--px);padding:7px 13px;border-radius:999px}
+.mp-lesson .go{background:#fff;color:#c2410c;font:900 13px var(--px);padding:4px 11px;border-radius:999px}
 .mp-lesson .ok{margin-left:auto;font-size:20px}
 .lesson{max-width:560px;margin:0 auto;text-align:center}
 .lesson p{font-size:17px;line-height:1.45;margin:6px 0 10px}
@@ -610,11 +617,28 @@ button{font:inherit;color:inherit}
 #pGuide .garc{fill:none;stroke:#ffd166;stroke-width:3}#pGuide .garc.h{stroke:#ff8fa3}
 #pGuide .glabbg{fill:#ffd166}#pGuide .glabbg.h{fill:#ff8fa3}
 #pGuide .glab{font:900 14px var(--px);fill:#1b1f3b;text-anchor:middle}
-.mp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mp-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .mp-row .mp-nova,.mp-row .mp-chaos{padding:12px 14px;border-radius:18px}
 .mp-row .mp-star{font-size:42px}
 .mp-row .mp-nova b{font-size:19px}
-@media (max-width:640px){.mp-row{grid-template-columns:1fr}}
+@media (max-width:900px){.mp-row{grid-template-columns:1fr 1fr}.mp-row .mp-daily{grid-column:1/-1}}
+.mp-row>*{min-width:0}
+/* phones: daily / supernova / chaos as three small tiles (icon + name), 5 levels a row, so the whole world fits on screen */
+@media (max-width:560px){
+  .mp-row{grid-template-columns:1fr 1fr 1fr;gap:6px}.mp-row .mp-daily{grid-column:auto}
+  .mp-row .mp-daily,.mp-row .mp-nova,.mp-row .mp-chaos{flex-direction:column;justify-content:center;gap:2px;padding:8px 4px;text-align:center;border-radius:14px}
+  .mp-row .mp-daily small,.mp-row .mp-nova small,.mp-row .mp-chaos small,.mp-row .mp-daily .go{display:none}
+  .mp-row .mp-daily b,.mp-row .mp-nova b,.mp-row .mp-chaos b{font-size:13px}
+  .mp-row .mp-daily .ic,.mp-row .mp-chaos .ic,.mp-row .mp-nova .mp-star{font-size:24px}
+  .mp-head{font-size:15px;gap:5px}.mp-chip{padding:4px 9px;font-size:13px}
+  .mp-world{padding:10px 8px 12px}
+  .mp-world h3{font-size:14px;gap:6px}.mp-world h3 small{font-size:12px}
+  .mp-arr{width:34px;height:34px;font-size:13px}
+  .mp-dots{gap:6px;margin:6px 0 0;min-height:30px}
+  .mp-lesson{padding:3px 4px 3px 9px;font-size:15px}.mp-lesson b{font-size:12px}
+  .mp-world .mp-node{width:48px;height:48px;font-size:16px}.mp-world .mp-node.boss{width:58px;height:58px;font-size:26px}
+  .mp-world .mp-node .st{font-size:11px;margin-top:2px}
+}
 .mp-tier{cursor:pointer;background:linear-gradient(90deg,#ffcf4a,#ff9d2e);color:#3b2300;border:0}
 .mp-daily,.mp-chaos{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:18px;border:0;cursor:pointer;text-align:left;color:#fff}
 .mp-daily{background:linear-gradient(90deg,#ff4fa3,#ff7a45)}
@@ -1708,7 +1732,7 @@ const MINOR_SHARP_ROW = ['A','E','B','F#','C#','G#','D#','A#'], MINOR_FLAT_ROW =
 const MINOR_ORDER = ['A','E','B','F#','C#','G#','D#','A#','D','G','C','F','Bb','Eb','Ab'];
 // MAP redesign switch (David 2026-11-15: not live yet; tomorrow is a key signature drill with a sub). false = the original
 // start screen (no MAP tab, no tiers on boards). ?map=1 turns it on in this browser for trying it out; ?map=0 turns it off.
-const MAP_ENABLED = (() => { try{ const v = new URLSearchParams(location.search).get('map'); if(v === '1' || v === '0') localStorage.setItem('scalequest.mapTry', v); return localStorage.getItem('scalequest.mapTry') === '1'; }catch(e){ return false; } })();
+const MAP_ENABLED = (() => { try{ const v = new URLSearchParams(location.search).get('map'); if(v === '1' || v === '0') localStorage.setItem('scalequest.mapTry', v); return localStorage.getItem('scalequest.mapTry') !== '0'; }catch(e){ return true; } })();   // 2026-11-16: map is on for everyone (?map=0 turns it off in one browser)
 // MAP worlds (2026-11-15 redesign; the map code is with the key signature ladder code further down)
 const MAP_WORLDS = [
   {n: 'Sharp Keys', col: '#ff7a45', bg: 'linear-gradient(160deg,#5a2412,#24163f)', keys: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'], boss: 'Metronome Max', face: '🤖', f: 1.3, taunt: 'Tick, tock. Think you know your sharp keys? Beat my clock!'},
@@ -4627,16 +4651,19 @@ function renderMap(){
   const d = mapData(), cur = mapCurrent(), total = MAP_WORLDS.reduce((a, W, w) => a + W.keys.reduce((b, _, i) => b + starOf(w, i), 0), 0);
   const tier = tierOf(+d.best || 0), I = dailyInfo();
   let h = `<div class="mp-head"><b>Your map</b><span class="mp-chip" title="Coins">🪙 ${d.coins}</span><span class="mp-chip" title="Stars">⭐ ${total}</span><button type="button" class="mp-chip mp-tier" id="mpTier" title="Your ranked tier">${tier ? tier[1] + ' ' + tier[2] : '🏅 Unranked'}</button></div>
-    <button type="button" class="mp-daily${I.done ? ' done' : ''}" id="mpDaily"><span class="ic" aria-hidden="true">🔥</span><span><b>${I.done ? 'Daily challenge done!' : 'Daily challenge'}</b><small>${I.done ? `Come back tomorrow · streak ${I.streak} day${I.streak === 1 ? '' : 's'}` : `Scale of the day: ${esc(scaleName(I.key))} · 5 questions · +50 🪙${I.streak ? ` · streak ${I.streak}` : ''}`}</small></span><span class="go">${I.done ? 'AGAIN' : 'PLAY'}</span></button>
-    <div class="mp-row"><button type="button" class="mp-nova" id="mpNova"><span class="mp-star" aria-hidden="true">★</span><span><b>${MN('nova')}</b><small>All 150 scales · ${CHAOS_LEN} questions · ${NOVA_HEARTS} hearts${novaUnlocked() ? '' : ` · 🔒 finish one ${MNs()} run to unlock`}</small></span></button>
+    <div class="mp-row"><button type="button" class="mp-daily${I.done ? ' done' : ''}" id="mpDaily"><span class="ic" aria-hidden="true">🔥</span><span><b>${I.done ? 'Daily challenge done!' : 'Daily challenge'}</b><small>${I.done ? `Come back tomorrow · streak ${I.streak} day${I.streak === 1 ? '' : 's'}` : `Scale of the day: ${esc(scaleName(I.key))} · 5 questions · +50 🪙${I.streak ? ` · streak ${I.streak}` : ''}`}</small></span><span class="go">${I.done ? 'AGAIN' : 'PLAY'}</span></button><button type="button" class="mp-nova" id="mpNova"><span class="mp-star" aria-hidden="true">★</span><span><b>${MN('nova')}</b><small>All 150 scales · ${CHAOS_LEN} questions · ${NOVA_HEARTS} hearts${novaUnlocked() ? '' : ` · 🔒 finish one ${MNs()} run to unlock`}</small></span></button>
     <button type="button" class="mp-chaos" id="mpChaos"><span class="ic" aria-hidden="true">⚔️</span><span><b>${MN('chaos')}</b><small>${CHAOS_LEN} timed questions · post a high score${tier ? ` · you: ${tier[1]} ${tier[2]}` : ' · earn your tier'}</small></span></button></div>`;
-  MAP_WORLDS.forEach((W, w) => {
-    const open = worldOpen(w), n = W.keys.length + 1, rowH = 84, H = n * rowH;
-    const pts = Array.from({length: n}, (_, i) => ({x: [50, 74, 50, 26][i % 4], y: 42 + i * rowH}));
+  // 2026-11-16: one world at a time (◀ ▶ arrows and dots), levels in a snake of rows, so the map fits one screen (no scrolling)
+  if(S.mapW == null || S.mapW < 0 || S.mapW >= MAP_WORLDS.length) S.mapW = cur ? cur.w : 0;
+  const narrow = (el.clientWidth || innerWidth) < 560;
+  [S.mapW].forEach(w => { const W = MAP_WORLDS[w];
+    const open = worldOpen(w), n = W.keys.length + 1, cols = 5, rows = Math.ceil(n / cols), rowH = narrow ? 76 : 92, H = rows * rowH;
+    const pts = Array.from({length: n}, (_, i) => { const r = Math.floor(i / cols), c = i % cols; return {x: Math.round(((r % 2 ? cols - 1 - c : c) + .5) / cols * 1000) / 10, y: 40 + r * rowH}; });
     const trail = pts.map((p, i) => (i ? 'L' : 'M') + p.x + ' ' + p.y).join(' ');
     const got = W.keys.reduce((a, _, i) => a + starOf(w, i), 0);
-    h += `<section class="mp-world${open ? '' : ' lock'}" style="background:${W.bg}"><h3><span style="color:${W.col}">●</span> World ${w + 1} · ${W.n}<small>${open ? `${got} / ${W.keys.length * 3} ⭐` : `🔒 Beat ${esc(MAP_WORLDS[w - 1].boss)} to open`}</small></h3>
-      ${w === 0 ? `<button type="button" class="mp-lesson${d.lesson ? ' done' : ''}" id="mpLesson"><span aria-hidden="true">📖</span><span><b>${d.lesson ? 'How scales work' : 'Start here: how scales work'}</b><small>${d.lesson ? 'Watch the 2-minute lesson again' : 'New to scales? A 2-minute lesson before Level 1'}</small></span>${d.lesson ? '<span class="ok">✓</span>' : '<span class="go">GO</span>'}</button>` : ''}
+    const dots = MAP_WORLDS.map((X, j) => `<button type="button" class="mp-dot${j === w ? ' on' : ''}" data-wgo="${j}" style="--c:${X.col}" aria-label="World ${j + 1}: ${esc(X.n)}"></button>`).join('');
+    h += `<section class="mp-world${open ? '' : ' lock'}" style="background:${W.bg}"><h3><button type="button" class="mp-arr" data-wv="-1" aria-label="Previous world"${w ? '' : ' disabled'}>◀</button><span class="mp-wn"><span style="color:${W.col}">●</span> World ${w + 1} · ${W.n}</span><small>${open ? `${got} / ${W.keys.length * 3} ⭐` : `🔒 Beat ${esc(MAP_WORLDS[w - 1].boss)} to open`}</small><button type="button" class="mp-arr" data-wv="1" aria-label="Next world"${w < MAP_WORLDS.length - 1 ? '' : ' disabled'}>▶</button></h3>
+      <div class="mp-dots">${dots}${w === 0 ? `<button type="button" class="mp-lesson${d.lesson ? ' done' : ''}" id="mpLesson"><span aria-hidden="true">📖</span><b>${d.lesson ? (narrow ? 'Lesson ✓' : 'How scales work ✓') : narrow ? 'New? Lesson' : 'New? Start here: how scales work'}</b>${d.lesson ? '' : '<span class="go">GO</span>'}</button>` : ''}</div>
       <div class="mp-path" style="height:${H}px"><svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${trail}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
     W.keys.forEach((k, i) => {
       const s = starOf(w, i), op = levelOpen(w, i), isCur = !!cur && cur.w === w && cur.i === i;
@@ -4650,12 +4677,15 @@ function renderMap(){
   h += `<p class="mp-free">Key signatures (count it, write it), scale degrees and picking your own scales are in <b>FREE PLAY</b>.</p>`;
   el.innerHTML = h;
 }
+addEventListener('resize', () => { if(mapOn() && !S.run){ clearTimeout(renderMap.t); renderMap.t = setTimeout(renderMap, 150); } });
 $('#sqTabs').addEventListener('click', e => {
   const b = e.target.closest('[data-t]'); if(!b || S.run) return;
   SFX.click(); S.view = b.dataset.t; store.set('view', S.view); syncQuick();
 });
 $('#sqMap').addEventListener('click', e => {
   if(S.run || S.overlay) return;
+  const wv = e.target.closest('[data-wv],[data-wgo]');
+  if(wv){ SFX.click(); S.mapW = wv.dataset.wgo != null ? +wv.dataset.wgo : Math.max(0, Math.min(MAP_WORLDS.length - 1, S.mapW + +wv.dataset.wv)); return renderMap(); }
   if(e.target.closest('#mpTier')){ SFX.click(); return showTiers(); }
   if(e.target.closest('#mpLesson')){ SFX.click(); audio(); return startLesson(); }
   if(e.target.closest('#mpChaos')){ SFX.click(); return goChaos(); }
