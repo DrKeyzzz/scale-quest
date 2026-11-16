@@ -1690,6 +1690,9 @@ const MINOR_FORMS = ['nat', 'harm', 'mel'], MODE_TYPES = ['dor', 'phr', 'lyd', '
 const MAJOR_ORDER = ['C','G','D','A','E','B','F#','C#','F','Bb','Eb','Ab','Db','Gb','Cb'];
 const MINOR_SHARP_ROW = ['A','E','B','F#','C#','G#','D#','A#'], MINOR_FLAT_ROW = ['A','D','G','C','F','Bb','Eb','Ab'];
 const MINOR_ORDER = ['A','E','B','F#','C#','G#','D#','A#','D','G','C','F','Bb','Eb','Ab'];
+// MAP redesign switch (David 2026-11-15: not live yet; tomorrow is a key signature drill with a sub). false = the original
+// start screen (no MAP tab, no tiers on boards). ?map=1 turns it on in this browser for trying it out; ?map=0 turns it off.
+const MAP_ENABLED = (() => { try{ const v = new URLSearchParams(location.search).get('map'); if(v === '1' || v === '0') localStorage.setItem('scalequest.mapTry', v); return localStorage.getItem('scalequest.mapTry') === '1'; }catch(e){ return false; } })();
 // MAP worlds (2026-11-15 redesign; the map code is with the key signature ladder code further down)
 const MAP_WORLDS = [
   {n: 'Sharp Keys', col: '#ff7a45', bg: 'linear-gradient(160deg,#5a2412,#24163f)', keys: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'], boss: 'Metronome Max', face: '🤖', f: 1.3, taunt: 'Tick, tock. Think you know your sharp keys? Beat my clock!'},
@@ -2972,9 +2975,9 @@ function focusScale(id, deg=false){
 function applyFocus(label){
   S.view = 'free';
   if(String(label).toLowerCase() === 'key signatures'){
-    if(S.mode === 'nova') setChoice('mode', 'practice');
+    if(S.mode !== 'practice') setChoice('mode', 'practice');   // the key signature ladder lives in practice
     setChoice('scales', 'ks');
-    focusToast('🎯 Practice set up: <b>Key signatures</b>. Press <b>START</b> when you\'re ready!');
+    focusToast('🎯 <b>Key signatures</b>: pick a level and press <b>PLAY</b>!');
     return;
   }
   if(S.mode === 'nova') setChoice('mode', 'practice');   // a focus link sets up practice, never SUPERNOVA
@@ -4565,8 +4568,8 @@ function mapKey(){ const p = getProfile(); return p ? 'map:' + studentKey(p) : '
 var MAP_GUEST = MAP_GUEST || {s: {}, coins: 0};   // var: renderMap can run (from syncQuick) before this line
 function mapData(){ if(!mapKey()) return MAP_GUEST || (MAP_GUEST = {s: {}, coins: 0}); const d = store.get(mapKey(), null); return d && typeof d === 'object' && d.s ? d : {s: {}, coins: 0}; }
 function mapSave(d){ if(mapKey()) store.set(mapKey(), d); }
-function mapOn(){ return S.view === 'map' && !(window.MTGTest && MTGTest.active); }
-function worldOpen(w){ return w === 0 || (mapData().s[`${w - 1}:boss`] || 0) >= 1; }   // beat the boss of the world before
+function mapOn(){ return MAP_ENABLED && S.view === 'map' && !(window.MTGTest && MTGTest.active); }
+function worldOpen(w){ return true; }   // every world is open from the start (David: a kid may want just the flat keys); levels in a world go in order
 // a level's stars (World 4 uses the key signature ladder's own stars)
 function starOf(w, i){ return MAP_WORLDS[w].ladder ? (ladderStars()[i] || 0) : (mapData().s[`${w}:${i}`] || 0); }
 function levelOpen(w, i){ return worldOpen(w) && (i === 0 || starOf(w, i - 1) >= 1); }
@@ -4586,7 +4589,7 @@ function renderMap(){
   const el = $('#sqMap'); if(!el) return;
   const on = mapOn(); $('#app').classList.toggle('mapmode', on);
   document.querySelectorAll('#sqTabs [data-t]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.t === (on ? 'map' : 'free'))));
-  $('#sqTabs').hidden = !!(window.MTGTest && MTGTest.active);
+  $('#sqTabs').hidden = !MAP_ENABLED || !!(window.MTGTest && MTGTest.active);
   if(!on) return;
   const d = mapData(), cur = mapCurrent(), total = MAP_WORLDS.reduce((a, W, w) => a + W.keys.reduce((b, _, i) => b + starOf(w, i), 0), 0);
   const tier = tierOf(+d.best || 0), I = dailyInfo();
@@ -4715,7 +4718,7 @@ function duelEnd(){
   const p = openOverlay(`
     <div class="duelface" style="background:${W.col}">${win ? '😵' : W.face}</div>
     <h2 class="otitle">${win ? `YOU BEAT ${esc(W.boss.toUpperCase())}!` : `${esc(W.boss.toUpperCase())} WINS THIS TIME`}</h2>
-    <p class="osub">${win ? `<b>🪙 +${D.coins + prize}</b> coins${firstWin ? (nextW != null ? ` · <b>World ${nextW + 1}: ${esc(MAP_WORLDS[nextW].n)}</b> is open!` : ' · More worlds are coming soon!') : ''}` : `No penalty.${D.coins ? ` <b>🪙 +${D.coins}</b> coins for your hits.` : ''} Practice a level, then try again!`}</p>
+    <p class="osub">${win ? `<b>🪙 +${D.coins + prize}</b> coins${firstWin ? (nextW != null ? ` · Next up: <b>World ${nextW + 1}: ${esc(MAP_WORLDS[nextW].n)}</b>` : ' · You beat every boss on the map!') : ''}` : `No penalty.${D.coins ? ` <b>🪙 +${D.coins}</b> coins for your hits.` : ''} Practice a level, then try again!`}</p>
     <div class="obtns">${win && firstWin && nextW != null ? `<button class="btn obtn" id="dNext" type="button" data-focus>WORLD ${nextW + 1} ▶</button>` : !win ? `<button class="btn obtn" id="dAgain" type="button" data-focus>REMATCH ⚔️</button>` : ''}<button class="btn obtn alt" id="menuBtn" type="button"${win && !(firstWin && nextW != null) ? ' data-focus' : ''}>MAP</button></div>`, win ? '' : 'mag');
   const nx = p.querySelector('#dNext'); if(nx) nx.onclick = () => startLevel(nextW, 0);
   const ag = p.querySelector('#dAgain'); if(ag) ag.onclick = () => startDuel(D.w);
@@ -4728,7 +4731,7 @@ function duelEnd(){
    boards (from each row's score, so no extra reads). The daily challenge: a "scale of the day" (the same for everyone,
    from the date), 5 questions, pass 4 = +50 coins and the streak goes up (yesterday done = streak + 1, else 1). */
 function tierOf(score){ if(!(score > 0)) return null; let t = TIERS[0]; TIERS.forEach(x => { if(score >= x[0]) t = x; }); return t; }
-function tierTag(score){ const t = tierOf(score); return t ? ` <span class="tiertag" title="${t[2]} tier">${t[1]}</span>` : ''; }
+function tierTag(score){ if(!MAP_ENABLED) return ''; const t = tierOf(score); return t ? ` <span class="tiertag" title="${t[2]} tier">${t[1]}</span>` : ''; }
 function showTiers(){
   const best = +mapData().best || 0, me = tierOf(best);
   openOverlay(`<h2 class="otitle">RANKED TIERS</h2>
