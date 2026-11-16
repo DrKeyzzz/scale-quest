@@ -640,7 +640,15 @@ button{font:inherit;color:inherit}
 .degbtns.lad.two button{font-size:19px!important;padding:12px 2px}
 @media (max-width:700px){.degbtns.lad{grid-template-columns:repeat(min(var(--n,4),3),minmax(0,1fr))}.degbtns.lad.two{grid-template-columns:repeat(4,minmax(0,1fr))}.degbtns.lad button{min-height:50px;padding:10px 2px}}
 .kshint{font:600 14px var(--px);padding:5px 14px;border-radius:999px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
-.kshintbox{display:flex;gap:14px;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px;font-size:17px;line-height:1.4;text-align:left;flex:0 0 auto}
+.kshintbox{display:flex;flex-direction:column;gap:8px;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px;font-size:17px;line-height:1.4;text-align:left;flex:0 0 auto;max-width:440px}
+.kssteps{margin:0;padding-left:22px;display:grid;gap:4px}
+.kshintbox .minikbd,.minikbd{width:min(100%,230px);height:auto}
+.minikbd .mkw{fill:#fff;stroke:#1b1f3b;stroke-width:1.5}.minikbd .mkb{fill:#1b1f3b}
+.minikbd .on{fill:#8dffb3}.minikbd .mkb.on{fill:#17a653}.minikbd .from{fill:#ffd166}.minikbd .mkb.from{fill:#c9a200}
+.minikbd .mkl{font:900 13px var(--px);fill:#1b1f3b;text-anchor:middle}.minikbd .mkl.b{fill:#fff;font-size:10px}
+.minikbd .mka{fill:none;stroke:#ff8fa3;stroke-width:3}.minikbd .mkal{font:900 15px var(--px);fill:#ff8fa3;text-anchor:middle}
+#staffSvg .ksn{font:900 16px var(--px);fill:#dc2626;paint-order:stroke;stroke:#fff;stroke-width:4px}
+#staffSvg .kscirc{fill:none;stroke:#dc2626;stroke-width:3}
 .kshintbox p{margin:0;width:210px}
 .kshintbox svg{width:230px;height:230px;flex:none}
 /* the hint sits beside the staff (never on top of it); on narrow screens it goes under it */
@@ -4461,27 +4469,65 @@ function ladderQuestion(){
   renderQuestion();
 }
 // Hint: the trick for this kind of key signature and a circle of fifths (nothing lit, so it doesn't give the answer away).
+// Key signature hint (rebuilt 2026-11-15, David: "how did the hint actually help?"): it works the answer out step by step on
+// THIS key signature. The sharp or flat that matters is circled and named on the staff (ksStaffMarks), the steps are numbered,
+// and a little piano shows the half step (and, for minor, the 3 half steps down). No circle of fifths.
+function miniKbd(marks, arcs){
+  // a few keys around the marked ones (index 0 = C of the lower octave); names written inside the keys; arcs above
+  const BLK = [1, 3, 6, 8, 10], isB = i => BLK.includes(((i % 12) + 12) % 12), ids = marks.map(m => m.i).concat(arcs.flat().filter(x => typeof x === 'number'));
+  let lo = Math.min(...ids) - 3, hi = Math.max(...ids) + 3; while(isB(lo)) lo--; while(isB(hi)) hi++;
+  const W = 30, H = 88, BW = 18, BH = 54, xs = {}; let wi = 0;
+  for(let i = lo; i <= hi; i++){ if(!isB(i)){ xs[i] = wi * W + W / 2; wi++; } else xs[i] = wi * W; }
+  const mk = Object.fromEntries(marks.map(m => [m.i, m])); let wh = '', bl = '';
+  for(let i = lo; i <= hi; i++){
+    const m = mk[i], c = m ? ' ' + (m.cls || 'on') : '';
+    if(!isB(i)) wh += `<rect x="${xs[i] - W / 2 + 1}" y="0" width="${W - 2}" height="${H}" rx="4" class="mkw${c}"/>${m ? `<text x="${xs[i]}" y="${H - 10}" class="mkl">${m.label}</text>` : ''}`;
+    else bl += `<rect x="${xs[i] - BW / 2}" y="0" width="${BW}" height="${BH}" rx="3" class="mkb${c}"/>${m ? `<text x="${xs[i]}" y="${BH - 8}" class="mkl b">${m.label}</text>` : ''}`;
+  }
+  const arcsS = arcs.map(([a, b, l]) => { const x1 = xs[a], x2 = xs[b], mid = (x1 + x2) / 2;
+    return `<path d="M${x1} -3 Q${mid} -24 ${x2} -3" class="mka"/><text x="${mid}" y="-24" class="mkal">${l}</text>`; }).join('');
+  return `<svg class="minikbd" viewBox="0 -42 ${wi * W} ${H + 44}" aria-hidden="true">${wh}${bl}${arcsS}</svg>`;
+}
+function ksHintPlan(q){
+  const n = sigCount(q.maj), flat = isFlatKey(q.maj), names = sigList(q.maj).map(fmt), M = fmt(q.maj), mi = fmt(relMinor(q.maj));
+  const iM = pcOf(SCALES[q.maj][0]) + 12, steps = [], marks = [], arcs = []; let mark = -1;
+  if(!n){ steps.push('No sharps or flats at all.', `That's <b>C major</b>.`); marks.push({i: iM, label: 'C'}); }
+  else if(!flat){
+    mark = n - 1; const last = names[n - 1];
+    steps.push(`Find the <b>last sharp</b> (circled on the staff): <b>${last}</b>.`, `Go up a <b>half step</b>, the very next key: ${last} → <b>${M}</b>.`, `So it's <b>${M} major</b>.`);
+    marks.push({i: iM - 1, label: last, cls: 'from'}, {i: iM, label: M}); arcs.push([iM - 1, iM, 'H']);
+  } else if(n === 1){ mark = 0; steps.push('One flat (B♭) always means <b>F major</b>. Just remember this one!'); marks.push({i: iM, label: 'F'}); }
+  else { mark = n - 2; steps.push(`Find the <b>second-to-last flat</b> (circled on the staff): <b>${names[n - 2]}</b>.`, `That flat's name <b>is</b> the key: <b>${M} major</b>.`); marks.push({i: iM, label: M}); }
+  if(q.minor){
+    const path = [iM, iM - 1, iM - 2, iM - 3];
+    steps.push(`For the <b>minor</b> key, go <b>down 3 half steps</b> from ${M}: <b>${mi} minor</b>.`);
+    marks.length = 0; arcs.length = 0; marks.push({i: iM, label: M, cls: 'from'}, {i: iM - 3, label: mi + 'm'});
+    for(let k = 1; k < 4; k++) arcs.push([path[k - 1], path[k], 'H']);
+  }
+  return {steps, marks, arcs, mark};
+}
 function ladderHint(q){
-  const n = sigCount(q.maj), flat = isFlatKey(q.maj);
-  let t = !n ? 'No sharps or flats: that is <b>C major</b> (and A minor).' : !flat
-    ? 'Find the <b>last sharp</b> (farthest right) and go up a half step. That is the major key.'
-    : n === 1 ? 'One flat (B♭) is always <b>F major</b>.' : 'The <b>second-to-last flat</b> names the major key.';
-  if(q.minor) t += ' For the <b>minor</b> key, go <b>down 3 half steps</b> from the major key (the inside ring).';
-  const maj = ['C', 'G', 'D', 'A', 'E', 'B/C♭', 'F♯/G♭', 'C♯/D♭', 'A♭', 'E♭', 'B♭', 'F'];
-  const min = ['Am', 'Em', 'Bm', 'F♯m', 'C♯m', 'G♯m', 'D♯m', 'A♯m', 'Fm', 'Cm', 'Gm', 'Dm'];
-  let s = '<circle cx="85" cy="85" r="80" fill="var(--bg2)" stroke="var(--line)" stroke-width="2"/><circle cx="85" cy="85" r="56" fill="none" stroke="var(--line)"/>';
-  maj.forEach((k, i) => { const a = (i * 30 - 90) * Math.PI / 180;
-    s += `<text x="${(85 + 68 * Math.cos(a)).toFixed(1)}" y="${(85 + 68 * Math.sin(a)).toFixed(1)}" font-size="${k.length > 2 ? 11 : 17}" font-weight="700" fill="${q.minor ? 'var(--dim)' : 'var(--ink)'}">${k}</text>`;
-    s += `<text x="${(85 + 44 * Math.cos(a)).toFixed(1)}" y="${(85 + 44 * Math.sin(a)).toFixed(1)}" font-size="9.5" font-weight="700" fill="${q.minor ? 'var(--mag)' : 'var(--dim)'}">${min[i]}</text>`; });
-  s += '<text x="85" y="80" font-size="8.5" fill="var(--dim)">♯ clockwise</text><text x="85" y="91" font-size="8.5" fill="var(--dim)">♭ counter</text>';
-  return `<div class="kshintbox" id="ksHintBox"><svg viewBox="0 0 170 170" role="img" aria-label="Circle of fifths">${s}</svg><p>${t}</p></div>`;
+  const P = ksHintPlan(q);
+  return `<div class="kshintbox" id="ksHintBox"><ol class="kssteps">${P.steps.map(t => `<li>${t}</li>`).join('')}</ol>${miniKbd(P.marks, P.arcs)}</div>`;
+}
+// circle + name the sharp/flat that matters on the staff (and name all of them, small)
+function ksStaffMarks(q, on){
+  const g = document.getElementById('hintNames'); if(!g) return;
+  if(!on){ g.innerHTML = ''; return; }
+  const n = sigCount(q.maj), flat = isFlatKey(q.maj), names = sigList(q.maj).map(fmt), P = flat ? FLAT_SIG_POS : SHARP_SIG_POS, v = staves()[0], mark = ksHintPlan(q).mark;
+  let out = '';
+  for(let i = 0; i < n; i++){
+    const x = 96 + i * 16, y = yOf(P[i] + CLEFS[v.clef].sig) + v.dy;
+    if(i === mark) out += `<circle cx="${x}" cy="${y - (flat ? 4 : 0)}" r="15" class="kscirc"/><text class="ksn hit" x="${x + 20 + (n - 1 - i) * 16}" y="${y + 5}" text-anchor="start">← ${names[i]}</text>`;
+  }
+  g.innerHTML = out;
 }
 $('#qHelp').addEventListener('click', e => {
   if(!e.target.closest('#ksHintBtn')) return;
   const r = S.run, q = r && r.q; if(!q || !r.ladder || S.busy) return;
   SFX.click(); const sw = $('#staffWrap'), old = $('#ksHintBox'), open = !old;
   if(old) old.remove(); else sw.querySelector('.paper').insertAdjacentHTML('afterend', ladderHint(q));
-  sw.classList.toggle('hinted', open); e.target.setAttribute('aria-expanded', open);
+  sw.classList.toggle('hinted', open); e.target.setAttribute('aria-expanded', open); ksStaffMarks(q, open);
 });
 function ladderHintOff(){ const b = $('#ksHintBox'); if(b) b.remove(); $('#staffWrap').classList.remove('hinted'); }
 function ladderEnd(){
@@ -4794,6 +4840,7 @@ $('#qHelp').addEventListener('click', e => {
   SFX.click(); const ex = $('#explain'), open = ex.hidden || !ex.querySelector('.hintbox, .kshintbox');
   ex.innerHTML = open ? hintFor(q) : ''; ex.hidden = !open; e.target.setAttribute('aria-expanded', String(open));
   if(q.type === 'staff') $('#hintNames').innerHTML = open ? staffNames() : '';
+  if(ksQ(q) && q.type === 'ksname') ksStaffMarks(q, open);
   if(q.type === 'piano' || q.type === 'build'){ pianoNames(q, open); pianoGuide(q, open); }
   if(open && !q.hinted){ q.hinted = true; r.hints = (r.hints || 0) + 1; }
 });
