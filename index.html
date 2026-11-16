@@ -578,6 +578,7 @@ button{font:inherit;color:inherit}
 .lspiano .b rect{fill:#1b1f3b}
 .lspiano .lk.on .w rect,.lspiano .w.on rect{fill:#9ef0c0}.lspiano .b.on rect{fill:#2f9e6a}
 .lspiano .lk.now rect{fill:#ffd166!important}
+.lspiano .w.skip rect{fill:#e6e8f5;stroke-dasharray:5 4}.lspiano .w.skip text{fill:#8a90b8}
 .lsmsg{min-height:24px;font-weight:700;color:var(--yel)}
 .lspat{letter-spacing:.12em;color:var(--yel)}
 .hintbox{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px;max-width:720px;text-align:center}
@@ -4746,7 +4747,7 @@ function startLesson(){
   let step = 0, built = 0;
   const STEPS = [
     () => ({t: 'What is a scale?', b: `<p>A <b>scale</b> is a set of notes in order, like the steps of a ladder. It starts on a <b>home note</b> and climbs up to the same letter again.</p>${lessonPiano()}<button class="btn obtn alt" id="lsHear" type="button">▶ HEAR C MAJOR</button>`}),
-    () => ({t: 'Half steps and whole steps', b: `<p>A <b>half step (H)</b> is the very next key, black or white. A <b>whole step (W)</b> skips one key.</p>${lessonPiano()}<div class="obtns"><button class="btn obtn alt" id="lsHalf" type="button">SHOW A HALF STEP</button><button class="btn obtn alt" id="lsWhole" type="button">SHOW A WHOLE STEP</button></div>`}),
+    () => ({t: 'Half steps and whole steps', b: `<p>A <b>half step (H)</b> is the very next key, black or white. A <b>whole step (W)</b> skips one key.</p>${lessonPiano()}<div class="obtns"><button class="btn obtn alt" id="lsHalf" type="button">HALF STEP: E TO F</button><button class="btn obtn alt" id="lsWhole" type="button">WHOLE STEP: E TO F♯</button></div><p class="lsmsg" id="lsMsg"></p>`}),
     () => ({t: 'Build C major', b: `<p>Every <b>major</b> scale uses the same pattern: <b class="lspat">W W H W W W H</b>. Start on <b>C</b> and tap the keys going up.</p>${lessonPiano()}<p class="lsmsg" id="lsMsg">Tap <b>C</b> to start.</p>`}),
     () => ({t: 'Scale numbers', b: `<p>Each note in the scale has a number. The home note is <b>1</b>.</p><div class="explain">${scaleChips('C', 'C MAJOR', [], -1)}</div><p>So what is the <b>5th</b> of C major?</p><div class="obtns" id="lsQ"><button class="btn obtn alt" data-a="F" type="button">F</button><button class="btn obtn alt" data-a="G" type="button">G</button><button class="btn obtn alt" data-a="A" type="button">A</button></div><p class="lsmsg" id="lsMsg"></p>`}),
     () => ({t: 'You\'re ready! 🎉', b: `<p>That's the secret to every scale: <b>start on the home note, follow the pattern, count the numbers</b>. Stuck in a level? Tap <b>💡 Hint</b>.</p>`}),
@@ -4760,8 +4761,11 @@ function startLesson(){
     const bk = p.querySelector('#lsBack'); if(bk) bk.onclick = () => { step--; show(); };
     nx.onclick = () => { if(last){ const d = mapData(); d.lesson = true; mapSave(d); closeOverlay(); startLevel(0, 0); } else { step++; built = 0; show(); } };
     const hear = p.querySelector('#lsHear'); if(hear) hear.onclick = () => lessonPlay(LS_W);
-    const half = p.querySelector('#lsHalf'); if(half) half.onclick = () => { lessonLight([64, 65]); lessonPlay([64, 65], 600); };
-    const whole = p.querySelector('#lsWhole'); if(whole) whole.onclick = () => { lessonLight([60, 62]); lessonPlay([60, 62], 600); };
+    // Both steps start on E so they're easy to compare: E-F is one half step; E-F♯ adds one more (it skips F).
+    const half = p.querySelector('#lsHalf'); if(half) half.onclick = () => { lessonLight([], 'skip'); lessonLight([64, 65]); lessonPlay([64, 65], 600);
+      p.querySelector('#lsMsg').innerHTML = 'E to F: the very next key. That\'s <b>1 half step</b>.'; };
+    const whole = p.querySelector('#lsWhole'); if(whole) whole.onclick = () => { lessonLight([64, 66]); lessonLight([65], 'skip'); lessonPlay([64, 66], 600);
+      p.querySelector('#lsMsg').innerHTML = 'E to F♯ skips F: half step + half step = <b>1 whole step</b>.'; };
     const pi = p.querySelector('.lspiano');
     if(pi) pi.addEventListener('click', e => {
       const g = e.target.closest('.lk'); if(!g) return; const m = +g.dataset.m; playMidi(m, .5);
