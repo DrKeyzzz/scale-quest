@@ -642,7 +642,7 @@ button{font:inherit;color:inherit}
 .kshint{font:600 14px var(--px);padding:5px 14px;border-radius:999px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
 .kshintbox{display:flex;flex-direction:column;gap:8px;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px;font-size:17px;line-height:1.4;text-align:left;flex:0 0 auto;max-width:440px}
 .kssteps{margin:0;padding-left:22px;display:grid;gap:4px}
-.kshintbox .minikbd,.minikbd{width:min(100%,230px);height:auto}
+.kshintbox .minikbd,.minikbd{width:min(100%,260px);height:auto}
 .minikbd .mkw{fill:#fff;stroke:#1b1f3b;stroke-width:1.5}.minikbd .mkb{fill:#1b1f3b}
 .minikbd .on{fill:#8dffb3}.minikbd .mkb.on{fill:#17a653}.minikbd .from{fill:#ffd166}.minikbd .mkb.from{fill:#c9a200}
 .minikbd .mkl{font:900 13px var(--px);fill:#1b1f3b;text-anchor:middle}.minikbd .mkl.b{fill:#fff;font-size:10px}
@@ -4478,7 +4478,8 @@ function ladderQuestion(){
 function miniKbd(marks, arcs){
   // a few keys around the marked ones (index 0 = C of the lower octave); names written inside the keys; arcs above
   const BLK = [1, 3, 6, 8, 10], isB = i => BLK.includes(((i % 12) + 12) % 12), ids = marks.map(m => m.i).concat(arcs.flat().filter(x => typeof x === 'number'));
-  let lo = Math.min(...ids) - 3, hi = Math.max(...ids) + 3; while(isB(lo)) lo--; while(isB(hi)) hi++;
+  // whole octaves from C (plus the next C), so it looks like a real piano
+  const lo = Math.floor(Math.min(...ids) / 12) * 12, hi = Math.ceil((Math.max(...ids) + 1) / 12) * 12;
   const W = 30, H = 88, BW = 18, BH = 54, xs = {}; let wi = 0;
   for(let i = lo; i <= hi; i++){ if(!isB(i)){ xs[i] = wi * W + W / 2; wi++; } else xs[i] = wi * W; }
   const mk = Object.fromEntries(marks.map(m => [m.i, m])); let wh = '', bl = '';
@@ -4511,7 +4512,8 @@ function ksHintPlan(q){
 }
 function ladderHint(q){
   const P = ksHintPlan(q);
-  return `<div class="kshintbox" id="ksHintBox"><ol class="kssteps">${P.steps.map(t => `<li>${t}</li>`).join('')}</ol>${miniKbd(P.marks, P.arcs)}</div>`;
+  // the little piano only when there is a step to show (sharps: the half step up; minor: 3 half steps down)
+  return `<div class="kshintbox" id="ksHintBox"><ol class="kssteps">${P.steps.map(t => `<li>${t}</li>`).join('')}</ol>${P.arcs.length ? miniKbd(P.marks, P.arcs) : ''}</div>`;
 }
 // circle + name the sharp/flat that matters on the staff (and name all of them, small)
 function ksStaffMarks(q, on){
