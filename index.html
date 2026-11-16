@@ -308,7 +308,7 @@ button{font:inherit;color:inherit}
 .degcard{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .degcard span{font-family:var(--px);font-size:9px;padding:5px 7px;border:2px solid var(--line);background:var(--panel);color:var(--dim)}
 .degcard b{color:var(--yel);font-weight:400;margin-right:4px}
-.degcard.count span{color:var(--ink);border-color:var(--yel);font-size:15px}.degcard.count span.lbl{border:0;background:none;color:var(--yel);font-size:13px}
+.degcard.count span{color:var(--ink);border-color:var(--yel);font-size:15px}.degcard.count span.lbl{border:0;background:none;color:var(--yel);font-size:13px}.degcard.count span.hit{background:var(--yel);color:#1a1440}.degcard.count span.hit b{color:#1a1440}
 .sigmini{flex:none;width:118px;padding:0;align-self:center} .sigmini svg{display:block;width:100%;height:auto}
 .pianowrap.nameit{display:flex;gap:10px;align-items:center;width:min(100%,830px,calc(28vh * 2.95 + 230px))}
 .pianowrap.nameit>svg{flex:1;min-width:0}
@@ -4879,7 +4879,11 @@ function pianoNames(q, on){
 // ("COUNT UP FROM C: 1 C · 2 D …") and writes the letters on the staff / piano, so a student finds the note's letter and reads its number.
 // Same height as the reference row, so the screen still fits without scrolling.
 function degCardHtml(){ return Object.entries(DEG_NAME).map(([n, nm]) => `<span><b>${n}</b>${nm.toUpperCase()}</span>`).join(''); }
-function degCountHtml(q){ return `<span class="lbl">COUNT UP FROM ${esc(fmt(tonicOf(q.sk)))}:</span>` + (SCALES[q.sk] || []).slice(0, 7).map((n, i) => `<span><b>${i + 1}</b>${esc(fmt(n))}</span>`).join(''); }
+// "What is the SUBMEDIANT…?" questions: the hint first says what the name means (SUBMEDIANT = 6) and lights that chip
+function degCountHtml(q){
+  const ask = !nameQ(q) && q.degree, ton = esc(fmt(tonicOf(q.sk)));
+  return `<span class="lbl">${ask ? `${DEG_NAME[q.degree].toUpperCase()} = ${q.degree} · ` : ''}COUNT UP FROM ${ton}:</span>` + (SCALES[q.sk] || []).slice(0, 7).map((n, i) => `<span${ask && i + 1 === q.degree ? ' class="hit"' : ''}><b>${i + 1}</b>${esc(fmt(n))}</span>`).join('');
+}
 function degHint(q, open){
   const c = $('#degCard'); c.innerHTML = open ? degCountHtml(q) : degCardHtml(); c.classList.toggle('count', open);
   if(q.type === 'dstaff') $('#hintNames').innerHTML = open ? staffNames([460]) : '';   // right of the key signature
