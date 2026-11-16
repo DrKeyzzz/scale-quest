@@ -584,6 +584,11 @@ button{font:inherit;color:inherit}
 .hintbox{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px;max-width:720px;text-align:center}
 .hintbox p{margin:4px 0;font-size:16px;line-height:1.4}
 .hintbox .explain{margin:6px 0}
+.hintbox .explain .steprow{flex-wrap:wrap;justify-content:center;row-gap:6px}
+.hintbox .explain .steprow span{font-size:22px!important;padding:6px 10px!important}
+.hintbox .explain .steprow i{font-size:18px!important;min-width:30px;font-weight:900}
+.hintbox .explain .steprow i.aug{font-size:15px!important}
+@media (max-width:600px){.hintbox .explain .steprow span{font-size:17px!important;padding:5px 7px!important}.hintbox .explain .steprow i{font-size:14px!important;min-width:20px}}
 #staffSvg .hn{font:800 14px var(--px);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:4px}
 #staffSvg .hn.ln{fill:#0284c7}#staffSvg .hn.sp{fill:#c026d3}
 .hl-ln{color:#38bdf8}.hl-sp{color:#e879f9}
@@ -4742,7 +4747,8 @@ function hintable(r, q){ return !!r && !!q && r.mode === 'practice' && !r.ladder
 function hintFor(q){
   const ton = fmt(tonicOf(q.sk || q.key));
   if(ksQ(q)) return ladderHint(q);
-  if(q.type === 'build') return `<div class="hintbox"><p>The note names are on the keys now. Start on <b>${ton}</b>${q.dir === 'down' ? ' at the top and go down' : ' and go up'}. Follow the steps: <b>W</b> = whole step (skip one key), <b>H</b> = half step (the very next key, black or white).</p>${stepChips(q, [], false)}</div>`;
+  // build: the whole scale laid out with the steps between the notes, so the W/H pattern and the notes line up
+  if(q.type === 'build') return `<div class="hintbox"><p>Here is <b>${esc(q.name)}</b>, with the steps between the notes. Start on <b>${ton}</b>${q.dir === 'down' ? ' at the top' : ''} and click them in order. <b>W</b> = whole step (skip one key) · <b>H</b> = half step (the very next key).</p><div class="explain">${stepChips(q, [], true)}</div></div>`;
   const ls = CLEF_LS[S.clef] || CLEF_LS.treble;
   return `<div class="hintbox"><p>Count up the scale. <b>${ton}</b> is 1, so find number <b>${q.degree}</b>:</p><div class="explain">${scaleChips(q.sk, 'COUNT UP', [], -1)}</div>
     ${q.type === 'piano' ? `<p>The note names are on the piano keys now. Find number ${q.degree} and click it (any octave). A <b>♯</b> is the black key just right of its letter, a <b>♭</b> just left.</p>` : q.type === 'staff' ? `<p>The letters are on the staff now: <b class="hl-ln">lines ${ls[0]}</b> · <b class="hl-sp">spaces ${ls[1]}</b> (from the bottom). Move the note to that letter. Need a ♯ or ♭? Use the accidental buttons.</p>` : ''}</div>`;
