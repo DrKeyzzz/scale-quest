@@ -2101,10 +2101,17 @@ function localTop(n){
   });
   return Object.values(best).sort((a,b) => b.score - a.score).slice(0, n);
 }
+// avatar head (2026-11-16): class rows carry data-avc (class) / data-avs (name); avHeads() adds each classmate's head.
+// MTGAvatar is set up near the end of the page, so a board drawn before that waits for DOMContentLoaded.
+function avHeads(el){
+  if(!el) return;
+  if(!window.MTGAvatar){ if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => avHeads(el), {once: true}); return; }
+  el.querySelectorAll('[data-avs]').forEach(n => MTGAvatar.badge(n, n.dataset.avc, n.dataset.avs, 22));
+}
 function boardTable(list){
   if(!list.length) return `<p class="dim">No scores yet. Finish a ${MNs()} run to claim the top spot!</p>`;
   return `<table class="board"><tbody>${list.map((x,i) =>
-    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}${tierTag(+x.score)}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'}${x.world ? '' : ` · x${+x.streak || 0}`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm"${!x.world && x.classCode ? ` data-avc="${esc(x.classCode)}" data-avs="${esc(x.name)}"` : ''}>${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}${tierTag(+x.score)}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'}${x.world ? '' : ` · x${+x.streak || 0}`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 
 /* ---------- student profile (welcome screen) ---------- */
@@ -3755,7 +3762,7 @@ function novaWarning(){
 function markNova(list, finishers){ return list.map(x => ({...x, nova: finishers.has(`${x.name}|${x.classCode || ''}`) || (x.dev && finishers.has(`${x.name}|`))})); }
 function novaTable(list){
   if(!list.length) return `<p class="dim">No ${MN('nova')} runs yet. Be the first to survive!</p>`;
-  return `<table class="board"><tbody>${list.map((x,i) => `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm">${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.finished ? starSVG('badge') : ' <span class="novatag">SURVIVOR</span>'}</td><td class="k">${x.finished ? '20/20' : `${x.reached}/20`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+  return `<table class="board"><tbody>${list.map((x,i) => `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm"${!x.world && x.classCode ? ` data-avc="${esc(x.classCode)}" data-avs="${esc(x.name)}"` : ''}>${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.finished ? starSVG('badge') : ' <span class="novatag">SURVIVOR</span>'}</td><td class="k">${x.finished ? '20/20' : `${x.reached}/20`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 function toMenu(){
   closeOverlay(); S.run = null; S.busy = false; $('#app').classList.remove('novaRun');
@@ -3771,7 +3778,7 @@ function renderBoard(){
   $('#boardTitle').textContent = cls ? `${String(p.className).toUpperCase()} TOP 5` : 'WORLD TOP 5';
   wrap.innerHTML = '<p class="dim">LOADING...</p>';
   (cls ? Cloud.classTop(p.classCode) : Cloud.worldTop())
-    .then(async list => { const f = await Cloud.novaFinishers().catch(() => new Set()); wrap.innerHTML = boardTable(markNova(markMe(list.slice(0,5)), f)); })
+    .then(async list => { const f = await Cloud.novaFinishers().catch(() => new Set()); wrap.innerHTML = boardTable(markNova(markMe(list.slice(0,5)), f)); avHeads(wrap); })
     .catch(() => { wrap.innerHTML = boardTable(markMe(localTop(5))) + '<p class="boardnote">Leaderboard is offline. Showing this device.</p>'; });
 }
 function boardPanel(){
@@ -3797,18 +3804,18 @@ function boardPanel(){
     if(tab === 'deg' || tab === 'ks'){
       const bcol = tab === 'ks' ? 'key_scores' : 'degree_scores';
       Promise.all([Promise.all(cls.map(c => Cloud.degBoard(c.code, bcol))), Cloud.degBoard(null, bcol)])
-        .then(([mine, world]) => { if(tab === want) el.innerHTML = mine.map((l, i) => head(cls[i]) + (l.length ? boardTable(markMe(l.slice(0, 5))) : '<p class="dim">No runs yet.</p>')).join('') + (mine.length ? worldHead : '') + (world.length ? boardTable(markMe(world.slice(0, 10))) : '<p class="dim">No runs yet. Be the first!</p>'); })
+        .then(([mine, world]) => { if(tab === want) el.innerHTML = mine.map((l, i) => head(cls[i]) + (l.length ? boardTable(markMe(l.slice(0, 5))) : '<p class="dim">No runs yet.</p>')).join('') + (mine.length ? worldHead : '') + (world.length ? boardTable(markMe(world.slice(0, 10))) : '<p class="dim">No runs yet. Be the first!</p>'); avHeads(el); })
         .catch(() => { if(tab === want) el.innerHTML = '<p class="dim">Couldn\'t reach the leaderboard. Check your internet and press REFRESH.</p>'; });
       return;
     }
     if(tab === 'nova'){
       Promise.all([Promise.all(cls.map(c => Cloud.novaBoard(c.code))), Cloud.novaBoard(null)])
-        .then(([mine, world]) => { if(tab === want) el.innerHTML = mine.map((l, i) => head(cls[i]) + novaTable(markMe(l.slice(0, 5)))).join('') + (mine.length ? worldHead : '') + novaTable(markMe(world.slice(0, 10))); })
+        .then(([mine, world]) => { if(tab === want) el.innerHTML = mine.map((l, i) => head(cls[i]) + novaTable(markMe(l.slice(0, 5)))).join('') + (mine.length ? worldHead : '') + novaTable(markMe(world.slice(0, 10))); avHeads(el); })
         .catch(() => { if(tab === want) el.innerHTML = '<p class="dim">Couldn\'t reach the leaderboard. Check your internet and press REFRESH.</p>'; });
       return;
     }
     (tc ? Cloud.classTop(tc.code).then(l => l.slice(0, 10)) : Cloud.worldTop())
-      .then(async list => { const f = await Cloud.novaFinishers().catch(() => new Set()); if(tab === want) el.innerHTML = boardTable(markNova(markMe(list), f)); })
+      .then(async list => { const f = await Cloud.novaFinishers().catch(() => new Set()); if(tab === want){ el.innerHTML = boardTable(markNova(markMe(list), f)); avHeads(el); } })
       .catch(() => { if(tab === want) el.innerHTML = '<p class="dim">Couldn\'t reach the leaderboard. Check your internet and press REFRESH.</p>'; });
   };
   p.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; show(); });
