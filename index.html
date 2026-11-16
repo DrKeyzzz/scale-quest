@@ -156,7 +156,8 @@
     if(s === 'medieval') localStorage.setItem('sq_skin_v1', 'medieval');
     else if(ok(s)){ localStorage.setItem('mtg_skin_v1', s); localStorage.setItem('sq_skin_v1', 'shared'); }
     sq = localStorage.getItem('sq_skin_v1'); s = localStorage.getItem('mtg_skin_v1'); }catch(e){}
-  document.documentElement.dataset.skin = sq !== 'shared' ? 'medieval' : ok(s) ? s : 'clean'; })();
+  // 2026-11-15 redesign: Scale Quest uses the modern look only (Day if that is the every-game choice, else Clean); Medieval and Classic are gone here.
+  document.documentElement.dataset.skin = s === 'day' ? 'day' : 'clean'; })();
 </script>
 <style>
 :root{
@@ -527,6 +528,43 @@ button{font:inherit;color:inherit}
 .submit{font-size:15px;padding:13px 36px}
 .submit.next{background:var(--cyan)}
 .explain{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
+/* ---------- MAP (2026-11-15 redesign, stage 1): worlds of levels on the start screen; Free play = the old setup ---------- */
+.sqtabs{display:flex;gap:6px;padding:4px;border-radius:999px;background:var(--panel);border:1px solid var(--line)}
+.sqtabs button{font:800 15px var(--px);padding:9px 18px;border-radius:999px;border:0;background:none;color:var(--dim);cursor:pointer}
+.sqtabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+#app.mapmode :is(.cta,#ksLadder,.cta-piano,.kmap,#quick,#more){display:none!important}
+#app:not(.mapmode) #sqMap{display:none}
+.sqmap{width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.mp-head{display:flex;align-items:center;gap:8px;font:800 18px var(--px)}
+.mp-head b{margin-right:auto}
+.mp-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font:800 15px var(--px);color:var(--ink)}
+.mp-world{border-radius:20px;padding:12px 14px 16px;color:#fff;position:relative;overflow:hidden}
+.mp-world h3{margin:0;display:flex;align-items:center;gap:8px;font:900 19px var(--px)}
+.mp-world h3 small{margin-left:auto;font:700 13px var(--px);opacity:.9;text-align:right}
+.mp-world.lock{opacity:.6}
+.mp-world.soonw{background:var(--panel);color:var(--ink);opacity:.7}
+.mp-world.soonw p{margin:6px 0 0;font-size:14px;color:var(--dim)}
+.mp-path{position:relative;margin-top:4px}
+.mp-path svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.mp-node{position:absolute;transform:translate(-50%,-50%);width:62px;height:62px;border-radius:50%;border:0;background:var(--c);color:#fff;
+  font:900 20px var(--px);display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.28)}
+.mp-node:active{transform:translate(-50%,-46%)}
+.mp-node .st{position:absolute;top:100%;margin-top:4px;left:50%;transform:translateX(-50%);font-size:13px;letter-spacing:1px;color:#ffd23f;white-space:nowrap;text-shadow:0 1px 2px #000;font-family:system-ui,sans-serif}
+.mp-node.lock{background:#2a2f5e;color:#7d84bd;cursor:not-allowed;font-size:18px}
+.mp-node.lock .st{display:none}
+.mp-node.cur{animation:mpPulse 1.4s ease-in-out infinite}
+@keyframes mpPulse{50%{box-shadow:0 6px 0 rgba(0,0,0,.28),0 0 0 10px rgba(255,255,255,.2)}}
+.mp-node.boss{width:82px;height:82px;font-size:38px;border:3px solid rgba(255,255,255,.8);cursor:default;opacity:.75}
+.mp-node.boss .st{font:800 11px var(--px);letter-spacing:0;color:#fff}
+.mp-nova{display:flex;align-items:center;gap:16px;width:100%;padding:16px;border-radius:20px;border:2px solid #ffcf4a;cursor:pointer;text-align:left;color:#fff;
+  background:radial-gradient(circle at 12% 50%,#ffb84d 0%,#c2410c 30%,#2a0f3a 75%);box-shadow:0 0 36px rgba(255,170,60,.3)}
+.mp-nova b{display:block;font:900 22px var(--px);color:#fff3b0}
+.mp-nova small{display:block;font:600 14px var(--px);color:#ffe9c2;margin-top:3px}
+.mp-star{font-size:56px;color:#fff3b0;text-shadow:0 0 22px #ff9d2e;animation:mpSwell 2.4s ease-in-out infinite;flex:none;line-height:1}
+@keyframes mpSwell{50%{transform:scale(1.15) rotate(8deg)}}
+.mp-free{font:600 13px var(--px);color:var(--dim);text-align:center;margin:0}
+@media (prefers-reduced-motion:reduce){.mp-node.cur,.mp-star{animation:none}}
+@media (max-width:700px){.mp-node{width:54px;height:54px;font-size:18px}.mp-node.boss{width:70px;height:70px;font-size:32px}.mp-world h3{font-size:16px}}
 /* KEY SIGNATURE LADDER (2026-11-15): 9 levels on the start screen, only that level's answer buttons, a Hint with the circle of fifths */
 .ksl{width:100%;max-width:900px;margin:4px auto 0;text-align:center}
 .ksl-row{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 8px;scroll-snap-type:x mandatory;justify-content:safe center}
@@ -1297,10 +1335,8 @@ html[data-skin="medieval"] .kmap p{margin:6px 0 0;font-size:15px;color:var(--dim
         <button class="btn tbtn" id="skinBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="skinPop">🎨 SKINS</button>
         <div class="skin-pop" id="skinPop" role="dialog" aria-label="Skins" hidden>
           <div class="skinpick" id="skinPick" role="group" aria-label="Skins">
-            <button type="button" data-look="medieval" aria-pressed="false"><span class="sw" aria-hidden="true"><i style="background:#2b2119"></i><i style="background:#f1e3c4"></i><i style="background:#9e2a2b"></i></span><b>Medieval</b></button>
             <button type="button" data-look="clean" aria-pressed="false"><span class="sw" aria-hidden="true"><i style="background:#151b3d"></i><i style="background:#4cc9f0"></i><i style="background:#b794f6"></i></span><b>Clean</b></button>
             <button type="button" data-look="day" aria-pressed="false"><span class="sw" aria-hidden="true"><i style="background:#eef2fa"></i><i style="background:#0369a1"></i><i style="background:#b45309"></i></span><b>Day</b></button>
-            <button type="button" data-look="classic" aria-pressed="false"><span class="sw" aria-hidden="true"><i style="background:#1a1142"></i><i style="background:#3ff0ff"></i><i style="background:#ff4fd8"></i></span><b>Classic</b></button>
           </div>
           <p class="mnote">Your skin is saved on this device and used in every Music Theory Game. Medieval is only in Scale Quest.</p>
         </div>
@@ -1330,6 +1366,8 @@ html[data-skin="medieval"] .kmap p{margin:6px 0 0;font-size:15px;color:var(--dim
   <section class="panel stage" id="stage">
     <div class="attract" id="attract">
       <div class="assign" id="assignBanner" hidden></div>
+      <div class="sqtabs" id="sqTabs" role="tablist" aria-label="Start screen"><button type="button" role="tab" data-t="map" aria-selected="true">🗺️ MAP</button><button type="button" role="tab" data-t="free" aria-selected="false">🎮 FREE PLAY</button></div>
+      <div class="sqmap" id="sqMap"></div>
       <div class="cta">
         <h2 class="cta-title">READY TO <span>QUEST?</span></h2>
         <button class="btn start playbig" id="playBtn" type="button"><span class="gl" aria-hidden="true">▶</span> <span id="playLabel">START</span></button>
@@ -1586,6 +1624,14 @@ const MINOR_FORMS = ['nat', 'harm', 'mel'], MODE_TYPES = ['dor', 'phr', 'lyd', '
 const MAJOR_ORDER = ['C','G','D','A','E','B','F#','C#','F','Bb','Eb','Ab','Db','Gb','Cb'];
 const MINOR_SHARP_ROW = ['A','E','B','F#','C#','G#','D#','A#'], MINOR_FLAT_ROW = ['A','D','G','C','F','Bb','Eb','Ab'];
 const MINOR_ORDER = ['A','E','B','F#','C#','G#','D#','A#','D','G','C','F','Bb','Eb','Ab'];
+// MAP worlds (2026-11-15 redesign; the map code is with the key signature ladder code further down)
+const MAP_WORLDS = [
+  {n: 'Sharp Keys', col: '#ff7a45', bg: 'linear-gradient(160deg,#5a2412,#24163f)', keys: ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'], boss: 'Metronome Max', face: '🤖'},
+  {n: 'Flat Keys', col: '#4c8dff', bg: 'linear-gradient(160deg,#123070,#1a1440)', keys: ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'], boss: 'DJ Flat-Top', face: '😎'},
+];
+const MAP_SOON = [['Minor', '#b05cff', 'Natural, harmonic and melodic minor.'], ['Key Signatures', '#19c3a6', 'The 9 key signature levels (in Free play → Key signatures for now).'], ['Modes', '#ff4fa3', 'Dorian to Locrian.']];
+const levelLen = i => i < 2 ? 7 : 10, levelPass = i => i < 2 ? 5 : 8;   // same lengths as the key signature ladder
+const QPK = () => S.run && S.run.level ? S.run.level.n : S.qpk;
 // KEY SIGNATURE LADDER levels (the ladder code is with the key signature questions further down)
 // Levels 1-2: 7 questions, pass 5 (David 2026-11-15: shorter to start); levels 3-9: 10 questions, pass 8. Stars: pass / one miss / all.
 const ladderLen = i => i < 2 ? 7 : 10, ladderPass = i => i < 2 ? 5 : 8;
@@ -1986,7 +2032,7 @@ const S = {
   qpk: store.get('qpk', 5),
   keySig: false,   // no key signatures: students write every accidental themselves (Scale Degrees shows them on its name-it questions)
   deg: store.get('deg', false) === true, degSel: 0, degFocus: 0,
-  ks: store.get('ks', false) === true, ksMinor: store.get('ksMinor', false) === true, ksMix: store.get('ksMix', true) !== false, ksSel: '', ksAcc: '#', ksPlaced: [], ksLv: Math.max(0, Math.min(8, +store.get('ksLv', 0) || 0)), ksOpenTo: -1,
+  ks: store.get('ks', false) === true, ksMinor: store.get('ksMinor', false) === true, ksMix: store.get('ksMix', true) !== false, view: store.get('view', 'map') === 'free' ? 'free' : 'map', ksSel: '', ksAcc: '#', ksPlaced: [], ksLv: Math.max(0, Math.min(8, +store.get('ksLv', 0) || 0)), ksOpenTo: -1,
   muted: store.get('muted', false),
   clef: ['treble', 'bass', 'alto', 'grand'].includes(store.get('clef')) ? store.get('clef') : 'treble',   // More options > Clef; a teacher's test or link can set it
   run: null, busy: false, overlay: false,
@@ -2231,6 +2277,7 @@ function syncQuick(){
   $('#playSum').innerHTML = `<b>${esc(what)}</b> · ${how}${S.clef !== 'treble' ? ' · ' + CL().tag : ''}`;
   ctaPiano(nova ? null : sel[0]);
   renderKsLadder();
+  renderMap();
 }
 // The little piano on the stage lights up the first scale you'll play.
 function ctaPiano(id){
@@ -2317,6 +2364,7 @@ function playPressed(){
   if(S.run || S.overlay || $('#playBtn').disabled) return;
   if(!store.get('howto', false)) return howTo(true);
   audio(); closeDD();
+  if(mapOn()){ const c = S.mapPick || mapCurrent(); S.mapPick = null; if(c) startLevel(c.w, c.i); else focusToast('Every open level has a star! Replay any level for more stars, or try Free play.'); return; }
   if(S.mode === 'chaos') chaosPicker(); else if(S.mode === 'nova') novaWarning(); else if(ladderOn()) startLadder(S.ksLv); else startRun('practice');
 }
 function howTo(then){
@@ -2537,8 +2585,8 @@ function updateHUD(){
   const hideKey = q && q.type === 'ksname';   // naming the key: don't show it
   $('#hudKey').textContent = q ? (hideKey ? 'KEY SIGNATURE' : ksQ(q) ? q.name.toUpperCase() : scaleName(q.key).toUpperCase()) : '—';
   $('#ladder').style.visibility = hideKey ? 'hidden' : '';
-  const tag = $('#modeTag'); tag.textContent = r.ladder ? `KEY SIGS · LEVEL ${r.ladder.lv + 1}` : (r.deg ? 'DEGREES · ' : '') + MN(r.mode); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
-  $('#hudQ').textContent = r.ladder ? `${Math.min(r.total + 1, r.ladder.qs.length)}/${r.ladder.qs.length}` : isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${S.qpk}`;
+  const tag = $('#modeTag'); tag.textContent = r.level ? `WORLD ${r.level.w + 1} · LEVEL ${r.level.i + 1}` : r.ladder ? `KEY SIGS · LEVEL ${r.ladder.lv + 1}` : (r.deg ? 'DEGREES · ' : '') + MN(r.mode); tag.classList.toggle('chaos', r.mode === 'chaos'); tag.classList.toggle('nova', r.mode === 'nova');
+  $('#hudQ').textContent = r.ladder ? `${Math.min(r.total + 1, r.ladder.qs.length)}/${r.ladder.qs.length}` : isTimed(r.mode) ? `${r.total+1}/${CHAOS_LEN}` : `${r.qInKey+1}/${QPK()}`;
   $('#hudScore').textContent = String(r.score).padStart(6, '0');
   $('#hudStreak').textContent = 'x' + r.streak;
   $('#hudHealth').hidden = r.mode === 'practice'; $('#hud').classList.toggle('nohealth', r.mode === 'practice');   // practice has no hearts
@@ -2847,6 +2895,7 @@ function focusScale(id, deg=false){
   renderKeyRows(); renderAssignment(); syncQuick();
 }
 function applyFocus(label){
+  S.view = 'free';
   if(String(label).toLowerCase() === 'key signatures'){
     if(S.mode === 'nova') setChoice('mode', 'practice');
     setChoice('scales', 'ks');
@@ -2890,6 +2939,7 @@ function decodeSettings(s){
   return o && typeof o === 'object' && !Array.isArray(o) ? o : null;
 }
 function applySettings(o){
+  S.view = 'free';   // a teacher's link sets up Free play (not saved, so the student's own choice comes back next time)
   const t = {};
   if(Array.isArray(o.keys)){ const k = PLAY_ORDER.filter(id => o.keys.includes(id)); if(k.length) t.keys = k; }
   if(o.mode === 'practice' || o.mode === 'chaos') t.mode = o.mode;
@@ -3012,12 +3062,14 @@ function startRun(mode){
   closeOverlay(); preloadSound();
   if(mode === 'nova' && (S.deg || S.ks)) return;
   const lad = mode === 'practice' && S.ks && S.ladderGo != null ? S.ladderGo : null; S.ladderGo = null;
-  const keys = lad != null ? KS_LADDER[lad].keys.slice() : mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major')); if(!keys.length) return;
+  const lev = mode === 'practice' && S.levelGo ? S.levelGo : null; S.levelGo = null;   // a map level: one key
+  const keys = lev ? [lev.k] : lad != null ? KS_LADDER[lad].keys.slice() : mode === 'nova' ? PLAY_ORDER.slice() : PLAY_ORDER.filter(k => S.selected.has(k) && (!(S.deg || S.ks) || typeOf(k) === 'major')); if(!keys.length) return;
   S.awaitNext = null;
   S.run = {mode, keys, keyIdx:0, continued:false, times:[], qInKey:0, total:0, score:0, streak:0, best:0, lives: mode === 'nova' ? NOVA_HEARTS : 3, misses: [],
            stats:{}, pts:{base:0, speed:0, streak:0}, bonusKeys: mode === 'chaos' ? bonusKeys(keys) : [], lastInstr:null, lastKey:null, lastType:null, lastDeg:{}, q:null, ended:false, deg: S.deg && mode !== 'nova', ks: S.ks && mode !== 'nova', ksMix: S.ksMix && !S.deg && !S.ks,
            ksAt: mode === 'nova' ? new Set([...Array(16).keys()].map(i => i + 3).sort(() => Math.random() - .5).slice(0, 3)) : null,
-           ladder: lad != null ? ladderPlan(lad) : null};
+           ladder: lad != null && !lev ? ladderPlan(lad) : null, level: lev ? {...lev, coins: 0} : null};
+  if(lev){ S.run.deg = false; S.run.ks = false; S.run.ksMix = true; }   // a level is that key's scale questions (+ its key signature)
   setPlaying(true); updateHUD();
   $('#app').classList.toggle('ladrun', !!S.run.ladder);
   $('#timer').hidden = !isTimed(mode);
@@ -3068,10 +3120,10 @@ function nextQuestion(){
   if(r.ladder) return ladderQuestion();
   if(r.ks) return ksQuestion();
   if(r.mode === 'practice'){
-    if(r.qInKey >= S.qpk) return keyCleared();
+    if(r.qInKey >= QPK()) return keyCleared();
     key = r.keys[r.keyIdx];
     // KEY SIG QUESTIONS: the last question for each scale names its key signature
-    if(r.ksMix && S.qpk >= 3 && r.qInKey === S.qpk - 1 && stdSig(key)) return ksQuestion(key, 'ksname');
+    if(r.ksMix && QPK() >= 3 && r.qInKey === QPK() - 1 && stdSig(key)) return ksQuestion(key, 'ksname');
     type = r.qInKey === 0 ? 'build' : (r.qInKey % 2 === 1 ? 'staff' : 'piano');
   } else {
     if(r.total >= CHAOS_LEN) return endRun('complete');
@@ -3196,7 +3248,8 @@ function onCorrect(){
   let bonus = 0;
   if(r.streak === 3) bonus = 50; else if(r.streak === 5) bonus = 100; else if(r.streak % 10 === 0) bonus = 250;
   r.score += pts + speed + bonus; r.pts.base += pts; r.pts.speed += speed; r.pts.streak += bonus; stat(q.key, true); logAnswer(q, true);
-  flash('ok'); SFX.coin(); popup('+' + (pts + speed));
+  flash('ok'); SFX.coin();
+  if(r.level){ const c = r.level.i >= 4 ? 15 : 10; r.level.coins += c; popup(`+${c} 🪙`); } else popup('+' + (pts + speed));
   if(speed) setTimeout(() => popup(`SPEED +${speed} · ${elapsed().toFixed(1)}s`, 'speed'), 120);
   if(bonus){ SFX.streak(); setTimeout(() => popup(`STREAK x${r.streak}! +${bonus}`, 'streak'), 250); }
   const praise = pick(['NICE!','PERFECT!','GREAT!','YES!','NAILED IT!']);
@@ -3396,6 +3449,7 @@ function openOverlay(html, cls=''){
 function closeOverlay(){ $('#overlay').hidden = true; S.overlay = false; }
 
 function keyCleared(){
+  if(S.run.level) return levelEnd();
   const r = S.run, key = r.keys[r.keyIdx], s = r.stats[key] || {right:0,total:0}, next = r.keys[r.keyIdx+1];
   SFX.level();
   const p = openOverlay(`
@@ -3567,7 +3621,8 @@ function novaTable(list){
 }
 function toMenu(){
   closeOverlay(); S.run = null; S.busy = false; $('#app').classList.remove('novaRun');
-  setPlaying(false); renderBoard(); updateCarts();
+  setPlaying(false); renderBoard(); updateCarts(); renderMap();
+  if(mapOn()) setTimeout(() => { const c = document.querySelector('.mp-node.cur'); if(c && c.scrollIntoView) c.scrollIntoView({block: 'center', behavior: 'smooth'}); }, 60);
   if(S.test && S.test.doc){ S.testRun = false; tsLobby(); }
 }
 function markMe(list){ const p = getProfile(), n = p ? displayName(p) : null; return list.map(x => ({...x, me: x.world ? x.name === myNick() : x.name === n})); }
@@ -4033,7 +4088,7 @@ $('#howBtn').onclick = () => { if(!S.overlay) howTo(false); };
 $('#submitBtn').onclick = primary;
 $('#quitBtn').onclick = () => {
   const r = S.run; if(!r) return;
-  if(r.ladder && !(S.test && S.testRun)){ r.ended = true; toMenu(); return; }   // a ladder level just stops (no stars for part of a level)
+  if((r.ladder || r.level) && !(S.test && S.testRun)){ r.ended = true; toMenu(); return; }   // a ladder level just stops (no stars for part of a level)
   if(Object.keys(r.stats).length) endRun('quit'); else { r.ended = true; toMenu(); }
 };
 // Clef: every staff redraws (questions, key signatures, Learn). save = false for a teacher's test or link (the student's own pick stays stored).
@@ -4374,6 +4429,98 @@ function ladderEnd(){
     <div class="obtns">${more && stars ? `<button class="btn obtn" id="ladNext" type="button" data-focus>LEVEL ${i + 2} ▶</button>` : ''}<button class="btn obtn${more && stars ? ' alt' : ''}" id="againBtn" type="button"${more && stars ? '' : ' data-focus'}>PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MENU</button></div>`, stars ? '' : 'mag');
   const nx = p.querySelector('#ladNext'); if(nx) nx.onclick = () => startLadder(i + 1);
   p.querySelector('#againBtn').onclick = () => startLadder(i);
+  p.querySelector('#menuBtn').onclick = toMenu;
+}
+
+/* ---------- MAP (2026-11-15 redesign, stage 1) ----------
+   The start screen's MAP tab: World 1 (sharp keys) and World 2 (flat keys), one key per level, 7 questions on levels 1-2
+   and 10 after (pass 5 / 8; stars: pass, one miss, perfect), coins for right answers. A level is a practice run of that one
+   key (r.level), so answers go to MTG_HIST, the teacher's progress and tests exactly as before. World 2 opens when every
+   World 1 level has a star (boss duels come next). Saved on this device per student (scalequest.map:<student>, like the
+   other Scale Quest stars); guests only while the page is open. FREE PLAY = the old setup (scales, CHAOS, key signatures). */
+function mapKey(){ const p = getProfile(); return p ? 'map:' + studentKey(p) : ''; }
+var MAP_GUEST = MAP_GUEST || {s: {}, coins: 0};   // var: renderMap can run (from syncQuick) before this line
+function mapData(){ if(!mapKey()) return MAP_GUEST || (MAP_GUEST = {s: {}, coins: 0}); const d = store.get(mapKey(), null); return d && typeof d === 'object' && d.s ? d : {s: {}, coins: 0}; }
+function mapSave(d){ if(mapKey()) store.set(mapKey(), d); }
+function mapOn(){ return S.view === 'map' && !(window.MTGTest && MTGTest.active); }
+function worldOpen(w){ if(w === 0) return true; const d = mapData(); return MAP_WORLDS[w - 1].keys.every((_, i) => (d.s[`${w - 1}:${i}`] || 0) >= 1); }
+function levelOpen(w, i){ return worldOpen(w) && (i === 0 || (mapData().s[`${w}:${i - 1}`] || 0) >= 1); }
+function mapCurrent(){
+  const d = mapData();
+  for(let w = 0; w < MAP_WORLDS.length; w++){ if(!worldOpen(w)) return null; const i = MAP_WORLDS[w].keys.findIndex((_, j) => !((d.s[`${w}:${j}`] || 0) >= 1)); if(i >= 0) return {w, i}; }
+  return null;
+}
+function renderMap(){
+  const el = $('#sqMap'); if(!el) return;
+  const on = mapOn(); $('#app').classList.toggle('mapmode', on);
+  document.querySelectorAll('#sqTabs [data-t]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.t === (on ? 'map' : 'free'))));
+  $('#sqTabs').hidden = !!(window.MTGTest && MTGTest.active);
+  if(!on) return;
+  const d = mapData(), cur = mapCurrent(), total = Object.values(d.s).reduce((a, v) => a + (+v || 0), 0);
+  let h = `<div class="mp-head"><b>Your map</b><span class="mp-chip" title="Coins">🪙 ${d.coins}</span><span class="mp-chip" title="Stars">⭐ ${total}</span></div>`;
+  MAP_WORLDS.forEach((W, w) => {
+    const open = worldOpen(w), n = W.keys.length + 1, rowH = 84, H = n * rowH;
+    const pts = Array.from({length: n}, (_, i) => ({x: [50, 74, 50, 26][i % 4], y: 42 + i * rowH}));
+    const trail = pts.map((p, i) => (i ? 'L' : 'M') + p.x + ' ' + p.y).join(' ');
+    const got = W.keys.reduce((a, _, i) => a + (d.s[`${w}:${i}`] || 0), 0);
+    h += `<section class="mp-world${open ? '' : ' lock'}" style="background:${W.bg}"><h3><span style="color:${W.col}">●</span> World ${w + 1} · ${W.n}<small>${open ? `${got} / ${W.keys.length * 3} ⭐` : `🔒 Get a star on every World ${w} level`}</small></h3>
+      <div class="mp-path" style="height:${H}px"><svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${trail}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+    W.keys.forEach((k, i) => {
+      const s = d.s[`${w}:${i}`] || 0, op = levelOpen(w, i), isCur = !!cur && cur.w === w && cur.i === i;
+      h += `<button type="button" class="mp-node${op ? '' : ' lock'}${isCur ? ' cur' : ''}" data-w="${w}" data-i="${i}" style="left:${pts[i].x}%;top:${pts[i].y}px;--c:${W.col}" aria-label="${esc(scaleName(k))}${op ? '' : ', locked'}${s ? `, ${s} of 3 stars` : ''}">${op ? esc(fmt(k)) : '🔒'}<span class="st" aria-hidden="true">${'★'.repeat(s)}${'☆'.repeat(3 - s)}</span></button>`;
+    });
+    const bp = pts[n - 1];
+    h += `<div class="mp-node boss" style="left:${bp.x}%;top:${bp.y}px;--c:${W.col}" title="Boss duels are coming soon">${W.face}<span class="st">BOSS · ${esc(W.boss)} · SOON</span></div></div></section>`;
+  });
+  MAP_SOON.forEach(([n, c, t], j) => { h += `<section class="mp-world soonw"><h3><span style="color:${c}">●</span> World ${j + 3} · ${n}<small>🔒 coming soon</small></h3><p>${t}</p></section>`; });
+  h += `<button type="button" class="mp-nova" id="mpNova"><span class="mp-star" aria-hidden="true">★</span><span><b>${MN('nova')}</b><small>All 150 scales · ${CHAOS_LEN} questions · ${NOVA_HEARTS} hearts · no second tries${novaUnlocked() ? '' : ` · 🔒 finish one ${MNs()} run in Free play to unlock`}</small></span></button>
+    <p class="mp-free">CHAOS, key signatures, scale degrees and picking your own scales are in <b>FREE PLAY</b>.</p>`;
+  el.innerHTML = h;
+}
+$('#sqTabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-t]'); if(!b || S.run) return;
+  SFX.click(); S.view = b.dataset.t; store.set('view', S.view); syncQuick();
+});
+$('#sqMap').addEventListener('click', e => {
+  if(S.run || S.overlay) return;
+  if(e.target.closest('#mpNova')){
+    if(!novaUnlocked()) return focusToast(`🔒 <b>${MN('nova')}</b> unlocks after you finish one <b>${MN('chaos')}</b> run. Find it in <b>FREE PLAY</b>.`);
+    SFX.click(); audio(); if(S.ks) setKs(false); if(S.deg) setDeg(false); novaWarning(); return;
+  }
+  const b = e.target.closest('.mp-node[data-w]'); if(!b) return;
+  const w = +b.dataset.w, i = +b.dataset.i;
+  if(!levelOpen(w, i)) return focusToast(worldOpen(w) ? '🔒 Get a star on the level before it first.' : `🔒 Get a star on every World ${w} level to open World ${w + 1}.`);
+  SFX.click(); S.mapPick = {w, i};
+  if(!store.get('howto', false)) return howTo(true);
+  audio(); S.mapPick = null; startLevel(w, i);
+});
+function startLevel(w, i){
+  if(!levelOpen(w, i)) return;
+  S.levelGo = {w, i, n: levelLen(i), k: MAP_WORLDS[w].keys[i]}; startRun('practice');
+}
+function levelEnd(){
+  const r = S.run; if(!r) return; r.ended = true; S.busy = true;
+  const L = r.level, s = Object.values(r.stats).reduce((a, x) => [a[0] + x.right, a[1] + x.total], [0, 0]);
+  const got = s[0], N = L.n, P = levelPass(L.i), acc = s[1] ? Math.round(100 * got / s[1]) : 0;
+  const stars = got >= N ? 3 : got >= N - 1 ? 2 : got >= P ? 1 : 0;
+  const nextWasOpen = L.w + 1 < MAP_WORLDS.length && worldOpen(L.w + 1);
+  const d = mapData(), key = `${L.w}:${L.i}`, bonus = stars * 10;
+  d.coins = (+d.coins || 0) + L.coins + bonus; if(stars > (d.s[key] || 0)) d.s[key] = stars; mapSave(d);
+  if(s[1]) MTG_HIST.run('scale', {score: 0, level: L.i + 1, acc});
+  stars ? SFX.win() : SFX.over();
+  const W = MAP_WORLDS[L.w], nextI = L.i + 1 < W.keys.length ? L.i + 1 : null;
+  const newWorld = !nextWasOpen && L.w + 1 < MAP_WORLDS.length && worldOpen(L.w + 1);
+  const title = !stars ? 'SO CLOSE!' : newWorld ? `WORLD ${L.w + 2} UNLOCKED!` : 'LEVEL CLEARED!';
+  const line = !stars ? `Get ${P} of ${N} to open the next level.` : stars < 3 ? `Get ${N} of ${N} for three stars.` : 'Perfect!';
+  const next = stars && nextI != null && levelOpen(L.w, nextI) ? {w: L.w, i: nextI} : newWorld ? {w: L.w + 1, i: 0} : null;
+  const p = openOverlay(`
+    <h2 class="otitle">${title}</h2>
+    <p class="osub" style="font-size:44px;color:var(--yel);letter-spacing:5px;font-family:system-ui,sans-serif">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</p>
+    <p class="osub">${esc(scaleName(L.k))}: <b>${got} of ${N}</b> right. ${line}</p>
+    <p class="osub"><b>🪙 +${L.coins + bonus}</b> coins${bonus ? ` (${bonus} star bonus)` : ''}</p>
+    <div class="obtns">${next ? `<button class="btn obtn" id="lvNext" type="button" data-focus>NEXT: ${esc(scaleName(MAP_WORLDS[next.w].keys[next.i]).toUpperCase())} ▶</button>` : ''}<button class="btn obtn${next ? ' alt' : ''}" id="againBtn" type="button"${next ? '' : ' data-focus'}>PLAY AGAIN</button><button class="btn obtn alt" id="menuBtn" type="button">MAP</button></div>`, stars ? '' : 'mag');
+  const nx = p.querySelector('#lvNext'); if(nx) nx.onclick = () => startLevel(next.w, next.i);
+  p.querySelector('#againBtn').onclick = () => startLevel(L.w, L.i);
   p.querySelector('#menuBtn').onclick = toMenu;
 }
 
