@@ -4101,32 +4101,15 @@ function tdCsv(studs){
 
 // ----- Assignment -----
 function tdAssign(){
-  const cls = tdClass(), a = (cls && cls.scale_assignment) || {}, picked = new Set(a.keys || []);
+  // 2026-11-16: the old per-game banner form is gone; assignments are made on the one Assign page (hub /teacher/), opened with this game picked
+  const cls = tdClass(), old = cls && cls.scale_assignment;
   $('#tdBody').innerHTML = `
-    <div class="td-univ"><h3>ASSIGN PRACTICE (ALL GAMES)</h3>
-      <p>Assignments now live on one page for every game: pick the class, the game, the skills (scales, key signature levels, Brainwaves areas…), the goal and the dates. Students see it on their home page.</p>
-      <a class="btn tbtn td-univbtn" href="https://drkeyzzz.github.io/teacher/?new=1" target="_blank" rel="noopener">OPEN THE ASSIGN PAGE ↗</a></div>
-    <details class="td-old"><summary>Old: Scale Quest-only scale banner</summary>
-    <p class="dim" style="margin:0">Choose the scales <b>${esc(cls.name)}</b> should practice. Students see a banner with a <b>USE THESE KEYS</b> button and their progress toward the goal. It stays until you change or clear it.</p>
-    <div class="td-sec" id="aKeys"><h3>SCALES</h3>${[['MAJOR', MAJOR_ORDER], ...MINOR_FORMS.map(f => [SCALE_TYPES[f].name.toUpperCase(), MINOR_ORDER.map(t => t + ':' + f)]), ...MODE_TYPES.map(m => [SCALE_TYPES[m].name.toUpperCase(), MAJOR_ORDER.map(t => t + ':' + m)])]
-      .map(([label, ids]) => `<div class="td-keyrow"><span>${label}</span><div class="td-keys">${ids.filter(k => SCALES[k]).map(k => `<button type="button" data-k="${k}" aria-pressed="${picked.has(k)}" title="${scaleName(k)}">${fmt(tonicOf(k))}${MINOR_FORMS.includes(typeOf(k)) ? 'm' : ''}</button>`).join('')}</div></div>`).join('')}</div>
-    <form class="td-form" id="assignForm" onsubmit="return false">
-      <label>GOAL: QUESTIONS<input id="aGoal" type="number" min="0" max="500" value="${a.goal ?? DAILY_GOAL}"></label>
-      <label>GOAL: MINUTES<input id="aMinutes" type="number" min="0" max="240" value="${a.minutes || ''}" placeholder="optional"></label>
-      <span></span>
-      <label class="wide">NOTE TO STUDENTS<input id="aNote" maxlength="140" value="${esc(a.note || '')}" placeholder="optional, e.g. Watch out for the sharps in D and A"></label>
-    </form>
-    <div class="obtns" style="justify-content:flex-start"><button class="btn obtn" type="button" id="aSave">SAVE ASSIGNMENT</button>${cls.scale_assignment ? '<button class="btn obtn alt" type="button" id="aClear">CLEAR ASSIGNMENT</button>' : ''}</div>
-    </details>`;
-  $('#aKeys').onclick = e => { const b = e.target.closest('[data-k]'); if(b) b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); };
-  $('#aSave').onclick = async () => {
-    const keys = [...$('#aKeys').querySelectorAll('[aria-pressed="true"]')].map(b => b.dataset.k);
-    const assignment = {keys, goal: Math.max(0, Math.min(500, +$('#aGoal').value || 0)), minutes: Math.max(0, Math.min(240, +$('#aMinutes').value || 0)), note: $('#aNote').value.trim().slice(0, 140), set_at: Date.now()};
-    try{ await Cloud.saveAssignment(TD.code, assignment); cls.scale_assignment = assignment; $('#tdErr').textContent = ''; tdAssign(); popupMsg(`Assignment saved for ${cls.name}.`); }
-    catch(err){ $('#tdErr').textContent = errMsg(err); }
-  };
+    <div style="border:2px solid #4cc9f0;border-radius:14px;padding:14px 16px;margin:0 0 12px"><b style="font-size:1.15em">ASSIGN SCALE QUEST TO A CLASS</b>
+      <p style="margin:6px 0 12px;opacity:.85">Pick the class, the skills, the goal and the dates on the Assign page. Scale Quest is already chosen for you. Students see the assignment on their home page.</p>
+      <a class="btn tbtn" href="/teacher/?new=1&amp;game=scale" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">OPEN THE ASSIGN PAGE ↗</a></div>
+    ${old ? `<p style="margin:6px 0;opacity:.8">${esc(cls.name)} still has an old Scale Quest banner from before the Assign page. <button class="btn tbtn" type="button" id="aClear">Clear old banner</button></p>` : ''}`;
   const clr = $('#aClear');
-  if(clr) clr.onclick = async () => { try{ await Cloud.saveAssignment(TD.code, null); cls.scale_assignment = null; tdAssign(); popupMsg('Assignment cleared.'); } catch(err){ $('#tdErr').textContent = errMsg(err); } };
+  if (clr) clr.onclick = async () => { try { await Cloud.saveAssignment(TD.code, null); cls.scale_assignment = null; tdAssign(); popupMsg('Old banner cleared.'); } catch (err) { $('#tdErr').textContent = errMsg(err); } };
 }
 function popupMsg(text){ const e = $('#tdErr'); e.style.color = 'var(--ok)'; e.textContent = text; setTimeout(() => { e.textContent = ''; e.style.color = ''; }, 3000); }
 
