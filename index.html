@@ -2012,12 +2012,16 @@ const Cloud = {
     }
   },
   // World Top 10: the 10 best runs (a small read, safe for public traffic). Game names only.
-  worldTop(){ return this.cached('scale_scores|world', () => this.run(async ({fs, db}) => (await fs.getDocs(fs.query(this.worldCol(fs, db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(10)))).docs.map(d => this.row(d)))); },
+  // 2026-11-16 (David): the developer's runs (Maestro) show on the World boards too, not only on class boards
+  worldTop(){ return this.cached('scale_scores|world', () => this.run(async ({fs, db}) => {
+    const rows = (await fs.getDocs(fs.query(this.worldCol(fs, db, 'scale_scores'), fs.orderBy('score', 'desc'), fs.limit(10)))).docs.map(d => this.row(d)), seen = new Set(rows.map(x => x.id));
+    return rows.concat((await devRows(fs, db, 'scale_scores')).map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id))).sort((a, b) => b.score - a.score).slice(0, 10);
+  })); },
   worldRank(score, col = 'scale_scores'){ return this.run(async ({fs, db}) => (await fs.getCountFromServer(fs.query(this.worldCol(fs, db, col), fs.where('score', '>', score)))).data().count + 1); },
   // SCALE DEGREES CHAOS board: a class (plus the developer's runs) or the World top 10, each player's best run.
   degBoard(code, name = 'degree_scores'){ return this.cached((name === 'degree_scores' ? 'deg|' : 'degks|') + (code || 'world'), () => this.run(async ({fs, db}) => {
     let rows = (await fs.getDocs(fs.query(code ? this.classCol(fs, db, code, name) : this.worldCol(fs, db, name), fs.orderBy('score', 'desc'), fs.limit(code ? LB_N : 30)))).docs.map(d => this.row(d));
-    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat((await devRows(fs, db, name)).map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
+    { const seen = new Set(rows.map(x => x.id)); rows = rows.concat((await devRows(fs, db, name)).map(d => this.row(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }   // class and World (2026-11-16)
     return this.bestOf(rows);
   })); },
   // Teacher dashboard: every score in the class.
@@ -2061,7 +2065,7 @@ const Cloud = {
   // Class (plus the developer's runs) or World: each player's best run, finished runs first.
   novaBoard(code){ return this.cached('nova|' + (code || 'world'), () => this.run(async ({fs, db}) => {
     let rows = (await fs.getDocs(fs.query(code ? this.classCol(fs, db, code, 'nova_scores') : this.worldCol(fs, db, 'nova_scores'), fs.orderBy('score', 'desc'), fs.limit(code ? LB_N : 60)))).docs.map(d => this.novaRow(d));
-    if(code){ const seen = new Set(rows.map(x => x.id)); rows = rows.concat((await devRows(fs, db, 'nova_scores')).map(d => this.novaRow(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }
+    { const seen = new Set(rows.map(x => x.id)); rows = rows.concat((await devRows(fs, db, 'nova_scores')).map(d => this.novaRow(d)).filter(x => !seen.has(x.id) && seen.add(x.id))); }   // class and World (2026-11-16)
     const best = {};
     for(const x of rows){ const b = best[x.name + '|' + x.classCode]; if(!b || (x.finished > b.finished) || (x.finished === b.finished && x.score > b.score)) best[x.name + '|' + x.classCode] = x; }
     return Object.values(best).sort((a,b) => (b.finished - a.finished) || (b.score - a.score));
