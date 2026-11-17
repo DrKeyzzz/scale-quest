@@ -2892,7 +2892,7 @@ async function syncProgress(){
     const a = c.code === p.classCode ? S.assignment : (S.moreAssign.find(x => x.code === c.code) || {}).a;
     const data = {class_code: c.code, owner: c.owner, date: d.date, sid: sidOf(p), student: displayName(p),
       questions: d.questions, correct: d.correct, minutes: d.minutes, first_at: d.first || Date.now(), last_at: d.last || Date.now(),
-      goal: (a && a.goal) || DAILY_GOAL, by_key: d.byKey, types: d.types, missed: d.missed,
+      goal: DAILY_GOAL, by_key: d.byKey, types: d.types, missed: d.missed,
       chaos: d.runs.slice(-20).map(r => ({s: r.s, a: r.a, k: r.k, t: r.t})), best_chaos: d.best};
     if(d.nova[0]) data.nova = d.nova;   // [attempts, finished, furthest question]
     try{ await Cloud.saveProgress(`${c.code}_${d.date}_${data.sid}`, data); } catch(e){ console.warn('Progress sync failed:', e); }
@@ -2903,7 +2903,7 @@ document.addEventListener('visibilitychange', () => { if(document.hidden){ clear
 /* ---------- assignment (set by the teacher, shown to the class) ---------- */
 S.assignment = null;
 S.moreAssign = [];   // assignments from the student's other classes: [{code, name, a}]
-const goalFor = () => (S.assignment && S.assignment.goal) || DAILY_GOAL;
+const goalFor = () => DAILY_GOAL;   // 2026-11-17: the old in-game assignment no longer changes the daily goal (hub assignments replaced it)
 async function refreshClassInfo(){
   const p = getProfile(), list = savedOf(p);
   if(!Cloud.on || !list.length){ S.assignment = null; S.moreAssign = []; renderAssignment(); return; }
@@ -2922,7 +2922,9 @@ async function refreshClassInfo(){
 }
 function renderAssignment(){
   const box = $('#assignBanner'), p = getProfile();
-  const list = [...(S.assignment ? [{name: p && p.className, a: S.assignment}] : []), ...S.moreAssign];
+  // 2026-11-17: the old in-game banner (classes/<code>.scale_assignment) is retired. Assignments come from the home page now, and a student
+  // who opened a teacher's link read the old October banner ("E · B · USE THESE KEYS") as the assignment and set it up by hand.
+  const list = [];
   $('#attract').classList.toggle('has-assign', !!(list.length && !S.run));
   if(!list.length || S.run){ box.hidden = true; return; }
   const d = buildDay(), many = list.length > 1 || !S.assignment;   // label each banner with its class when there's more than the main one
