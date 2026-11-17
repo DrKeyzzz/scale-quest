@@ -2115,7 +2115,7 @@ function avHeads(el){
 function boardTable(list){
   if(!list.length) return `<p class="dim">No scores yet. Finish a ${MNs()} run to claim the top spot!</p>`;
   return `<table class="board"><tbody>${list.map((x,i) =>
-    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm"${!x.world && x.classCode ? ` data-avc="${esc(x.classCode)}" data-avs="${esc(x.name)}"` : ''}>${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}${tierTag(+x.score)}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'}${x.world ? '' : ` · x${+x.streak || 0}`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+    `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm"${x.classCode ? ` data-avc="${esc(x.classCode)}" data-avs="${esc(x.name)}"` : ''}>${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.nova ? starSVG('badge') : ''}${tierTag(+x.score)}</td><td class="k">${+x.keys || 0} KEY${+x.keys === 1 ? '' : 'S'}${x.world ? '' : ` · x${+x.streak || 0}`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 
 /* ---------- student profile (welcome screen) ---------- */
@@ -3768,7 +3768,7 @@ function novaWarning(){
 function markNova(list, finishers){ return list.map(x => ({...x, nova: finishers.has(`${x.name}|${x.classCode || ''}`) || (x.dev && finishers.has(`${x.name}|`))})); }
 function novaTable(list){
   if(!list.length) return `<p class="dim">No ${MN('nova')} runs yet. Be the first to survive!</p>`;
-  return `<table class="board"><tbody>${list.map((x,i) => `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm"${!x.world && x.classCode ? ` data-avc="${esc(x.classCode)}" data-avs="${esc(x.name)}"` : ''}>${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.finished ? starSVG('badge') : ' <span class="novatag">SURVIVOR</span>'}</td><td class="k">${x.finished ? '20/20' : `${x.reached}/20`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
+  return `<table class="board"><tbody>${list.map((x,i) => `<tr class="${x.me ? 'me' : ''}"><td>${i+1}.</td><td class="nm"${x.classCode ? ` data-avc="${esc(x.classCode)}" data-avs="${esc(x.name)}"` : ''}>${ICONS.includes(x.icon) ? `<span class="nm-ic">${iconHTML(x.icon)}</span>` : ''}${esc(x.name)}${x.dev ? ' <span class="devtag" title="Developer score">DEV</span>' : ''}${x.finished ? starSVG('badge') : ' <span class="novatag">SURVIVOR</span>'}</td><td class="k">${x.finished ? '20/20' : `${x.reached}/20`}</td><td class="s">${String(+x.score || 0).padStart(6,'0')}</td></tr>`).join('')}</tbody></table>`;
 }
 function toMenu(){
   closeOverlay(); S.run = null; S.busy = false; $('#app').classList.remove('novaRun');
