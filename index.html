@@ -6546,6 +6546,7 @@ function shade(hex, f) { const n = parseInt(hex.slice(1), 16); const c = s => Ma
     var el = document.elementFromPoint(x, y);
     if (!el || el === document.body || el === document.documentElement) return true;
     if (own && t.contains(el)) return true;
+    if (el.tagName === 'CANVAS' && el.offsetWidth >= innerWidth * .9 && el.offsetHeight >= innerHeight * .9) return true;   // a full-page background picture
     if (el.closest('button,a,input,select,textarea,label,canvas,video,img,svg,[role=button],[contenteditable],.mav-corner')) return false;
     for (var n = el.firstChild; n; n = n.nextSibling) if (n.nodeType === 3 && n.textContent.trim()) return false;
     return true;
