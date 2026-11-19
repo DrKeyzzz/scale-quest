@@ -2596,9 +2596,11 @@ const EXTRA_H = () => isGrand() ? GRAND_DY : 0, VX = () => isGrand() ? -22 : 0;
 // The clef sign at x (Noto Music glyphs, sized to the 20-unit staff space).
 function clefSvg(x, style = '', c = S.clef, dy = 0){
   const st = style ? ` style="${style}"` : '';
-  if(c === 'bass') return `<text class="clef" x="${x}" y="${yOf(2) + 1 + dy}" font-size="92"${st}>𝄢</text>`;   // top line to just under the 2nd line
-  if(c === 'alto') return `<text class="clef" x="${x}" y="${yOf(2) + 1 + dy}" font-size="82"${st}>𝄡</text>`;   // top line to bottom line
-  return `<text class="clef" x="${x}" y="${yOf(2)+17+dy}" font-size="104"${st}>𝄞</text>`;
+  // Engraving rule for Noto Music (2026-11-19): font size = staff height (4 spaces = 80), baseline on the bottom line.
+  // Treble curl on G, bass dots around F, alto centered on middle C (was 104/92/82, about 30% too big for the treble clef).
+  if(c === 'bass') return `<text class="clef" x="${x}" y="${yOf(2) + dy}" font-size="80"${st}>𝄢</text>`;
+  if(c === 'alto') return `<text class="clef" x="${x}" y="${yOf(2) + dy}" font-size="80"${st}>𝄡</text>`;
+  return `<text class="clef" x="${x}" y="${yOf(2) + dy}" font-size="80"${st}>𝄞</text>`;
 }
 // Staff lines from x1 to x2 with their clef signs at clefX; bar = the line down the left edge (always there on the grand staff, with its brace).
 function staffLines(x1, x2, clefX, {bar = false, style = ''} = {}){
