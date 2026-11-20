@@ -3099,7 +3099,7 @@ function applySettings(o){
   if(Number.isInteger(o.ksLevel) && o.ksLevel >= 1 && o.ksLevel <= 9){ t.ks = true; t.ksLevel = o.ksLevel; }
   if(Number.isInteger(o.map) && o.map >= 1 && o.map <= MAP_WORLDS.length){   // Map levels assignment: world 1-5, levels mapFrom-mapTo (1-based)
     const w = o.map - 1, n = MAP_WORLDS[w].keys.length, a = Math.min(n, Math.max(1, Number.isInteger(o.mapFrom) ? o.mapFrom : 1));
-    t.map = {w, a: a - 1, b: Math.min(n, Math.max(a, Number.isInteger(o.mapTo) ? o.mapTo : n)) - 1};
+    t.map = {w, a: a - 1, b: Math.min(n, Math.max(a, Number.isInteger(o.mapTo) && o.mapTo >= 1 ? o.mapTo : n)) - 1};
   }
   if(!Object.keys(t).length) return null;
   if(t.keys){   // like a ready-made set: show the first scale's family in the key grid
