@@ -658,6 +658,10 @@ button{font:inherit;color:inherit}
 .duelface{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;font-size:60px;margin:0 auto 6px;border:4px solid #fff}
 @media (prefers-reduced-motion:reduce){.mp-node.cur,.mp-star{animation:none}}
 @media (max-width:700px){.mp-node{width:54px;height:54px;font-size:18px}.mp-node.boss{width:70px;height:70px;font-size:32px}.mp-world h3{font-size:16px}}
+/* Map levels assignment (2026-11-20): banner + the assigned levels glow gold */
+.mp-asg{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 10px;padding:9px 12px;border-radius:12px;border:2px solid #ffd34d;background:rgba(255,211,77,.12);font:600 14px/1.35 system-ui,sans-serif;color:var(--ink)}
+.mp-asg>span:first-child{font-size:20px}.mp-asgn{margin-left:6px;color:#ffd34d;white-space:nowrap}
+.mp-node.asg{box-shadow:0 0 0 4px #ffd34d,0 0 18px 4px rgba(255,211,77,.55)}
 /* KEY SIGNATURE LADDER (2026-11-15): 9 levels on the start screen, only that level's answer buttons, a Hint with the circle of fifths */
 .ksl{width:100%;max-width:900px;margin:4px auto 0;text-align:center}
 .ksl-row{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 8px;scroll-snap-type:x mandatory;justify-content:safe center}
@@ -2875,7 +2879,7 @@ function buildDay(){
   return {date: dayKey(), questions: qs.length, correct, minutes: activeMinutes(qs), byKey, types, missed: Object.fromEntries(miss),
     runs: day.runs.filter(r => !r.nova), best: day.runs.filter(r => !r.nova).reduce((a, r) => Math.max(a, r.s), 0),
     nova: day.runs.filter(r => r.nova).reduce((a, r) => [a[0] + 1, a[1] + (r.f ? 1 : 0), Math.max(a[2], r.r || 0)], [0, 0, 0]),
-    first: qs.length ? qs[0].t0 : 0, last: qs.length ? qs[qs.length-1].t1 : 0};
+    first: qs.length ? qs[0].t0 : 0, last: qs.length ? qs[qs.length-1].t1 : 0, lv: day.lv || {}};
 }
 let syncTimer = 0;
 // at most one progress save a minute per student (plus one when the page is hidden), so a busy class stays inside Firebase's free daily limit
@@ -2895,6 +2899,7 @@ async function syncProgress(){
       goal: DAILY_GOAL, by_key: d.byKey, types: d.types, missed: d.missed,
       chaos: d.runs.slice(-20).map(r => ({s: r.s, a: r.a, k: r.k, t: r.t})), best_chaos: d.best};
     if(d.nova[0]) data.nova = d.nova;   // [attempts, finished, furthest question]
+    if(Object.keys(d.lv).length) data.levels = d.lv;   // map levels cleared today {"w:i": stars} (Map levels assignments, 2026-11-20)
     try{ await Cloud.saveProgress(`${c.code}_${d.date}_${data.sid}`, data); } catch(e){ console.warn('Progress sync failed:', e); }
   }
 }
@@ -3092,6 +3097,10 @@ function applySettings(o){
   if(CLEFS[o.clef]) t.clef = o.clef;
   if(typeof o.ks === 'boolean') t.ks = o.ks;
   if(Number.isInteger(o.ksLevel) && o.ksLevel >= 1 && o.ksLevel <= 9){ t.ks = true; t.ksLevel = o.ksLevel; }
+  if(Number.isInteger(o.map) && o.map >= 1 && o.map <= MAP_WORLDS.length){   // Map levels assignment: world 1-5, levels mapFrom-mapTo (1-based)
+    const w = o.map - 1, n = MAP_WORLDS[w].keys.length, a = Math.min(n, Math.max(1, Number.isInteger(o.mapFrom) ? o.mapFrom : 1));
+    t.map = {w, a: a - 1, b: Math.min(n, Math.max(a, Number.isInteger(o.mapTo) ? o.mapTo : n)) - 1};
+  }
   if(!Object.keys(t).length) return null;
   if(t.keys){   // like a ready-made set: show the first scale's family in the key grid
     S.selected = new Set(t.keys);
@@ -3108,6 +3117,11 @@ function applySettings(o){
   if(t.clef) setClef(t.clef, false);
   if('ks' in t && t.ks !== S.ks){ if(t.ks) setChoice('scales', 'ks'); else setKs(false); }
   if(t.ksLevel){ S.ksLv = t.ksLevel - 1; S.ksOpenTo = S.ksLv; if(S.mode !== 'practice') setChoice('mode', 'practice'); syncQuick(); }   // the teacher's level is open even if not reached yet
+  if(t.map){   // open the map on that world; the assigned levels are open (World 4's through the ladder's own rule)
+    S.mapAsg = t.map; S.mapW = t.map.w; S.view = 'map';
+    if(MAP_WORLDS[t.map.w].ladder) S.ksOpenTo = Math.max(+S.ksOpenTo || 0, t.map.b);
+    syncQuick();
+  }
   updateCarts(); renderAssignment();
   return t;
 }
@@ -3116,7 +3130,8 @@ function applySettingsFromUrl(){
   const q = new URLSearchParams(location.search), s = q.get('settings'); if(s == null) return;
   q.delete('settings'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
   try{ const o = decodeSettings(s); teacherSettings = o && applySettings(o); } catch(e){ console.warn('settings link:', e); }
-  if(teacherSettings && !q.get('focus')) focusToast('🎯 Your teacher\'s settings are ready. Press <b>START</b>!');
+  if(teacherSettings && teacherSettings.map){ const A = teacherSettings.map; focusToast(`🎯 Your teacher picked <b>World ${A.w + 1}: ${esc(MAP_WORLDS[A.w].n)}</b>, levels ${A.a + 1} to ${A.b + 1}. Tap a glowing level!`); }
+  else if(teacherSettings && !q.get('focus')) focusToast('🎯 Your teacher\'s settings are ready. Press <b>START</b>!');
 }
 function showWelcome(keep){
   closeOverlay();
@@ -4597,6 +4612,7 @@ function ladderEnd(){
   if(stars > before){ all[i] = stars; if(ladderKey()) store.set(ladderKey(), all); }
   const md = mapData(), ladCoins = got * 10 + stars * 10; md.coins = (+md.coins || 0) + ladCoins; mapSave(md);   // the ladder pays map coins too
   if(s[1]) MTG_HIST.run('scale', {score: 0, level: i + 1, acc});
+  mapCleared(MAP_WORLDS.findIndex(W => W.ladder), i, stars);   // World 4 = the ladder
   if(S.test && S.testRun) return tsEnd(r, {acc, total: s[1], final: r.score, reason: 'complete'});
   stars ? SFX.win() : SFX.over();
   const more = i < 8 && ladderOpen(i + 1);
@@ -4627,7 +4643,26 @@ function mapOn(){ return MAP_ENABLED && S.view === 'map' && !(window.MTGTest && 
 function worldOpen(w){ return true; }   // every world is open from the start (David: a kid may want just the flat keys); levels in a world go in order
 // a level's stars (World 4 uses the key signature ladder's own stars)
 function starOf(w, i){ return MAP_WORLDS[w].ladder ? (ladderStars()[i] || 0) : (mapData().s[`${w}:${i}`] || 0); }
-function levelOpen(w, i){ return worldOpen(w) && (i === 0 || starOf(w, i - 1) >= 1); }
+function levelOpen(w, i){ return worldOpen(w) && (i === 0 || starOf(w, i - 1) >= 1 || mapAsgHas(w, i)); }
+/* MAP LEVELS ASSIGNMENT (2026-11-20): a teacher's link (?settings {map: 1-5, mapFrom, mapTo}) opens that world on the map with the
+   assigned levels marked and open (even if not reached). Every level cleared (1+ star) is saved for the day as lv {"w:i": stars}:
+   in the answer log (sent to the teacher as scale_progress.levels) and in mtg_hist_v1 (scale.lv), which the home page counts. */
+S.mapAsg = null;   // {w, a, b}: world and level range (0-based), from the teacher's link; not saved
+function mapAsgHas(w, i){ const A = S.mapAsg; return !!A && A.w === w && i >= A.a && i <= A.b; }
+function mapCleared(w, i, stars){
+  if(!(stars >= 1)) return;
+  const id = `${w}:${i}`;
+  try{ const log = readLog(), d = todayOf(log); d.lv = d.lv || {}; d.lv[id] = Math.max(d.lv[id] || 0, stars); writeLog(log); } catch(e){}
+  try{   // the same day record MTG_HIST keeps (its key and shape), so the home page's assignment card can count levels
+    const raw = JSON.parse(localStorage.getItem('rdt_profile_v1') || 'null');
+    if(sessionStorage.getItem('music_guest') !== '1' && raw && raw.first && raw.init){
+      const k = 'mtg_hist_v1:' + (raw.first + raw.init).toLowerCase().replace(/[^a-z]/g, '');
+      const h = JSON.parse(localStorage.getItem(k) || 'null');
+      if(h && h.days){ const g = (h.days[dayKey()] || {}).scale; if(g){ g.lv = g.lv || {}; g.lv[id] = Math.max(g.lv[id] || 0, stars); localStorage.setItem(k, JSON.stringify(h)); } }
+    }
+  } catch(e){}
+  scheduleSync();
+}
 // what a node says: C, Am (nat), D (dor), or the ladder level number
 function nodeLabel(w, k){
   if(MAP_WORLDS[w].ladder) return esc(k);
@@ -4651,6 +4686,10 @@ function renderMap(){
   let h = `<div class="mp-head"><b>Your map</b><span class="mp-chip" title="Coins">🪙 ${d.coins}</span><span class="mp-chip" title="Stars">⭐ ${total}</span><button type="button" class="mp-chip mp-tier" id="mpTier" title="Your ranked tier">${tier ? tier[1] + ' ' + tier[2] : '🏅 Unranked'}</button></div>
     <div class="mp-row"><button type="button" class="mp-daily${I.done ? ' done' : ''}" id="mpDaily"><span class="ic" aria-hidden="true">🔥</span><span><b>${I.done ? 'Daily challenge done!' : 'Daily challenge'}</b><small>${I.done ? `Come back tomorrow · streak ${I.streak} day${I.streak === 1 ? '' : 's'}` : `Scale of the day: ${esc(scaleName(I.key))} · 5 questions · +50 🪙${I.streak ? ` · streak ${I.streak}` : ''}`}</small></span><span class="go">${I.done ? 'AGAIN' : 'PLAY'}</span></button><button type="button" class="mp-nova" id="mpNova"><span class="mp-star" aria-hidden="true">★</span><span><b>${MN('nova')}</b><small>All 150 scales · ${CHAOS_LEN} questions · ${NOVA_HEARTS} hearts${novaUnlocked() ? '' : ` · 🔒 finish one ${MNs()} run to unlock`}</small></span></button>
     <button type="button" class="mp-chaos" id="mpChaos"><span class="ic" aria-hidden="true">⚡</span><span><b>${MN('chaos')}</b><small>${CHAOS_LEN} timed questions · post a high score${tier ? ` · you: ${tier[1]} ${tier[2]}` : ' · earn your tier'}</small></span></button></div>`;
+  if(S.mapAsg){   // Map levels assignment banner (2026-11-20)
+    const A = S.mapAsg, n = A.b - A.a + 1; let got = 0; for(let i = A.a; i <= A.b; i++) if(starOf(A.w, i) >= 1) got++;
+    h += `<div class="mp-asg"><span aria-hidden="true">🎯</span><span><b>From your teacher:</b> World ${A.w + 1} · ${esc(MAP_WORLDS[A.w].n)}, levels ${A.a + 1} to ${A.b + 1} <b class="mp-asgn">${got} of ${n} cleared</b></span>${S.mapW !== A.w && S.mapW != null ? `<button type="button" class="mp-chip" data-wgo="${A.w}">Go there ▶</button>` : ''}</div>`;
+  }
   // 2026-11-16: one world at a time (◀ ▶ arrows and dots), levels in a snake of rows, so the map fits one screen (no scrolling)
   if(S.mapW == null || S.mapW < 0 || S.mapW >= MAP_WORLDS.length) S.mapW = cur ? cur.w : 0;
   const narrow = (el.clientWidth || innerWidth) < 560;
@@ -4665,7 +4704,7 @@ function renderMap(){
       <div class="mp-path" style="height:${H}px"><svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${trail}" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
     W.keys.forEach((k, i) => {
       const s = starOf(w, i), op = levelOpen(w, i), isCur = !!cur && cur.w === w && cur.i === i;
-      h += `<button type="button" class="mp-node${op ? '' : ' lock'}${isCur ? ' cur' : ''}" data-w="${w}" data-i="${i}" style="left:${pts[i].x}%;top:${pts[i].y}px;--c:${W.col}" aria-label="${esc(levelName(w, i))}${op ? '' : ', locked'}${s ? `, ${s} of 3 stars` : ''}">${op ? nodeLabel(w, k) : '🔒'}<span class="st" aria-hidden="true">${'★'.repeat(s)}${'☆'.repeat(3 - s)}</span></button>`;
+      h += `<button type="button" class="mp-node${op ? '' : ' lock'}${isCur ? ' cur' : ''}${mapAsgHas(w, i) ? ' asg' : ''}" data-w="${w}" data-i="${i}" style="left:${pts[i].x}%;top:${pts[i].y}px;--c:${W.col}" aria-label="${esc(levelName(w, i))}${op ? '' : ', locked'}${s ? `, ${s} of 3 stars` : ''}">${op ? nodeLabel(w, k) : '🔒'}<span class="st" aria-hidden="true">${'★'.repeat(s)}${'☆'.repeat(3 - s)}</span></button>`;
     });
     const bp = pts[n - 1];
     const bo = bossOpen(w), beat = !!d.s[`${w}:boss`], bCur = !!cur && cur.w === w && cur.boss;
@@ -4715,6 +4754,7 @@ function levelEnd(){
   const d = mapData(), key = `${L.w}:${L.i}`, bonus = stars * 10;
   d.coins = (+d.coins || 0) + L.coins + bonus; if(stars > (d.s[key] || 0)) d.s[key] = stars; mapSave(d);
   if(s[1]) MTG_HIST.run('scale', {score: 0, level: L.i + 1, acc});
+  mapCleared(L.w, L.i, stars);
   stars ? SFX.win() : SFX.over();
   const W = MAP_WORLDS[L.w], nextI = L.i + 1 < W.keys.length ? L.i + 1 : null;
   const newWorld = false, bossNow = stars && nextI == null && bossOpen(L.w) && !d.s[`${L.w}:boss`];
