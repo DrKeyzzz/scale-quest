@@ -2779,16 +2779,27 @@ function timerLoop(){
   requestAnimationFrame(timerLoop);
 }
 
+/* MTG_HIST start: identical in every game. Master copy: Music Games/shared/mtg-hist.snippet.js (python3 shared/apply-hist.py) */
 /* ---------- Music Theory Games: shared practice history for the student report (identical in every game) ----------
    One localStorage key per student, 'mtg_hist_v1:<first+initial>', kept with no time limit:
    { v: 1, name, days: { 'YYYY-MM-DD': { <game>: { plays, answers, correct, ms, best, level, bpm, caught, skills: { label: [right, total] }, last } } } }
-   The report at https://drkeyzzz.github.io/report/ reads it. Guests are not recorded. */
+   The report at https://drkeyzzz.github.io/report/ reads it. Guests are not recorded.
+   Practice time (ms), since 2026-11-23 = ACTIVE TIME: every 15 s, if this tab is visible and the student tapped, clicked, typed
+   or answered in the last 60 s, 15 000 ms go to today's game. One tab per student earns at a time (lock mtg_hist_lock_v1:<sid>).
+   No time inside a frame (Super Genius channels). The game is the page's (folder name), or the last one note()/run()/at() named.
+   A page with its own sign-in sets window.MTG_HIST_WHO = () => ({ first, init, classCode }) or null. */
 const MTG_HIST = (() => {
-  const prof = () => { try { if (sessionStorage.getItem('music_guest') === '1') return null; const p = JSON.parse(localStorage.getItem('rdt_profile_v1') || 'null'); return p && p.first && p.init ? p : null; } catch { return null; } };
+  const prof = () => {
+    try {
+      if (typeof window.MTG_HIST_WHO === 'function') { const w = window.MTG_HIST_WHO(); return w && w.first && w.init ? w : null; }
+      if (sessionStorage.getItem('music_guest') === '1') return null; const p = JSON.parse(localStorage.getItem('rdt_profile_v1') || 'null'); return p && p.first && p.init ? p : null;
+    } catch { return null; }
+  };
   const day = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const sidOf = p => (p.first + p.init).toLowerCase().replace(/[^a-z]/g, '');
   function edit(game, fn) {
     const p = prof(); if (!p) return;
-    const k = 'mtg_hist_v1:' + (p.first + p.init).toLowerCase().replace(/[^a-z]/g, '');
+    const k = 'mtg_hist_v1:' + sidOf(p);
     let h = null; try { h = JSON.parse(localStorage.getItem(k) || 'null'); } catch {}
     if (!h || !h.days) h = { v: 1, days: {} };
     h.name = `${p.first.charAt(0).toUpperCase()}${p.first.slice(1)} ${p.init}.`; h.classCode = p.classCode || '';
@@ -2797,20 +2808,45 @@ const MTG_HIST = (() => {
     fn(g);
     try { localStorage.setItem(k, JSON.stringify(h)); } catch {}
   }
+  const quiet = game => game === 'genius';   // Super Genius sends no mtghist events (its channels already count)
+  // ---------- active time ----------
+  const PAGE = { 'scale-quest': 'scale', 'tidal-tones': 'tidal', 'rooftop-runner': 'rooftop', 'earshot-saloon': 'earshot',
+    'rhythm-trainer': 'rhythm', 'super-genius': 'genius', 'critical-listening-lab': 'listen' };   // Brainwaves: the area, via note()/at()
+  let cur = null; try { cur = location.pathname.split('/').map(s => PAGE[s]).filter(Boolean).pop() || null; } catch {}
+  let input = 0;
+  const TICK = 15000, IDLE = 60000, LOCK_MS = 40000, TAB = Math.random().toString(36).slice(2);
+  const poke = () => { input = Date.now(); };
+  function tick() {
+    try {
+      if (!cur || document.visibilityState !== 'visible' || Date.now() - input > IDLE) return;
+      const p = prof(); if (!p) return;
+      const lk = 'mtg_hist_lock_v1:' + sidOf(p), now = Date.now();
+      let l = null; try { l = JSON.parse(localStorage.getItem(lk) || 'null'); } catch {}
+      if (l && l.id !== TAB && now - l.t < LOCK_MS) return;          // another tab is earning this student's time
+      localStorage.setItem(lk, JSON.stringify({ id: TAB, t: now }));
+      edit(cur, g => { g.ms = (g.ms || 0) + TICK; });
+    } catch {}
+  }
+  try {
+    if (window.top === window) {
+      for (const ev of ['pointerdown', 'keydown', 'touchstart']) addEventListener(ev, poke, { capture: true, passive: true });
+      setInterval(tick, TICK);
+    }
+  } catch {}
   return {
     // one answered note/question/rhythm: ok = right; labels = the skills it shows (e.g. ['Eighth notes', 'F4'])
     note(game, labels, ok) {
-      try { dispatchEvent(new CustomEvent('mtghist', { detail: { type: 'note', game, ok: !!ok } })); } catch {}   // the Activity log counts guests too
+      if (!quiet(game)) try { dispatchEvent(new CustomEvent('mtghist', { detail: { type: 'note', game, ok: !!ok } })); } catch {}   // the Activity log counts guests too
+      cur = game; poke();
       edit(game, g => {
-        const now = Date.now();
-        if (g.last && now - g.last < 120000) g.ms += now - g.last;     // gaps over 2 minutes aren't practice time (was 10 until 2026-11-18)
-        g.last = now; g.answers++; if (ok) g.correct++;
+        g.last = Date.now(); g.answers++; if (ok) g.correct++;   // time comes from the active-time tick, not answer gaps
         for (const lab of [].concat(labels || [])) { if (!lab) continue; const s = g.skills[lab] || (g.skills[lab] = [0, 0]); s[1]++; if (ok) s[0]++; }
       });
     },
     // one finished game or round
     run(game, r) {
-      try { dispatchEvent(new CustomEvent('mtghist', { detail: { type: 'run', game, r: r || {} } })); } catch {}
+      if (!quiet(game)) try { dispatchEvent(new CustomEvent('mtghist', { detail: { type: 'run', game, r: r || {} } })); } catch {}
+      cur = game; poke();
       edit(game, g => {
         g.plays++; g.best = Math.max(g.best, Math.round(r.score || 0)); g.level = Math.max(g.level, r.level || 0);
         if (r.bpm) g.bpm = Math.max(g.bpm || 0, r.bpm);
@@ -2818,8 +2854,11 @@ const MTG_HIST = (() => {
         if (r.acc != null) g.acc = Math.max(g.acc || 0, Math.round(r.acc));
       });
     },
+    // which game the time goes to from now on (Brainwaves: the area that just opened; null = none, e.g. back on the map)
+    at(game) { cur = game || null; },
   };
 })();
+/* MTG_HIST end */
 
 /* ---------- answer log (this device, per student, one week) + class sync ---------- */
 const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
